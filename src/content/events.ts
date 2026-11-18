@@ -79,7 +79,7 @@ export const events: EventDef[] = [
   {
     id: 'cashCrisis',
     weight: 1,
-    cooldownDays: 90,
+    cooldownDays: 360,
     urgent: true,
     condition: { cashNegative: true },
     choices: [

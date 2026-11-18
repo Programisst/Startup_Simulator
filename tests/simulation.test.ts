@@ -99,8 +99,10 @@ describe('пользователи и деньги', () => {
   });
 
   it('плохой продукт с рекламой теряет больше пользователей, чем хороший', () => {
-    const bad = advance(run(launchedGame(), { type: 'setAdSpend', perDay: 30 }), 60);
-    let good = launchedGame();
+    // Серверов хватает обоим: сравниваем только влияние качества, без перегрузки.
+    const start = run(launchedGame(), { type: 'setCapacity', capacity: 10_000 });
+    const bad = advance(run(start, { type: 'setAdSpend', perDay: 30 }), 60);
+    let good = start;
     good = { ...good, doneFeatures: content.features.saas.map((f) => f.id), bugs: 0 };
     good = advance(run(good, { type: 'setAdSpend', perDay: 30 }), 60);
     const lossShare = (s: GameState) => s.lastDay.churned / s.users;
@@ -129,8 +131,8 @@ describe('подработка, улучшение продукта и слож�
     let s = run(newGame(), { type: 'setSideJob', share: 0.5 });
     s = advance(run(s, { type: 'queueFeature', featureId: 'core' }), 30);
     expect(s.doneFeatures).toEqual([]);
-    expect(s.cash).toBeCloseTo(3000 - 800 - 40 - 5 + 600, 0);
-    expect(s.months[0]?.sideIncome).toBeCloseTo(600, 0);
+    expect(s.cash).toBeCloseTo(3000 - 800 - 40 - 5 + 350, 0);
+    expect(s.months[0]?.sideIncome).toBeCloseTo(350, 0);
     s = advance(s, 20);
     expect(s.doneFeatures).toEqual(['core']);
     expect(applyCommand(s, { type: 'setSideJob', share: 0.3 }, content).ok).toBe(false);
@@ -148,8 +150,8 @@ describe('подработка, улучшение продукта и слож�
   it('сложность меняет стартовые условия', () => {
     const easy = newGame({ difficulty: 'easy' });
     const hard = newGame({ difficulty: 'hard' });
-    expect(easy.cash).toBe(6000);
-    expect(hard.cash).toBe(2000);
+    expect(easy.cash).toBe(5000);
+    expect(hard.cash).toBe(2500);
     expect(hard.livingCostPerMonth).toBeGreaterThan(easy.livingCostPerMonth);
     expect(hard.market.cacBase).toBeGreaterThan(easy.market.cacBase);
   });

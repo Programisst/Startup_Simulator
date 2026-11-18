@@ -24,5 +24,5 @@ export const config: GameConfig = {
   goalProfitPerMonth: 3000,
   goalProfitMonths: 3,
   goalValuation: 10_000_000,
-  marketVariation: 0.15,
+  marketVariation: 0.2,
 };
