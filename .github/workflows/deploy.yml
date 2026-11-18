@@ -1,8 +1,8 @@
 name: Публикация игры
 
+# Отключено: GitHub Pages недоступен для этого аккаунта (региональные ограничения).
+# Запускается только вручную. Игру для показа собирает команда `npm run share`.
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:

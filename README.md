@@ -10,6 +10,7 @@
 npm install      # один раз, после скачивания проекта
 npm run dev      # запустить игру, откроется адрес http://localhost:5173
 npm test         # запустить тесты
+npm run share    # собрать игру в один файл share/StartupSimulator.html, который можно переслать
 ```
 
 ## Права
