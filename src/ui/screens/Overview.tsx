@@ -1,12 +1,14 @@
 import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
 import { LineChart } from '../components/LineChart';
+import { OfficeScene } from '../office/OfficeScene';
 import { dec, gameDate, money, num } from '../format';
 import { useStore } from '../store';
 
 export function Overview() {
   const { t } = useTranslation();
   const game = useStore((s) => s.game)!;
+  const speed = useStore((s) => s.speed);
   const b = game.lastDay;
 
   const last30 = game.recentDays.slice(-30);
@@ -17,6 +19,7 @@ export function Overview() {
 
   return (
     <div className="screen">
+      <OfficeScene game={game} speed={speed} />
       <div className="cards">
         <div className="card">
           <span>{t('metrics.cash')}</span>
