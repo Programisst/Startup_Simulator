@@ -1,0 +1,47 @@
+{
+  "badReview": {
+    "title": "A brutal review",
+    "body": "A creator with a million followers called your product the worst thing they tried this year. The video is taking off.",
+    "choices": {
+      "fixQuietly": "Stay silent and fix bugs fast",
+      "respondPublicly": "Respond publicly",
+      "offerPartnership": "Offer them a $500 partnership"
+    }
+  },
+  "serverOutage": {
+    "title": "The service is down",
+    "body": "Your servers could not handle the load. The product has been down for three hours and users are furious.",
+    "choices": {
+      "compensate": "Apologize and hand out $400 in credits",
+      "ignore": "Fix it quietly and explain nothing",
+      "blameProvider": "Blame the hosting provider"
+    }
+  },
+  "viralPost": {
+    "title": "A post went viral",
+    "body": "A user wrote a glowing post about your product and thousands are sharing it.",
+    "choices": {
+      "rideTheWave": "Just enjoy the traffic",
+      "payForBoost": "Pay $300 to promote the post",
+      "rushFeature": "Rush out what the comments are asking for"
+    }
+  },
+  "adPriceHike": {
+    "title": "Ads got more expensive",
+    "body": "The ad platform you rely on has raised its prices.",
+    "choices": {
+      "accept": "Live with it",
+      "switchChannel": "Spend $400 moving to another platform",
+      "contentMarketing": "Fewer ads, more useful articles"
+    }
+  },
+  "cashCrisis": {
+    "title": "Out of money",
+    "body": "Your balance is negative. If you are not back above zero in 30 days, the company goes bankrupt.",
+    "choices": {
+      "takeLoan": "Take a $5,000 loan and repay $7,000 over six months",
+      "sellEquipment": "Sell equipment for $1,500",
+      "holdOn": "Hold on and do nothing"
+    }
+  }
+}

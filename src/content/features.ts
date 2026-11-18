@@ -1,0 +1,66 @@
+// Функции продукта по типам. cost — дни работы основателя, value — ценность для пользователей.
+// Названия для игрока лежат в src/content/<язык>/features.json.
+import type { FeatureDef, ProductTypeId } from '../core/types';
+
+export const features: Record<ProductTypeId, FeatureDef[]> = {
+  saas: [
+    { id: 'core', cost: 25, value: 14, core: true },
+    { id: 'dashboard', cost: 15, value: 9 },
+    { id: 'teamAccounts', cost: 20, value: 11 },
+    { id: 'integrations', cost: 30, value: 14 },
+    { id: 'reports', cost: 18, value: 9 },
+    { id: 'api', cost: 25, value: 11 },
+    { id: 'mobileApp', cost: 35, value: 13 },
+    { id: 'automation', cost: 40, value: 16 },
+  ],
+  social: [
+    { id: 'core', cost: 25, value: 13, core: true },
+    { id: 'feed', cost: 18, value: 11 },
+    { id: 'messages', cost: 22, value: 12 },
+    { id: 'recommendations', cost: 35, value: 16 },
+    { id: 'groups', cost: 20, value: 10 },
+    { id: 'video', cost: 40, value: 16 },
+    { id: 'notifications', cost: 10, value: 7 },
+    { id: 'moderation', cost: 25, value: 9 },
+  ],
+  mobile: [
+    { id: 'core', cost: 20, value: 17, core: true },
+    { id: 'onboarding', cost: 8, value: 9 },
+    { id: 'offlineMode', cost: 18, value: 12 },
+    { id: 'notifications', cost: 8, value: 8 },
+    { id: 'socialSharing', cost: 12, value: 10 },
+    { id: 'personalization', cost: 25, value: 16 },
+    { id: 'widgets', cost: 14, value: 9 },
+    { id: 'tabletVersion', cost: 20, value: 10 },
+  ],
+  ai: [
+    { id: 'core', cost: 30, value: 15, core: true },
+    { id: 'chatHistory', cost: 10, value: 7 },
+    { id: 'fileUpload', cost: 20, value: 11 },
+    { id: 'betterModel', cost: 40, value: 18 },
+    { id: 'templates', cost: 12, value: 8 },
+    { id: 'api', cost: 25, value: 10 },
+    { id: 'teamWorkspace', cost: 25, value: 11 },
+    { id: 'voiceInput', cost: 22, value: 9 },
+  ],
+  marketplace: [
+    { id: 'core', cost: 30, value: 14, core: true },
+    { id: 'search', cost: 15, value: 10 },
+    { id: 'reviews', cost: 12, value: 9 },
+    { id: 'payments', cost: 25, value: 13 },
+    { id: 'sellerTools', cost: 22, value: 11 },
+    { id: 'delivery', cost: 30, value: 12 },
+    { id: 'disputes', cost: 18, value: 8 },
+    { id: 'recommendations', cost: 30, value: 13 },
+  ],
+  devtools: [
+    { id: 'core', cost: 25, value: 14, core: true },
+    { id: 'cli', cost: 12, value: 9 },
+    { id: 'docs', cost: 10, value: 9 },
+    { id: 'integrations', cost: 25, value: 13 },
+    { id: 'api', cost: 18, value: 10 },
+    { id: 'teamAccounts', cost: 20, value: 10 },
+    { id: 'plugins', cost: 30, value: 13 },
+    { id: 'selfHosted', cost: 35, value: 12 },
+  ],
+};

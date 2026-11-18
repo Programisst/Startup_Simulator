@@ -1,0 +1,343 @@
+// Описание состояния игры, команд игрока и игрового контента.
+// ОБЩИЙ ФАЙЛ: от него зависят и ядро, и интерфейс. Менять только по договорённости.
+
+import type { RngState } from './rng';
+
+export type ProductTypeId = 'saas' | 'social' | 'mobile' | 'ai' | 'marketplace' | 'devtools';
+export type BusinessModel = 'subscription' | 'ads' | 'oneTime' | 'commission';
+export type GoalId = 'profit' | 'valuation' | 'sandbox';
+export type GameStatus = 'running' | 'won' | 'bankrupt';
+export type DifficultyId = 'easy' | 'normal' | 'hard';
+
+// ---------- Контент (данные игры) ----------
+
+/** Аудитория: поправки к рынку для выбранного типа продукта. */
+export interface AudienceDef {
+  id: string;
+  /** Насколько продукт подходит аудитории, 0.5…1.5 */
+  fit: number;
+  /** Множитель размера рынка */
+  marketFactor: number;
+  /** Множитель цены-ориентира */
+  priceFactor: number;
+}
+
+/** Параметры типа продукта. Все ставки — месячные. */
+export interface ProductTypeDef {
+  id: ProductTypeId;
+  marketSize: number;
+  cacBase: number;
+  churnBase: number;
+  convBase: number;
+  priceRef: number;
+  viralBase: number;
+  organicBase: number;
+  serverCostPerUser: number;
+  adRevenuePerUser: number;
+  commissionPerUser: number;
+  /** Давление конкурентов, 0…1 */
+  competition: number;
+  /** Сколько «очков функций» рынок ждёт от продукта в начале игры */
+  expectation0: number;
+  /** Сколько долларов оценки даёт один пользователь */
+  userValue: number;
+  audiences: AudienceDef[];
+}
+
+export interface FeatureDef {
+  id: string;
+  /** Стоимость в единицах работы (1 единица = день работы основателя) */
+  cost: number;
+  /** Ценность для пользователей */
+  value: number;
+  /** Основа продукта: без неё нельзя запуститься и делать другие функции */
+  core?: boolean;
+}
+
+export interface EventCondition {
+  launched?: boolean;
+  minDay?: number;
+  minUsers?: number;
+  maxUsers?: number;
+  minQuality?: number;
+  maxQuality?: number;
+  minCash?: number;
+  maxCash?: number;
+  minBugs?: number;
+  minDebt?: number;
+  overloaded?: boolean;
+  cashNegative?: boolean;
+}
+
+export type ModifierTarget = 'acquisition' | 'churn';
+
+export type Effect =
+  | { type: 'cash'; amount: number }
+  | { type: 'reputation'; amount: number }
+  /** Скандал: временный штраф к репутации, затухает сам */
+  | { type: 'scandal'; amount: number }
+  | { type: 'usersPct'; pct: number }
+  | { type: 'bugs'; amount: number }
+  | { type: 'debt'; amount: number }
+  | { type: 'modifier'; target: ModifierTarget; factor: number; days: number }
+  /** Заём: деньги сейчас, возврат amount × repayFactor равными долями за days дней */
+  | { type: 'loan'; amount: number; repayFactor: number; days: number }
+  | { type: 'chance'; probability: number; then: Effect[]; otherwise?: Effect[] };
+
+export interface EventChoiceDef {
+  id: string;
+  effects: Effect[];
+}
+
+export interface EventDef {
+  id: string;
+  /** Чем больше вес, тем чаще событие выбирается среди подходящих */
+  weight: number;
+  /** Сколько дней событие не может повториться */
+  cooldownDays: number;
+  once?: boolean;
+  /** Срочное: случается сразу, как только выполнено условие */
+  urgent?: boolean;
+  condition: EventCondition;
+  choices: EventChoiceDef[];
+}
+
+/** Уровень сложности: меняет стартовые условия, но не формулы. */
+export interface DifficultyDef {
+  id: DifficultyId;
+  startCash: number;
+  /** Расходы основателя на жизнь в месяц */
+  livingCostPerMonth: number;
+  /** Сколько приносит подработка при полной занятости, в месяц */
+  sideJobIncomePerMonth: number;
+  /** Множитель цены рекламы и оттока: больше 1 — рынок жёстче */
+  marketHarshness: number;
+}
+
+export interface GameConfig {
+  startReputation: number;
+  startCapacity: number;
+  capacityTiers: number[];
+  toolsCostPerMonth: number;
+  paymentFee: number;
+  founderSkill: number;
+  rushSpeed: number;
+  bugfixCost: number;
+  refactorCost: number;
+  /** Сколько работы стоит один шаг улучшения продукта и сколько очков он даёт */
+  polishCost: number;
+  polishValue: number;
+  /** Допустимые доли времени основателя на подработку */
+  sideJobShares: number[];
+  expectationGrowthPerMonth: number;
+  eventMinGapDays: number;
+  eventDailyChance: number;
+  bankruptcyDays: number;
+  goalProfitPerMonth: number;
+  goalProfitMonths: number;
+  goalValuation: number;
+  /** Насколько рынок каждой партии случайно отличается от базового, доля (0.15 = ±15%) */
+  marketVariation: number;
+}
+
+export interface GameContent {
+  config: GameConfig;
+  difficulties: Record<DifficultyId, DifficultyDef>;
+  productTypes: Record<ProductTypeId, ProductTypeDef>;
+  features: Record<ProductTypeId, FeatureDef[]>;
+  events: EventDef[];
+}
+
+// ---------- Состояние партии ----------
+
+/** Параметры рынка этой партии: тип продукта с поправками аудитории (позже — и AI). */
+export interface Market {
+  marketSize: number;
+  cacBase: number;
+  churnBase: number;
+  convBase: number;
+  priceRef: number;
+  viralBase: number;
+  organicBase: number;
+  serverCostPerUser: number;
+  adRevenuePerUser: number;
+  commissionPerUser: number;
+  competition: number;
+  fit: number;
+  expectation0: number;
+  userValue: number;
+}
+
+export type Task =
+  | { kind: 'feature'; featureId: string; progress: number }
+  | { kind: 'bugfix'; progress: number }
+  | { kind: 'refactor'; progress: number }
+  /** Улучшение продукта: повторяемая задача, идёт, пока её не снимут */
+  | { kind: 'polish'; progress: number };
+
+export interface Modifier {
+  target: ModifierTarget;
+  factor: number;
+  untilDay: number;
+}
+
+export interface Loan {
+  dailyPayment: number;
+  untilDay: number;
+}
+
+export interface EventLogEntry {
+  day: number;
+  eventId: string;
+  /** null — событие ещё ждёт выбора игрока */
+  choiceId: string | null;
+  /** Как выпали случайные исходы внутри выбранного варианта */
+  chanceResults: boolean[];
+}
+
+/** Из чего сложился последний день — для объяснения показателей игроку. */
+export interface DayBreakdown {
+  paid: number;
+  organic: number;
+  viral: number;
+  newUsers: number;
+  churned: number;
+  converted: number;
+  revenue: number;
+  serverCost: number;
+  adCost: number;
+  toolsCost: number;
+  feeCost: number;
+  loanCost: number;
+  livingCost: number;
+  /** Доход от подработки основателя — не входит в доход продукта */
+  sideIncome: number;
+  expenses: number;
+}
+
+export interface DayPoint {
+  day: number;
+  cash: number;
+  users: number;
+  paying: number;
+  revenue: number;
+  expenses: number;
+}
+
+export interface MonthReport {
+  month: number;
+  revenue: number;
+  expenses: number;
+  /** Прибыль продукта: доход минус расходы, без подработки */
+  profit: number;
+  sideIncome: number;
+  users: number;
+  paying: number;
+  cash: number;
+}
+
+export interface GameState {
+  /** Версия формата сохранения */
+  version: 1;
+  seed: number;
+  rng: RngState;
+  /** Номер дня с начала партии, начиная с 0. В месяце 30 дней. */
+  day: number;
+  status: GameStatus;
+  goal: GoalId;
+  difficulty: DifficultyId;
+  livingCostPerMonth: number;
+  sideJobIncomePerMonth: number;
+  /** Доля времени основателя на подработку, 0…1 */
+  sideJobShare: number;
+
+  companyName: string;
+  productType: ProductTypeId;
+  audienceId: string;
+  businessModel: BusinessModel;
+  market: Market;
+
+  cash: number;
+  users: number;
+  paying: number;
+  quality: number;
+  reputation: number;
+  scandal: number;
+  debt: number;
+  bugs: number;
+  capacity: number;
+  price: number;
+  adSpendPerDay: number;
+
+  launched: boolean;
+  launchDay: number | null;
+  doneFeatures: string[];
+  /** Очки качества, набранные улучшением продукта */
+  polish: number;
+  tasks: Task[];
+  rush: boolean;
+
+  modifiers: Modifier[];
+  loans: Loan[];
+
+  negativeCashDays: number;
+  profitableMonthsInRow: number;
+
+  pendingEvent: string | null;
+  lastEventDay: number;
+  eventLog: EventLogEntry[];
+
+  lastDay: DayBreakdown;
+  /** Последние 90 дней — для графиков */
+  recentDays: DayPoint[];
+  monthRevenue: number;
+  monthExpenses: number;
+  monthSideIncome: number;
+  months: MonthReport[];
+}
+
+// ---------- Команды игрока ----------
+
+export interface NewGameSetup {
+  seed: number;
+  companyName: string;
+  productType: ProductTypeId;
+  audienceId: string;
+  businessModel: BusinessModel;
+  goal: GoalId;
+  difficulty: DifficultyId;
+}
+
+export type Command =
+  | { type: 'setAdSpend'; perDay: number }
+  | { type: 'setPrice'; price: number }
+  | { type: 'setCapacity'; capacity: number }
+  | { type: 'queueFeature'; featureId: string }
+  | { type: 'startBugfix' }
+  | { type: 'startRefactor' }
+  | { type: 'startPolish' }
+  | { type: 'setSideJob'; share: number }
+  | { type: 'removeTask'; index: number }
+  | { type: 'setRush'; rush: boolean }
+  | { type: 'launch' }
+  | { type: 'chooseEvent'; choiceId: string }
+  | { type: 'continueAsSandbox' };
+
+export type CommandError =
+  | 'gameOver'
+  | 'invalidValue'
+  | 'unknownFeature'
+  | 'featureAlreadyDone'
+  | 'featureAlreadyQueued'
+  | 'coreFeatureRequired'
+  | 'nothingToFix'
+  | 'alreadyQueued'
+  | 'noSuchTask'
+  | 'alreadyLaunched'
+  | 'noEvent'
+  | 'unknownChoice'
+  | 'eventPending';
+
+export type CommandResult =
+  | { ok: true; state: GameState }
+  | { ok: false; error: CommandError };
