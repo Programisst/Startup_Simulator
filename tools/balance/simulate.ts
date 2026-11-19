@@ -14,6 +14,7 @@ export const defaultModel: Record<ProductTypeId, BusinessModel> = {
   ai: 'subscription',
   marketplace: 'commission',
   devtools: 'subscription',
+  game: 'ads',
 };
 
 export function play(productType: ProductTypeId, strategy: Strategy, seed: number, difficulty: DifficultyId): GameState {
@@ -26,6 +27,8 @@ export function play(productType: ProductTypeId, strategy: Strategy, seed: numbe
       businessModel: defaultModel[productType],
       goal: 'profit',
       difficulty,
+      // Темы идут по кругу: баланс проверяется на всех, а не на «партии без темы».
+      themeId: content.themes[Math.abs(seed) % content.themes.length]?.id,
     },
     content,
   );

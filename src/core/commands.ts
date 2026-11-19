@@ -1,6 +1,7 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { applyEffects } from './events';
+import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf } from './founder';
 import { nextOffice } from './office';
 import { loanLimit, loanTerms } from './bank';
@@ -27,7 +28,7 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
   }
   if (state.status !== 'running') return fail('gameOver');
 
-  const features = content.features[state.productType];
+  const features = featuresOf(state, content);
 
   switch (cmd.type) {
     case 'rest':

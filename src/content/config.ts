@@ -63,6 +63,7 @@ export const config: GameConfig = {
     coffeeDays: 3,
     coffeeCooldownDays: 10,
     coffeeCost: 5,
+    genericFeaturesPerGame: 4,
     dilemmaMinCost: 12,
     focusChars: 240,
     focusBonus: 0.5,

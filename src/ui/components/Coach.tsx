@@ -1,7 +1,7 @@
 // Подсказка обучения: одна короткая фраза о том, что сделать сейчас.
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { roomView } from '../../core';
+import { featuresOf, roomView } from '../../core';
 import { useStore } from '../store';
 import { tutorialStep, type TutorialStep } from '../tutorial';
 
@@ -13,7 +13,7 @@ export function useTutorialStep(menuAlwaysOpen = false): TutorialStep | null {
   const screen = useStore((s) => s.screen);
   const speed = useStore((s) => s.speed);
   if (!game) return null;
-  const core = content.features[game.productType].find((f) => f.core);
+  const core = featuresOf(game, content).find((f) => f.core);
   return tutorialStep({
     active,
     running: game.status === 'running',

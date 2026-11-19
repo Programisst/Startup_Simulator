@@ -8,9 +8,10 @@ export const ideaLexicon: IdeaLexicon = {
   productTypes: {
     saas: ['бизнес', 'компани', 'crm', 'учет', 'бухгалтер', 'склад', 'документ', 'сотрудник', 'команд', 'офис', 'b2b', 'отчет', 'планировщик', 'задач', 'счета', 'касс', 'business', 'team', 'invoice'],
     social: ['соцсет', 'социальн', 'общени', 'друз', 'лент', 'знакомств', 'сообществ', 'чат', 'подписчик', 'блог', 'мессенджер', 'social', 'friends', 'community', 'dating', 'feed'],
-    mobile: ['приложени', 'мобильн', 'телефон', 'смартфон', 'игр', 'трекер', 'фитнес', 'привычк', 'медитац', 'app', 'mobile', 'game'],
+    mobile: ['приложени', 'мобильн', 'телефон', 'смартфон', 'трекер', 'фитнес', 'привычк', 'медитац', 'app', 'mobile'],
     ai: ['ии', 'ai', 'нейросет', 'искусственн', 'интеллект', 'gpt', 'бот', 'ассистент', 'генер', 'распозна', 'помощник', 'chatbot', 'neural'],
     marketplace: ['маркетплейс', 'площадк', 'прода', 'покуп', 'аренд', 'доставк', 'заказ', 'исполнител', 'объявлен', 'бронир', 'сделк', 'биржа', 'marketplace', 'rent', 'delivery', 'booking'],
+    game: ['игра', 'игры', 'игру', 'игре', 'игрой', 'игрок', 'игров', 'геймер', 'уровн', 'головоломк', 'шутер', 'стратеги', 'аркад', 'квест', 'rpg', 'game', 'gamer', 'puzzle'],
     devtools: ['разработчик', 'программист', 'код', 'api', 'библиотек', 'сервер', 'деплой', 'тестирован', 'баг', 'git', 'sdk', 'хостинг', 'devops', 'опенсорс', 'developer'],
   },
   audiences: {
@@ -22,6 +23,7 @@ export const ideaLexicon: IdeaLexicon = {
     professionals: ['специалист', 'врач', 'юрист', 'професси', 'карьер', 'резюме'],
     parents: ['родител', 'дет', 'ребен', 'мам', 'семь'],
     developers: ['разработчик', 'программист', 'developer'],
+    gamers: ['геймер', 'заядл', 'киберспорт', 'gamer'],
   },
   models: {
     subscription: ['подписк', 'ежемесячн', 'тариф', 'subscription'],
@@ -36,11 +38,27 @@ export const ideaLexicon: IdeaLexicon = {
     ai: 'subscription',
     marketplace: 'commission',
     devtools: 'subscription',
+    game: 'ads',
   },
 };
 
 export const ideaThemes = ['finance', 'health', 'education', 'games', 'food', 'travel', 'work', 'creative', 'family', 'city', 'dev'] as const;
 export type IdeaThemeId = (typeof ideaThemes)[number];
+
+/** По каким словам в идее узнаётся тема. Слова — начала слов, строчными, «ё» заменена на «е». */
+export const themeLexicon: Record<IdeaThemeId, string[]> = {
+  finance: ['деньг', 'финанс', 'бюджет', 'трат', 'налог', 'счет', 'бухгалтер', 'инвест', 'банк', 'оплат', 'money', 'finance', 'budget'],
+  health: ['здоров', 'врач', 'фитнес', 'спорт', 'трениров', 'привычк', 'сон', 'медитац', 'питани', 'пациент', 'health', 'fitness'],
+  education: ['учеб', 'урок', 'курс', 'студент', 'школьник', 'экзамен', 'репетитор', 'конспект', 'обучени', 'вуз', 'learn', 'course'],
+  games: ['игра', 'игры', 'игру', 'игре', 'игрой', 'игрок', 'игров', 'геймер', 'уровн', 'головоломк', 'шутер', 'киберспорт', 'game', 'gamer'],
+  food: ['еда', 'еды', 'кафе', 'ресторан', 'рецепт', 'повар', 'обед', 'доставк', 'кофе', 'продукт', 'food', 'recipe'],
+  travel: ['путешеств', 'поездк', 'маршрут', 'экскурс', 'гид', 'отел', 'турист', 'попутчик', 'travel', 'trip'],
+  work: ['задач', 'команд', 'резюме', 'ваканси', 'собеседован', 'офис', 'сотрудник', 'планировщик', 'карьер', 'work', 'team'],
+  creative: ['дизайн', 'художник', 'музык', 'ролик', 'шаблон', 'творч', 'рисун', 'фото', 'design', 'music', 'art'],
+  family: ['родител', 'ребен', 'дети', 'детей', 'детск', 'семь', 'нян', 'собак', 'питом', 'кружк', 'family', 'kids', 'pet'],
+  city: ['сосед', 'район', 'город', 'двор', 'аренд', 'магазин', 'дом', 'city', 'neighbor'],
+  dev: ['разработчик', 'программист', 'код', 'кода', 'коде', 'api', 'sdk', 'сервер', 'тестирован', 'developer', 'code'],
+};
 
 /** Готовая идея-подсказка: её текст лежит в переводах под ключом new.ideas.<id>. */
 export interface IdeaSeed {
@@ -64,7 +82,9 @@ export const ideaSeeds: IdeaSeed[] = [
   { id: 'tutorsMarket', theme: 'education', productType: 'marketplace', audienceId: 'freelancers', businessModel: 'commission' },
   { id: 'studentsNet', theme: 'education', productType: 'social', audienceId: 'students', businessModel: 'ads' },
 
-  { id: 'puzzleGame', theme: 'games', productType: 'mobile', audienceId: 'everyone', businessModel: 'ads' },
+  { id: 'puzzleGame', theme: 'games', productType: 'game', audienceId: 'everyone', businessModel: 'ads' },
+  { id: 'farmGame', theme: 'games', productType: 'game', audienceId: 'everyone', businessModel: 'ads' },
+  { id: 'arenaGame', theme: 'games', productType: 'game', audienceId: 'gamers', businessModel: 'oneTime' },
   { id: 'gamersNet', theme: 'games', productType: 'social', audienceId: 'everyone', businessModel: 'ads' },
   { id: 'gameAnalytics', theme: 'games', productType: 'devtools', audienceId: 'developers', businessModel: 'subscription' },
 

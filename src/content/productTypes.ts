@@ -128,4 +128,26 @@ export const productTypes: Record<ProductTypeId, ProductTypeDef> = {
       { id: 'students', fit: 1.1, marketFactor: 0.5, priceFactor: 0.4 },
     ],
   },
+  // Игра: разлетается по друзьям и быстро надоедает. Зарабатывает на рекламе и покупках внутри игры.
+  game: {
+    id: 'game',
+    marketSize: 8_000_000,
+    cacBase: 2,
+    churnBase: 0.18,
+    convBase: 0.02,
+    priceRef: 5,
+    viralBase: 0.35,
+    organicBase: 0.00013,
+    serverCostPerUser: 0.03,
+    adRevenuePerUser: 0.3,
+    commissionPerUser: 0.05,
+    competition: 0.7,
+    expectation0: 42,
+    userValue: 2,
+    audiences: [
+      { id: 'everyone', fit: 0.9, marketFactor: 1.0, priceFactor: 1.0 },
+      { id: 'students', fit: 1.2, marketFactor: 0.4, priceFactor: 0.7 },
+      { id: 'gamers', fit: 1.3, marketFactor: 0.2, priceFactor: 2.0 },
+    ],
+  },
 };

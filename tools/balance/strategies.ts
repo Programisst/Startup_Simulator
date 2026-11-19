@@ -1,10 +1,10 @@
 // Простые автоматические игроки для проверки баланса.
-import { cac, teamView, type Command, type GameContent, type GameState } from '../../src/core';
+import { cac, featuresOf, teamView, type Command, type GameContent, type GameState } from '../../src/core';
 
 export type Strategy = (s: GameState, content: GameContent) => Command[];
 
 function coreId(s: GameState, content: GameContent): string {
-  return content.features[s.productType].find((f) => f.core)?.id ?? 'core';
+  return featuresOf(s, content).find((f) => f.core)?.id ?? 'core';
 }
 
 function answerEvent(s: GameState, content: GameContent): Command[] {
@@ -54,7 +54,7 @@ function builder(launchAfter: number): Strategy {
   return (s, content) => {
     const cmds = answerEvent(s, content);
     cmds.push(...care(s));
-    const defs = content.features[s.productType];
+    const defs = featuresOf(s, content);
     const core = coreId(s, content);
 
     if (s.tasks.length === 0) {
@@ -114,7 +114,7 @@ export const sideJobOnly: Strategy = (s, content) => {
  */
 export const novice: Strategy = (s, content) => {
   const cmds = answerEvent(s, content);
-  const defs = content.features[s.productType];
+  const defs = featuresOf(s, content);
   const core = coreId(s, content);
   if (s.tasks.length === 0) {
     const next = defs.find((f) => !s.doneFeatures.includes(f.id));

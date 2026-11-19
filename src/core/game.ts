@@ -1,5 +1,6 @@
 // Создание новой партии.
 
+import { pickFeatures, themeOf } from './features';
 import { cleanIdea } from './idea';
 import { createRng, nextRange } from './rng';
 import { createTeam } from './team';
@@ -37,14 +38,17 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
   const cacRoll = nextRange(fitRoll.next, 1 - v, 1 + v);
   const churnRoll = nextRange(cacRoll.next, 1 - v, 1 + v);
 
+  // Тема сдвигает рынок по-своему: где-то дороже привлекать, где-то чаще уходят.
+  const theme = themeOf(setup.themeId, content);
+  const tm = theme?.market ?? {};
   const market: Market = {
-    marketSize: type.marketSize * audience.marketFactor,
-    cacBase: type.cacBase * cacRoll.value * difficulty.marketHarshness,
-    churnBase: type.churnBase * churnRoll.value * difficulty.marketHarshness,
-    convBase: type.convBase,
-    priceRef: type.priceRef * audience.priceFactor,
-    viralBase: type.viralBase,
-    organicBase: type.organicBase,
+    marketSize: type.marketSize * audience.marketFactor * (tm.marketSize ?? 1),
+    cacBase: type.cacBase * cacRoll.value * difficulty.marketHarshness * (tm.cac ?? 1),
+    churnBase: type.churnBase * churnRoll.value * difficulty.marketHarshness * (tm.churn ?? 1),
+    convBase: type.convBase * (tm.conv ?? 1),
+    priceRef: type.priceRef * audience.priceFactor * (tm.price ?? 1),
+    viralBase: type.viralBase * (tm.viral ?? 1),
+    organicBase: type.organicBase * (tm.organic ?? 1),
     serverCostPerUser: type.serverCostPerUser,
     adRevenuePerUser: type.adRevenuePerUser,
     commissionPerUser: type.commissionPerUser,
@@ -70,6 +74,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     sideJobShare: 0,
     companyName: setup.companyName,
     ...(idea ? { idea } : {}),
+    ...(theme ? { themeId: theme.id, featureIds: pickFeatures(setup.seed, setup.productType, theme.id, content) } : {}),
     productType: setup.productType,
     audienceId: audience.id,
     businessModel: setup.businessModel,

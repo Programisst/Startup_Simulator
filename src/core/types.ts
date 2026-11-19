@@ -3,7 +3,7 @@
 
 import type { RngState } from './rng';
 
-export type ProductTypeId = 'saas' | 'social' | 'mobile' | 'ai' | 'marketplace' | 'devtools';
+export type ProductTypeId = 'saas' | 'social' | 'mobile' | 'ai' | 'marketplace' | 'devtools' | 'game';
 export type BusinessModel = 'subscription' | 'ads' | 'oneTime' | 'commission';
 export type GoalId = 'profit' | 'valuation' | 'sandbox';
 export type GameStatus = 'running' | 'won' | 'bankrupt';
@@ -52,6 +52,28 @@ export interface FeatureDef {
   value: number;
   /** Основа продукта: без неё нельзя запуститься и делать другие функции */
   core?: boolean;
+}
+
+/** Какие параметры рынка тема может сдвинуть. Каждое число — множитель: 1 — без изменений. */
+export interface ThemeMarket {
+  marketSize?: number;
+  cac?: number;
+  churn?: number;
+  conv?: number;
+  price?: number;
+  viral?: number;
+  organic?: number;
+}
+
+/**
+ * Тема стартапа (деньги, здоровье, игры…): свои функции и свои особенности рынка.
+ * Тип продукта отвечает на вопрос «что это», тема — «про что».
+ */
+export interface ThemeDef {
+  id: string;
+  /** Функции, которые есть только у этой темы */
+  features: FeatureDef[];
+  market: ThemeMarket;
 }
 
 export interface EventCondition {
@@ -269,6 +291,8 @@ export interface FounderConfig {
   coffeeCooldownDays: number;
   /** Сколько сил кофе отнимает сразу: рывок в долг */
   coffeeCost: number;
+  /** Сколько общих функций типа продукта попадает в партию (кроме основы); остальное — функции темы */
+  genericFeaturesPerGame: number;
   /** Развилка возникает только у функций не короче этого числа дней работы */
   dilemmaMinCost: number;
   /** Сколько знаков кода игрок должен набрать сам, чтобы сосредоточенность стала полной */
@@ -318,6 +342,7 @@ export interface GameContent {
   features: Record<ProductTypeId, FeatureDef[]>;
   events: EventDef[];
   milestones: MilestoneDef[];
+  themes: ThemeDef[];
 }
 
 // ---------- Состояние партии ----------
@@ -491,6 +516,10 @@ export interface GameState {
   companyName: string;
   /** Идея продукта словами игрока. Необязательное поле: в старых сохранениях его нет. */
   idea?: string;
+  /** Тема стартапа; нет поля — без темы, как в старых партиях */
+  themeId?: string;
+  /** Функции, доступные в этой партии, по порядку. Нет поля — все функции типа продукта. */
+  featureIds?: string[];
   productType: ProductTypeId;
   audienceId: string;
   businessModel: BusinessModel;
@@ -565,6 +594,8 @@ export interface NewGameSetup {
   companyName: string;
   /** Идея продукта словами игрока */
   idea?: string;
+  /** Тема стартапа (id из настроек) */
+  themeId?: string;
   productType: ProductTypeId;
   audienceId: string;
   businessModel: BusinessModel;

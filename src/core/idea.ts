@@ -118,3 +118,8 @@ export function checkIdeaAnswer(raw: unknown, text: string, lexicon: IdeaLexicon
     businessModel: models.find((m) => m === r.businessModel) ?? modelForIdea(text, productType, lexicon),
   };
 }
+
+/** Тема по словам идеи: та, у которой совпало больше слов; null — тема не угадывается. */
+export function themeForIdea(text: string, themeWords: Record<string, string[]>): string | null {
+  return best(parse(text), Object.keys(themeWords), themeWords);
+}

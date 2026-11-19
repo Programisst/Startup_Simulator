@@ -47,6 +47,7 @@ Product types:
 - ai: product whose core is an AI model (assistant, generator, recognition)
 - marketplace: connects buyers with sellers or clients with performers
 - devtools: tools for software developers
+- game: a video game (casual, puzzle, multiplayer and so on)
 
 Revenue models: subscription (monthly fee), ads (free, earns on advertising), oneTime (single purchase), commission (a cut of each deal).
 

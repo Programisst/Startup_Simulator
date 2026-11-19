@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { aiAnalyzeIdea, aiAvailable, aiSuggestIdeas } from '../../ai/client';
 import { content } from '../../content';
-import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
-import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
+import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, themeLexicon, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
+import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, themeForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
 import { hasSave } from '../../save/storage';
 import { Landscape } from '../apartment/laptop/Landscape';
 import { money } from '../format';
@@ -23,6 +23,8 @@ interface Manual {
   productType?: ProductTypeId;
   audienceId?: string;
   businessModel?: BusinessModel;
+  /** Тема: id, пустая строка — «без темы» */
+  themeId?: string;
 }
 
 function pick<T>(list: T[]): T {
@@ -37,6 +39,8 @@ interface Offer {
   productType: ProductTypeId;
   audienceId: string;
   businessModel: BusinessModel;
+  /** Тема готовой идеи; у идей от нейросети её нет — определится по словам */
+  themeId?: string;
 }
 
 /** Несколько случайных готовых идей по теме, по возможности не те, что показаны сейчас. */
@@ -95,6 +99,9 @@ export function NewGame() {
     : null;
   const businessModel = productType ? (manual.businessModel ?? modelForIdea(idea, productType, ideaLexicon)) : null;
 
+  // Тема: выбор игрока, иначе — по словам идеи.
+  const themeId = manual.themeId ?? themeForIdea(idea, themeLexicon) ?? '';
+
   const hasText = idea.trim().length > 0;
   const reading = productType ? 'readingHint' : hasText ? 'readingUnknown' : 'readingEmpty';
 
@@ -113,7 +120,7 @@ export function NewGame() {
 
   function takeIdea(offer: Offer) {
     setText(offer.text);
-    setManual({ productType: offer.productType, audienceId: offer.audienceId, businessModel: offer.businessModel });
+    setManual({ productType: offer.productType, audienceId: offer.audienceId, businessModel: offer.businessModel, ...(offer.themeId ? { themeId: offer.themeId } : {}) });
   }
 
   function showReadyIdeas(nextTheme: IdeaThemeId | null) {
@@ -122,7 +129,7 @@ export function NewGame() {
       drawIdeas(
         nextTheme,
         shown.map((o) => o.key),
-      ).map((seed) => ({ ...seed, key: seed.id, label: t(`new.themes.${seed.theme}`), text: t(`new.ideas.${seed.id}`) })),
+      ).map((seed) => ({ ...seed, key: seed.id, themeId: seed.theme, label: t(`new.themes.${seed.theme}`), text: t(`new.ideas.${seed.id}`) })),
     );
   }
 
@@ -166,6 +173,7 @@ export function NewGame() {
       seed: Math.floor(Math.random() * 2 ** 31),
       companyName: name.trim() || t('new.defaultName'),
       idea,
+      ...(themeId ? { themeId } : {}),
       productType,
       audienceId,
       businessModel,
@@ -258,7 +266,7 @@ export function NewGame() {
                 <select
                   aria-label={t('new.productType')}
                   value={productType ?? ''}
-                  onChange={(e) => setManual({ productType: e.target.value as ProductTypeId, businessModel: manual.businessModel })}
+                  onChange={(e) => setManual({ productType: e.target.value as ProductTypeId, businessModel: manual.businessModel, themeId: manual.themeId })}
                 >
                   {!productType && <option value="">{t('new.choose')}</option>}
                   {TYPES.map((id) => (
@@ -305,6 +313,20 @@ export function NewGame() {
                   ))}
                 </select>
                 {businessModel && <small>{t(`models.${businessModel}.hint`)}</small>}
+              </dd>
+            </div>
+            <div>
+              <dt>{t('new.theme')}</dt>
+              <dd>
+                <select aria-label={t('new.theme')} value={themeId} onChange={(e) => setManual({ ...manual, themeId: e.target.value })}>
+                  <option value="">{t('new.themeNone')}</option>
+                  {ideaThemes.map((id) => (
+                    <option key={id} value={id}>
+                      {t(`new.themes.${id}`)}
+                    </option>
+                  ))}
+                </select>
+                <small>{themeId ? t(`themeNotes.${themeId}`) : t('new.themeHint')}</small>
               </dd>
             </div>
           </dl>

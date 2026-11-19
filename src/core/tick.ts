@@ -3,6 +3,7 @@
 
 import { stepBank } from './bank';
 import { conditionHolds, eventSubject, rollEvent } from './events';
+import { featuresOf } from './features';
 import { energyAfterDay, energyOf, focusOf, founderBusy, founderWorkPerDay } from './founder';
 import {
   DAYS_IN_MONTH,
@@ -41,7 +42,7 @@ function modifierFactor(s: GameState, target: ModifierTarget): number {
 
 /** Сумма ценности готовых функций. */
 export function featureScore(s: GameState, content: GameContent): number {
-  const defs = content.features[s.productType];
+  const defs = featuresOf(s, content);
   let score = s.polish;
   for (const id of s.doneFeatures) score += defs.find((f) => f.id === id)?.value ?? 0;
   return score;
@@ -68,7 +69,7 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
   for (let guard = 0; guard < 50 && work > 0 && tasks.length > 0; guard++) {
     const task = tasks[0]!;
     if (task.kind === 'feature') {
-      const def = content.features[draft.productType].find((f) => f.id === task.featureId);
+      const def = featuresOf(draft, content).find((f) => f.id === task.featureId);
       const need = (def?.cost ?? 0) - task.progress;
       if (work >= need) {
         work -= Math.max(0, need);
