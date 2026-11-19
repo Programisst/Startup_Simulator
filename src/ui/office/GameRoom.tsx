@@ -6,6 +6,7 @@ import { content } from '../../content';
 import { milestoneView, roomView } from '../../core';
 import type { RoomLink } from '../apartment/link';
 import { money, num } from '../format';
+import { usePersonName } from '../names';
 import { useStore, type ScreenId } from '../store';
 import type { TutorialStep } from '../tutorial';
 import { CompanyApp } from './CompanyApp';
@@ -53,6 +54,7 @@ class RoomGuard extends Component<{ children: ReactNode }, { failed: boolean }> 
 
 export function GameRoom({ step }: { step: TutorialStep | null }) {
   const { t } = useTranslation();
+  const nameOf = usePersonName();
   const game = useStore((s) => s.game)!;
   const speed = useStore((s) => s.speed);
   const stepDay = useStore((s) => s.step);
@@ -127,6 +129,23 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     },
     focusText: t('founderCare.focus', { pct: num(view.founder.focus * 100), boost: num(view.founder.focusBoost * 100) }),
     onComputer: setComputerOpen,
+    // Команда для сцены: кто на каком месте, занят ли, в каком настроении. Как это нарисовать, решает напарник.
+    team: {
+      office: { ...view.team.office, title: t(`office.tiers.${view.team.office.id}`) },
+      people: view.team.people.map((p) => ({
+        id: p.id,
+        name: nameOf(p.nameSeed),
+        nameSeed: p.nameSeed,
+        role: p.role,
+        roleTitle: t(`team.roles.${p.role}`),
+        seat: p.seat,
+        busy: p.busy,
+        mood: p.mood,
+        leaving: p.leaving,
+        quote: t(`team.quotes.${p.driver}.${p.mood}`),
+      })),
+      freeSeats: view.team.freeSeats,
+    },
   };
 
   return (
