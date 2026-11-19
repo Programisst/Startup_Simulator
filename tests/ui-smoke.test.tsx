@@ -45,7 +45,7 @@ describe('экраны', () => {
   it('все экраны новой партии', () => {
     expect(render(newGame(), 'overview')).toContain('Продукт ещё не запущен');
     expect(render(newGame(), 'product')).toContain('Очередь работ');
-    expect(render(newGame(), 'marketing')).toContain('Рекламный бюджет');
+    expect(render(newGame(), 'marketing')).toContain('Куда тратить на рекламу');
     expect(render(newGame(), 'finance')).toContain('Жизнь основателя');
   });
 

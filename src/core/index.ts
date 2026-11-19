@@ -18,3 +18,4 @@ export { driverOf, cleanChat, CHAT_LINE_MAX, CHAT_KEPT_LINES } from './team';
 export { featuresOf, pickFeatures, themeOf } from './features';
 export { revenue30 as revenue30Of } from './events';
 export type { ChatLine, TalkOutcome } from './types';
+export { marketingView, channelSpend, totalAdSpend, channelEfficiency, contentBoost, type MarketingView, type ChannelView } from './marketing';
