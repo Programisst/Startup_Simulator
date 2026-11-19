@@ -1,17 +1,31 @@
 // Квартира основателя, привязанная к партии: главный вид игры.
 // Если браузер не умеет рисовать на холсте или квартира сломалась, игра показывает обычное меню сбоку.
-import { Component, lazy, Suspense, type ReactNode } from 'react';
+import { Component, lazy, Suspense, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { roomView } from '../../core';
 import type { RoomLink } from '../apartment/link';
-import { useStore } from '../store';
+import { num } from '../format';
+import { useStore, type ScreenId } from '../store';
 import type { TutorialStep } from '../tutorial';
 import { CompanyApp } from './CompanyApp';
 import { RoomControls } from './RoomControls';
 
 // Квартира со всей графикой подгружается отдельным файлом: первый экран игры открывается быстрее.
 const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
+
+/** Сколько набранных знаков кода уходит в расчёт одной пачкой. */
+const TYPED_BATCH = 12;
+
+/** Какой раздел «Компании» открывает значок нижней панели компьютера. */
+const DOCK_SCREENS: Record<string, ScreenId> = {
+  files: 'overview',
+  messenger: 'feed',
+  mail: 'mail',
+  notes: 'goals',
+  bank: 'bank',
+  settings: 'settings',
+};
 
 /** Умеет ли браузер рисовать на холсте (в тестах — нет). */
 export function canDraw(): boolean {
@@ -43,6 +57,10 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
   const speed = useStore((s) => s.speed);
   const stepDay = useStore((s) => s.step);
   const setComputerOpen = useStore((s) => s.setComputerOpen);
+  const dispatch = useStore((s) => s.dispatch);
+  const setScreen = useStore((s) => s.setScreen);
+  // Набранные знаки копятся и уходят в расчёт пачками, чтобы игра не пересчитывалась на каждую клавишу.
+  const typed = useRef(0);
   const view = roomView(game, content);
 
   const featureName = (id: string) => (id === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${id}`));
@@ -64,8 +82,30 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     status: t(`office.status.${view.activity}`),
     timeRuns: view.timeRuns && speed > 0,
     locked: !view.timeRuns,
-    sleep: stepDay,
+    sleep: () => {
+      dispatch({ type: 'rest' });
+      stepDay();
+    },
+    energy: view.founder.energy,
+    tired: view.founder.tired,
+    coffee: () => {
+      if (!view.founder.coffeeReady) return false;
+      dispatch({ type: 'coffee' });
+      return true;
+    },
     companyApp: <CompanyApp step={step} />,
+    onTyped: () => {
+      typed.current += 1;
+      if (typed.current >= TYPED_BATCH) {
+        dispatch({ type: 'typeCode', chars: typed.current });
+        typed.current = 0;
+      }
+    },
+    onDockApp: (item) => {
+      const target = DOCK_SCREENS[item];
+      if (target) setScreen(target);
+    },
+    focusText: t('founderCare.focus', { pct: num(view.founder.focus * 100), boost: num(view.founder.focusBoost * 100) }),
     onComputer: setComputerOpen,
   };
 

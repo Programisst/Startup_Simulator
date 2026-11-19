@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { teamView, type Candidate, type TeamMemberView } from '../../core';
+import { officeView, teamView, type Candidate, type TeamMemberView } from '../../core';
 import { dec, gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
 import { useStore } from '../store';
@@ -31,13 +31,20 @@ export function Team() {
   const game = useStore((s) => s.game)!;
   const dispatch = useStore((s) => s.dispatch);
   const [firing, setFiring] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<number | null>(null);
   const view = teamView(game, content);
   const cfg = content.config.team;
+  const office = officeView(game, content.config);
 
   const nameOf = usePersonName();
+  const bios = t('team.bios', { returnObjects: true }) as string[];
+  const quirks = t('team.quirks', { returnObjects: true }) as string[];
+  /** Биография и привычка подбираются по тому же числу, что и имя, — у человека они всегда одни и те же. */
+  const bioOf = (seed: number) => bios[(seed * 7) % bios.length];
+  const quirkOf = (seed: number) => quirks[(seed * 13 + 5) % quirks.length];
 
   /** Что человек даёт компании при обычной мотивации. */
-  function benefit(p: Candidate): string {
+  function benefit(p: Pick<Candidate, 'role' | 'skill' | 'trait'>): string {
     const out = p.skill * (p.trait === 'diligent' ? 1 + cfg.diligentBonus : 1);
     return p.role === 'developer'
       ? t('team.benefitDeveloper', { work: dec(out) })
@@ -57,6 +64,7 @@ export function Team() {
           <span title={t(`team.traitHints.${p.trait}`)}>
             {t(`team.traits.${p.trait}`)} — {t(`team.traitHints.${p.trait}`)}
           </span>
+          <span title={t(`team.drivers.${p.driver ?? 'money'}.hint`)}>{t(`team.drivers.${p.driver ?? 'money'}.name`)}</span>
         </div>
       </div>
     );
@@ -77,7 +85,7 @@ export function Team() {
           <b>
             {view.size} / {view.maxSize}
           </b>
-          <small>{t('team.sizeHint')}</small>
+          <small>{t(`office.tiers.${office.current.id}`)}</small>
         </div>
         <div className="card">
           <span>{t('team.payroll')}</span>
@@ -98,6 +106,28 @@ export function Team() {
 
       {view.size > 0 && monthsOfPayroll < 3 && <p className="notice">{t(game.cash < 0 ? 'team.warnBroke' : 'team.warnPayroll')}</p>}
 
+      <section className="panel office-panel">
+        <h3>{t('office.panel.title')}</h3>
+        <div className="row">
+          <div>
+            <b>{t('office.panel.now', { name: t(`office.tiers.${office.current.id}`), seats: office.current.seats })}</b>
+            <p className="muted">{office.current.rentPerMonth > 0 ? t('office.panel.rent', { rent: money(office.current.rentPerMonth) }) : t('office.panel.free')}</p>
+          </div>
+          {office.next ? (
+            <div className="office-next">
+              <span>{t('office.panel.next', { name: t(`office.tiers.${office.next.id}`), seats: office.next.seats })}</span>
+              <span className="muted">{t('office.panel.cost', { cost: money(office.next.moveCost), rent: money(office.next.rentPerMonth) })}</span>
+              <button className="primary" disabled={!office.canAfford} onClick={() => dispatch({ type: 'moveOffice' })}>
+                {t('office.panel.move')}
+              </button>
+              {!office.canAfford && <span className="negative">{t('office.panel.cantAfford', { gap: money(office.next.moveCost - game.cash) })}</span>}
+            </div>
+          ) : (
+            <span className="muted">{t('office.panel.last')}</span>
+          )}
+        </div>
+      </section>
+
       <div className="two">
         <section className="panel">
           <h3>{t('team.members')}</h3>
@@ -115,6 +145,21 @@ export function Team() {
                 </span>
               </div>
               {m.mayQuit && <p className="negative">{t('team.mayQuit')}</p>}
+              <details className="profile">
+                <summary>{t('team.profile')}</summary>
+                <p>{bioOf(m.nameSeed)}</p>
+                <p className="muted">{quirkOf(m.nameSeed)}</p>
+                <p className="muted">{t(`team.drivers.${m.driver}.hint`)}</p>
+              </details>
+              <p className={`quote quote-${m.mood}`}>
+                <span className="muted">{t('team.says')}</span> «{t(`team.quotes.${m.driver}.${m.mood}`)}»
+              </p>
+              <div className="row">
+                <button data-talk={m.id} disabled={!m.canTalk} title={t('team.talkHint')} onClick={() => dispatch({ type: 'talk', employeeId: m.id })}>
+                  {t('team.talk')}
+                </button>
+                {!m.canTalk && <small className="muted">{t('team.talkWait', { days: m.talkInDays })}</small>}
+              </div>
               <div className="row">
                 <label className="salary">
                   {t('team.salary')}
@@ -157,14 +202,30 @@ export function Team() {
           {view.candidates.map((c) => (
             <article key={c.id} className="person">
               {person(c)}
+              <p className="muted">{bioOf(c.nameSeed)}</p>
               <p>{benefit(c)}</p>
+              {c.risky && <p className="negative">{t('team.riskyHire', { days: c.cashDaysIfHired })}</p>}
               <div className="row">
                 <span>
                   <b>{money(c.salaryAsk)}</b> {t('team.perMonth')}
                 </span>
-                <button className="primary" disabled={!view.canHire} onClick={() => dispatch({ type: 'hire', candidateId: c.id })}>
-                  {t('team.hire')}
-                </button>
+                {c.risky && confirming !== c.id ? (
+                  // Опасный найм — в два нажатия: сначала игрок видит, чем рискует.
+                  <button disabled={!view.canHire} onClick={() => setConfirming(c.id)}>
+                    {t('team.hire')}
+                  </button>
+                ) : (
+                  <button
+                    className="primary"
+                    disabled={!view.canHire}
+                    onClick={() => {
+                      dispatch({ type: 'hire', candidateId: c.id });
+                      setConfirming(null);
+                    }}
+                  >
+                    {c.risky ? t('team.hireAnyway') : t('team.hire')}
+                  </button>
+                )}
               </div>
             </article>
           ))}

@@ -45,52 +45,51 @@ describe('давление денег', () => {
   });
 });
 
+// Цели сложности пересмотрены 19 ноября 2026 после живых партий: прежняя настройка
+// («разумный выживает в 30–60%, новичок разоряется на 6–10 месяце») давала медленное угасание без роста.
+// Теперь игра про рост: грамотный игрок растёт уверенно, а разоряются те, кто играет плохо или рискует.
 describe('сложность партии', () => {
-  it('обычная: разумная стратегия выживает в 30–60% партий', () => {
-    const s = summarize(runAll(sensible, 'normal', GAMES_PER_TYPE));
-    expect(s.survived).toBeGreaterThanOrEqual(0.3);
-    expect(s.survived).toBeLessThanOrEqual(0.6);
+  const survived = (strategy: typeof novice, id: DifficultyId) => summarize(runAll(strategy, id, GAMES_PER_TYPE)).survived;
+
+  it('обычная: грамотный игрок почти всегда выживает, новичок — чаще да, чем нет, но не всегда', () => {
+    expect(survived(sensible, 'normal')).toBeGreaterThanOrEqual(0.9);
+    const beginner = survived(novice, 'normal');
+    expect(beginner).toBeGreaterThanOrEqual(0.5);
+    expect(beginner).toBeLessThanOrEqual(0.97);
   });
 
-  it('обычная: новичок обычно разоряется на 6–10 месяце', () => {
-    const s = summarize(runAll(novice, 'normal', GAMES_PER_TYPE));
-    expect(s.bankrupt).toBeGreaterThanOrEqual(0.7);
-    expect(s.medianBankruptDay! / 30).toBeGreaterThanOrEqual(6);
-    expect(s.medianBankruptDay! / 30).toBeLessThanOrEqual(10);
+  it('лёгкая: новичок почти всегда выживает', () => {
+    expect(survived(novice, 'easy')).toBeGreaterThanOrEqual(0.9);
   });
 
-  it('три сложности заметно отличаются: шаг не меньше 15 процентных пунктов', () => {
-    const easy = summarize(runAll(sensible, 'easy', GAMES_PER_TYPE)).survived;
-    const normal = summarize(runAll(sensible, 'normal', GAMES_PER_TYPE)).survived;
-    const hard = summarize(runAll(sensible, 'hard', GAMES_PER_TYPE)).survived;
-    expect(easy - normal).toBeGreaterThanOrEqual(0.15);
+  it('сложная: проходима только хорошей игрой', () => {
+    expect(survived(novice, 'hard')).toBeLessThanOrEqual(0.6);
+    expect(survived(sensible, 'hard')).toBeLessThanOrEqual(0.6);
+    expect(survived(expert, 'hard')).toBeGreaterThanOrEqual(0.7);
+  });
+
+  it('сложности идут по возрастанию, сложная заметно жёстче обычной', () => {
+    const easy = survived(novice, 'easy');
+    const normal = survived(novice, 'normal');
+    const hard = survived(novice, 'hard');
+    expect(easy).toBeGreaterThanOrEqual(normal);
     expect(normal - hard).toBeGreaterThanOrEqual(0.15);
   });
 
-  it('лёгкая: у новичка есть шанс, но победа не гарантирована', () => {
-    const s = summarize(runAll(novice, 'easy', GAMES_PER_TYPE));
-    expect(s.survived).toBeGreaterThanOrEqual(0.2);
-    expect(s.survived).toBeLessThanOrEqual(0.8);
+  it('решения важнее удачи: на сложной ранний выход на рынок решает исход', () => {
+    expect(survived(expert, 'hard') - survived(sensible, 'hard')).toBeGreaterThanOrEqual(0.2);
   });
 
-  it('сложная: проходима только хорошей игрой — опытный иногда выживает, новичок никогда', () => {
-    const good = summarize(runAll(expert, 'hard', GAMES_PER_TYPE)).survived;
-    expect(good).toBeGreaterThan(0.05);
-    expect(good).toBeLessThanOrEqual(0.5);
-    expect(summarize(runAll(novice, 'hard', GAMES_PER_TYPE)).survived).toBe(0);
-  });
-
-  it('решения важнее удачи: ранний выход на рынок заметно повышает шансы', () => {
-    const late = summarize(runAll(sensible, 'normal', GAMES_PER_TYPE)).survived;
-    const early = summarize(runAll(expert, 'normal', GAMES_PER_TYPE)).survived;
-    expect(early - late).toBeGreaterThanOrEqual(0.2);
+  it('разорившийся новичок успевает поиграть: не раньше пятого месяца', () => {
+    const s = summarize(runAll(novice, 'normal', GAMES_PER_TYPE));
+    expect(s.medianBankruptDay! / 30).toBeGreaterThanOrEqual(5);
   });
 });
 
 describe('наём и деньги', () => {
-  it.each(DIFFICULTIES)('%s: нанять сильного разработчика в первый день — верное банкротство за полгода', (id) => {
+  it.each(DIFFICULTIES)('%s: нанять сильного разработчика в первый день — почти верное банкротство за полгода', (id) => {
     const s = summarize(runAll(recklessHirer, id, GAMES_PER_TYPE));
-    expect(s.bankrupt).toBe(1);
+    expect(s.bankrupt).toBeGreaterThanOrEqual(0.7);
     expect(s.medianBankruptDay).toBeLessThanOrEqual(6 * 30);
   });
 

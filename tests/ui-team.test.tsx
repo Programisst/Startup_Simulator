@@ -59,8 +59,19 @@ describe('экран команды', () => {
     expectNoMissingTexts();
   });
 
-  it('кнопка «Нанять» нанимает кандидата и добавляет зарплату', () => {
+  it('опасный найм: сначала предупреждение, нанять можно только вторым нажатием', () => {
     show(newGame());
+    expect(box.textContent).toContain('Если нанять сейчас, денег хватит на');
+    click(button('Нанять')[0]!);
+    expect(teamView(game(), content).members).toHaveLength(0);
+    click(button('Всё равно нанять')[0]!);
+    expect(teamView(game(), content).members).toHaveLength(1);
+    expectNoMissingTexts();
+  });
+
+  it('кнопка «Нанять» нанимает кандидата и добавляет зарплату', () => {
+    show({ ...newGame(), cash: 500_000 });
+    expect(box.textContent).not.toContain('Если нанять сейчас');
     const first = teamView(game(), content).candidates[0]!;
     click(button('Нанять')[0]!);
     const view = teamView(game(), content);

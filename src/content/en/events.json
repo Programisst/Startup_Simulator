@@ -90,12 +90,12 @@
     }
   },
   "angelOffer": {
-    "title": "Coffee with an investor",
-    "body": "A private investor noticed your growth and invites you for coffee. He is ready to lend money, with no stake in the company.",
+    "title": "Someone believes in you",
+    "body": "A private investor has been watching your product and is ready to put in $25,000 for 8% of the company. That is more than you have spent so far.",
     "choices": {
-      "askAdvice": "Take no money, but ask about his experience",
-      "takeMoney": "Take $8,000 and repay $10,000 within a year",
-      "decline": "Politely decline the meeting"
+      "takeMoney": "Take $25,000 for 8%",
+      "negotiate": "Bargain: the same money for 5%",
+      "decline": "Decline and stay the sole owner"
     }
   },
   "paymentFreeze": {
@@ -109,7 +109,7 @@
   },
   "founderBurnout": {
     "title": "Out of strength",
-    "body": "You have worked three weeks without a day off. Today you stared at the screen for half an hour and wrote nothing.",
+    "body": "You have worked without rest for a long time. Today you stared at the screen for half an hour and wrote nothing.",
     "choices": {
       "restWeekend": "Get away for the weekend, $150",
       "pushThrough": "Grit your teeth and keep going",
@@ -258,6 +258,105 @@
       "honest": "Tell the team honestly about the delay",
       "hide": "Blame problems at the bank",
       "ownMoney": "Borrow $2,000 from friends and pay on time"
+    }
+  },
+  "devShortcut": {
+    "title": "\"{{feature}}\": use something ready-made?",
+    "body": "Half the work is done. For the rest there is a ready third-party library: fast, but you do not know how it works inside.",
+    "choices": {
+      "writeOwn": "Write it yourself, as planned",
+      "useLibrary": "Take the library: faster, but debt grows",
+      "buyComponent": "Buy a proven component for $150"
+    }
+  },
+  "devScope": {
+    "title": "\"{{feature}}\" keeps growing",
+    "body": "It is now clear: doing everything you planned will take longer than it seemed.",
+    "choices": {
+      "asPlanned": "Finish it as planned",
+      "cutScope": "Cut to the essentials and ship sooner",
+      "goldPlate": "Polish it properly, even if it takes longer"
+    }
+  },
+  "devTests": {
+    "title": "\"{{feature}}\": write tests?",
+    "body": "The code already works on your machine. The question is whether to spend time on automated checks.",
+    "choices": {
+      "byHand": "Check by hand, as usual",
+      "keyTests": "Write tests for what matters most",
+      "fullTests": "Cover everything with tests"
+    }
+  },
+  "devDesign": {
+    "title": "\"{{feature}}\" turns out awkward",
+    "body": "You showed a draft to a friend. He looked for the main button for five minutes and never found it.",
+    "choices": {
+      "shipAsIs": "Leave it: they will get used to it",
+      "redo": "Redo the screen from scratch",
+      "askUsers": "Show it to five people over $60 of coffee and fix what they say"
+    }
+  },
+  "devOldBug": {
+    "title": "An old bug turned up",
+    "body": "While working on \"{{feature}}\" you noticed a bug in something you built earlier. Nobody has seen it yet.",
+    "choices": {
+      "keepGoing": "Stay focused: finish what you started",
+      "fixNow": "Drop everything and fix it properly",
+      "quickPatch": "Patch it quickly"
+    }
+  },
+  "devTeaser": {
+    "title": "\"{{feature}}\": announce early?",
+    "body": "Users ask what you are working on. The feature is half done.",
+    "choices": {
+      "quiet": "Stay quiet until release",
+      "announce": "Name a date, and now make it",
+      "earlyBeta": "Let the most active users try a rough version"
+    }
+  },
+  "seedRound": {
+    "title": "Seed round",
+    "body": "A fund has seen your numbers and offers $150,000 for 15% of the company. With this money you can build a real team.",
+    "choices": {
+      "takeMoney": "Sign: $150,000 for 15%",
+      "negotiate": "Bargain: the same money for 11%",
+      "decline": "Decline: we grow on our own"
+    }
+  },
+  "seriesA": {
+    "title": "Series A",
+    "body": "A large fund offers $1,500,000 for 20% of the company. Deals like this make the news.",
+    "choices": {
+      "takeMoney": "Sign: $1.5M for 20%",
+      "negotiate": "Bargain: the same money for 15%",
+      "decline": "Decline: we can manage ourselves"
+    }
+  },
+  "storeFeature": {
+    "title": "You are featured!",
+    "body": "A major platform put your product in its Editors' Choice selection. People are pouring in.",
+    "choices": {
+      "enjoy": "Enjoy it and welcome the guests",
+      "pushAds": "Add $500 of ads while everyone is looking",
+      "stayCalm": "Calmly answer every newcomer"
+    }
+  },
+  "award": {
+    "title": "An award",
+    "body": "Your product was named the best new service of the year. You are invited on stage.",
+    "choices": {
+      "accept": "Take the $2,000 prize",
+      "speech": "Give a speech people remember",
+      "thankTeam": "Dedicate the award to the team"
+    }
+  },
+  "enterpriseDeal": {
+    "title": "A big contract",
+    "body": "A well-known company wants a yearly agreement for all its staff. The lawyers have already sent the papers.",
+    "choices": {
+      "sign": "Sign for $6,000",
+      "negotiate": "Ask for $10,000",
+      "decline": "Decline: the terms are too harsh"
     }
   }
 }

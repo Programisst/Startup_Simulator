@@ -150,16 +150,89 @@ export const events: EventDef[] = [
       { id: 'negotiate', effects: [{ type: 'chance', probability: 0.4, then: [], otherwise: [{ type: 'cash', amount: -350 }] }] },
     ],
   },
+  // ---------- Большие удачи: инвестиции и признание ----------
   {
     id: 'angelOffer',
-    weight: 5,
+    mood: 'good',
+    weight: 30,
     cooldownDays: 360,
     once: true,
-    condition: { launched: true, minUsers: 1000, minDay: 150 },
+    condition: { launched: true, minUsers: 600, minDay: 90, minQuality: 45 },
     choices: [
-      { id: 'askAdvice', effects: [{ type: 'reputation', amount: 3 }] },
-      { id: 'takeMoney', effects: [{ type: 'loan', amount: 8000, repayFactor: 1.25, days: 360 }] },
-      { id: 'decline', effects: [] },
+      { id: 'takeMoney', effects: [{ type: 'invest', amount: 25_000, share: 0.08 }] },
+      {
+        id: 'negotiate',
+        effects: [{ type: 'chance', probability: 0.5, then: [{ type: 'invest', amount: 25_000, share: 0.05 }], otherwise: [{ type: 'reputation', amount: -1 }] }],
+      },
+      { id: 'decline', effects: [{ type: 'reputation', amount: 2 }] },
+    ],
+  },
+  {
+    id: 'seedRound',
+    mood: 'good',
+    weight: 40,
+    cooldownDays: 360,
+    once: true,
+    condition: { launched: true, minUsers: 2000, minRevenue30: 3000 },
+    choices: [
+      { id: 'takeMoney', effects: [{ type: 'invest', amount: 150_000, share: 0.15 }] },
+      {
+        id: 'negotiate',
+        effects: [{ type: 'chance', probability: 0.5, then: [{ type: 'invest', amount: 150_000, share: 0.11 }], otherwise: [{ type: 'reputation', amount: -2 }] }],
+      },
+      { id: 'decline', effects: [{ type: 'reputation', amount: 3 }] },
+    ],
+  },
+  {
+    id: 'seriesA',
+    mood: 'good',
+    weight: 50,
+    cooldownDays: 360,
+    once: true,
+    condition: { launched: true, minRevenue30: 30_000 },
+    choices: [
+      { id: 'takeMoney', effects: [{ type: 'invest', amount: 1_500_000, share: 0.2 }] },
+      {
+        id: 'negotiate',
+        effects: [{ type: 'chance', probability: 0.5, then: [{ type: 'invest', amount: 1_500_000, share: 0.15 }], otherwise: [{ type: 'reputation', amount: -2 }] }],
+      },
+      { id: 'decline', effects: [{ type: 'reputation', amount: 4 }] },
+    ],
+  },
+  {
+    id: 'storeFeature',
+    mood: 'good',
+    weight: 9,
+    cooldownDays: 240,
+    condition: { launched: true, minUsers: 200, minQuality: 55 },
+    choices: [
+      { id: 'enjoy', effects: [{ type: 'modifier', target: 'acquisition', factor: 3, days: 10 }] },
+      { id: 'pushAds', effects: [{ type: 'cash', amount: -500 }, { type: 'modifier', target: 'acquisition', factor: 4, days: 10 }] },
+      { id: 'stayCalm', effects: [{ type: 'modifier', target: 'acquisition', factor: 2, days: 10 }, { type: 'reputation', amount: 3 }] },
+    ],
+  },
+  {
+    id: 'award',
+    mood: 'good',
+    weight: 7,
+    cooldownDays: 360,
+    condition: { launched: true, minDay: 150, minQuality: 60, minUsers: 500 },
+    choices: [
+      { id: 'accept', effects: [{ type: 'cash', amount: 2000 }, { type: 'reputation', amount: 8 }] },
+      { id: 'speech', effects: [{ type: 'reputation', amount: 12 }] },
+      { id: 'thankTeam', effects: [{ type: 'reputation', amount: 5 }, { type: 'teamMotivation', amount: 10 }] },
+    ],
+  },
+  {
+    id: 'enterpriseDeal',
+    mood: 'good',
+    weight: 8,
+    cooldownDays: 200,
+    condition: { launched: true, minUsers: 1500, minQuality: 50 },
+    choices: [
+      { id: 'sign', effects: [{ type: 'cash', amount: 6000 }, { type: 'debt', amount: 6 }] },
+      { id: 'negotiate', effects: [{ type: 'chance', probability: 0.5, then: [{ type: 'cash', amount: 10_000 }, { type: 'debt', amount: 6 }], otherwise: [{ type: 'cash', amount: 3000 }] }] },
+      { id: 'decline', effects: [{ type: 'reputation', amount: 2 }] },
     ],
   },
   {
@@ -175,13 +248,13 @@ export const events: EventDef[] = [
   },
   {
     id: 'founderBurnout',
-    weight: 9,
-    cooldownDays: 150,
-    condition: { minDay: 90, rush: true },
+    weight: 12,
+    cooldownDays: 90,
+    condition: { minDay: 40, maxEnergy: 25 },
     choices: [
-      { id: 'restWeekend', effects: [{ type: 'cash', amount: -150 }, { type: 'debt', amount: -3 }] },
-      { id: 'pushThrough', effects: [{ type: 'bugs', amount: 5 }, { type: 'debt', amount: 6 }] },
-      { id: 'moreCoffee', effects: [{ type: 'chance', probability: 0.5, then: [], otherwise: [{ type: 'bugs', amount: 4 }] }] },
+      { id: 'restWeekend', effects: [{ type: 'cash', amount: -150 }, { type: 'energy', amount: 40 }] },
+      { id: 'pushThrough', effects: [{ type: 'bugs', amount: 4 }, { type: 'debt', amount: 5 }, { type: 'energy', amount: -10 }] },
+      { id: 'moreCoffee', effects: [{ type: 'chance', probability: 0.5, then: [{ type: 'energy', amount: 10 }], otherwise: [{ type: 'bugs', amount: 4 }] }] },
     ],
   },
   {
@@ -388,6 +461,81 @@ export const events: EventDef[] = [
       { id: 'honest', effects: [{ type: 'teamMotivation', amount: -8 }] },
       { id: 'hide', effects: [{ type: 'chance', probability: 0.5, then: [], otherwise: [{ type: 'teamMotivation', amount: -25 }] }] },
       { id: 'ownMoney', effects: [{ type: 'loan', amount: 2000, repayFactor: 1.2, days: 180 }, { type: 'teamMotivation', amount: 3 }] },
+    ],
+  },
+
+  // ---------- Развилки во время разработки ----------
+  // Возникают на середине работы над крупной функцией. Первый вариант — «делать как шло».
+  {
+    id: 'devShortcut',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: {},
+    choices: [
+      { id: 'writeOwn', effects: [] },
+      { id: 'useLibrary', effects: [{ type: 'taskProgress', amount: 4 }, { type: 'debt', amount: 6 }] },
+      { id: 'buyComponent', effects: [{ type: 'cash', amount: -150 }, { type: 'taskProgress', amount: 5 }] },
+    ],
+  },
+  {
+    id: 'devScope',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: {},
+    choices: [
+      { id: 'asPlanned', effects: [] },
+      { id: 'cutScope', effects: [{ type: 'taskProgress', amount: 5 }, { type: 'polish', amount: -1 }] },
+      { id: 'goldPlate', effects: [{ type: 'taskProgress', amount: -3 }, { type: 'polish', amount: 3 }] },
+    ],
+  },
+  {
+    id: 'devTests',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: {},
+    choices: [
+      { id: 'byHand', effects: [] },
+      { id: 'keyTests', effects: [{ type: 'taskProgress', amount: -1 }, { type: 'polish', amount: 1 }] },
+      { id: 'fullTests', effects: [{ type: 'taskProgress', amount: -3 }, { type: 'polish', amount: 2 }, { type: 'bugs', amount: -2 }] },
+    ],
+  },
+  {
+    id: 'devDesign',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: {},
+    choices: [
+      { id: 'shipAsIs', effects: [] },
+      { id: 'redo', effects: [{ type: 'taskProgress', amount: -3 }, { type: 'polish', amount: 2 }] },
+      { id: 'askUsers', effects: [{ type: 'cash', amount: -60 }, { type: 'taskProgress', amount: -1 }, { type: 'polish', amount: 2 }] },
+    ],
+  },
+  {
+    id: 'devOldBug',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: { minFeatures: 1 },
+    choices: [
+      { id: 'keepGoing', effects: [] },
+      { id: 'fixNow', effects: [{ type: 'taskProgress', amount: -2 }, { type: 'bugs', amount: -2 }, { type: 'polish', amount: 1 }] },
+      { id: 'quickPatch', effects: [{ type: 'bugs', amount: -1 }, { type: 'debt', amount: 3 }] },
+    ],
+  },
+  {
+    id: 'devTeaser',
+    dev: true,
+    weight: 1,
+    cooldownDays: 0,
+    condition: { launched: true, minUsers: 30 },
+    choices: [
+      { id: 'quiet', effects: [] },
+      { id: 'announce', effects: [{ type: 'reputation', amount: 2 }, { type: 'debt', amount: 4 }, { type: 'taskProgress', amount: 2 }] },
+      { id: 'earlyBeta', effects: [{ type: 'usersPct', pct: 2 }, { type: 'bugs', amount: 2 }] },
     ],
   },
 ];

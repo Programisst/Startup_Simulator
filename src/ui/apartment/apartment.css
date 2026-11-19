@@ -398,3 +398,58 @@ html.lm-standalone body {
   margin: 0 4px;
   background: rgba(255, 255, 255, 0.16);
 }
+
+/* Силы основателя: тонкая полоска под подписью. Устал — полоска краснеет. */
+.lm-energy .lm-sub {
+  margin: 0 0 6px;
+}
+.lm-energy-bar {
+  width: 92px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+}
+.lm-energy-bar i {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: #a7e08f;
+  transition: width 0.5s ease;
+}
+.lm-energy-bar.low i {
+  background: #ff8f8f;
+}
+
+/* Ближайшая цель — во всю ширину под кнопками времени. */
+.lm-hud-row.lm-hud-right {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 340px;
+}
+.lm-goal {
+  flex: 1 1 100%;
+  align-items: flex-start;
+  padding: 11px 14px 12px;
+  pointer-events: none;
+}
+.lm-goal .goal {
+  width: 100%;
+}
+.lm-goal b {
+  font-size: 14px;
+  color: #f4efe6;
+}
+.lm-goal .goal-label {
+  color: #f6c34a;
+}
+.lm-goal .goal-hint,
+.lm-goal .goal-meta {
+  color: #a39daf;
+}
+.lm-goal .goal-bar {
+  background: rgba(255, 255, 255, 0.12);
+}
+.lm-goal .goal-bar i {
+  background: #a7e08f;
+}

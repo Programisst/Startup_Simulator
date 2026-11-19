@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { applyCommand, tick, type GameState } from '../src/core';
 import { content } from '../src/content';
-import { advance, deepFreeze, launchedGame, newGame, run } from './helpers';
+import { advance, deepFreeze, launchedGame, newGame, run, advanceFresh } from './helpers';
 
 function playScript(seed: number): GameState {
   let s = launchedGame({ seed });
@@ -63,7 +63,7 @@ describe('разработка', () => {
   it('починка убирает ошибки', () => {
     let s = advance(run(newGame(), { type: 'queueFeature', featureId: 'core' }), 25);
     const bugs = s.bugs;
-    s = advance(run(s, { type: 'startBugfix' }), bugs * 2);
+    s = advanceFresh(run(s, { type: 'startBugfix' }), bugs * 2);
     expect(s.bugs).toBe(0);
     expect(s.tasks).toEqual([]);
   });
@@ -129,11 +129,11 @@ describe('пользователи и деньги', () => {
 describe('подработка, улучшение продукта и сложность', () => {
   it('подработка приносит деньги и замедляет разработку', () => {
     let s = run(newGame(), { type: 'setSideJob', share: 0.5 });
-    s = advance(run(s, { type: 'queueFeature', featureId: 'core' }), 30);
+    s = advanceFresh(run(s, { type: 'queueFeature', featureId: 'core' }), 30);
     expect(s.doneFeatures).toEqual([]);
     expect(s.cash).toBeCloseTo(3000 - 800 - 40 - 5 + 350, 0);
     expect(s.months[0]?.sideIncome).toBeCloseTo(350, 0);
-    s = advance(s, 20);
+    s = advanceFresh(s, 20);
     expect(s.doneFeatures).toEqual(['core']);
     expect(applyCommand(s, { type: 'setSideJob', share: 0.3 }, content).ok).toBe(false);
   });
@@ -141,7 +141,7 @@ describe('подработка, улучшение продукта и слож�
   it('улучшение продукта повышает качество и не заканчивается само', () => {
     let s = launchedGame();
     const before = advance(s, 1).quality;
-    s = advance(run(s, { type: 'startPolish' }), 50);
+    s = advanceFresh(run(s, { type: 'startPolish' }), 50);
     expect(s.polish).toBe(10);
     expect(s.quality).toBeGreaterThan(before);
     expect(s.tasks[0]?.kind).toBe('polish');
@@ -151,7 +151,7 @@ describe('подработка, улучшение продукта и слож�
     const easy = newGame({ difficulty: 'easy' });
     const hard = newGame({ difficulty: 'hard' });
     expect(easy.cash).toBe(5000);
-    expect(hard.cash).toBe(2500);
+    expect(hard.cash).toBe(2000);
     expect(hard.livingCostPerMonth).toBeGreaterThan(easy.livingCostPerMonth);
     expect(hard.market.cacBase).toBeGreaterThan(easy.market.cacBase);
   });

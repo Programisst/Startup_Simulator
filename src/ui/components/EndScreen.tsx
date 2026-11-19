@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { valuation } from '../../core';
+import { bankruptcyCause, valuation } from '../../core';
 import { gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
 import { useStore } from '../store';
@@ -17,6 +17,11 @@ export function EndScreen() {
       <div className="modal wide">
         <h2>{won ? t('end.wonTitle') : t('end.bankruptTitle')}</h2>
         <p>{t(won ? 'end.wonBody' : 'end.bankruptBody', { company: game.companyName, ...gameDate(game.day) })}</p>
+        {!won && (
+          <p className="end-cause">
+            <b>{t('end.causeTitle')}</b> {t(`end.cause.${bankruptcyCause(game)}`)}
+          </p>
+        )}
         <div className="cards">
           <div className="card">
             <span>{t('metrics.users')}</span>
@@ -36,7 +41,7 @@ export function EndScreen() {
           {game.eventLog.length === 0 && <li>{t('overview.noEvents')}</li>}
           {game.eventLog.map((e, i) => (
             <li key={i}>
-              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed) })}
+              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed), feature: !e.featureId ? '…' : e.featureId === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${e.featureId}`) })}
               {e.choiceId && <> — {t(`events.${e.eventId}.choices.${e.choiceId}`)}</>}
             </li>
           ))}

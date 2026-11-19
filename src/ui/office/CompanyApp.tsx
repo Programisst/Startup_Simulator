@@ -3,7 +3,10 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Coach } from '../components/Coach';
+import { GoalCard } from '../components/GoalCard';
 import { TopBar } from '../components/TopBar';
+import { FeedApp, GoalsApp, MailApp, SettingsApp } from '../screens/Apps';
+import { Bank } from '../screens/Bank';
 import { Finance } from '../screens/Finance';
 import { Marketing } from '../screens/Marketing';
 import { Overview } from '../screens/Overview';
@@ -41,7 +44,7 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
           <i />
           <i />
         </span>
-        {t('laptop.company.title')} — {companyName}
+        {COMPANY_TABS.includes(tab) ? t('laptop.company.title') : t(`apps.${tab}.title`)} — {companyName}
       </header>
       <nav className="sidebar" aria-label={t('laptop.company.title')}>
         <span className="ca-side-label">{companyName}</span>
@@ -53,6 +56,8 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
             {t(`nav.${id}`)}
           </button>
         ))}
+        <span className="ca-fill" />
+        <GoalCard variant="app" />
       </nav>
       <TopBar />
       <main className="content">
@@ -63,6 +68,11 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
         {tab === 'team' && <Team />}
         {tab === 'marketing' && <Marketing />}
         {tab === 'finance' && <Finance />}
+        {tab === 'feed' && <FeedApp />}
+        {tab === 'mail' && <MailApp />}
+        {tab === 'goals' && <GoalsApp />}
+        {tab === 'settings' && <SettingsApp />}
+        {tab === 'bank' && <Bank />}
       </main>
     </div>
   );

@@ -3,6 +3,7 @@
 // что у него в работе и какие есть тревожные сигналы. Состояние игры эти функции не меняют.
 
 import { overload } from './formulas';
+import { coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay } from './founder';
 import { teamOf, teamWorkPerDay } from './team';
 import type { GameContent, GameState, Task } from './types';
 
@@ -55,6 +56,27 @@ export interface RoomProduct {
   revenue30: number;
 }
 
+/** Состояние основателя: силы, темп, кофе. */
+export interface RoomFounder {
+  /** Силы 0…100 */
+  energy: number;
+  /** Во сколько раз он сейчас работает от полной силы (без кофе) */
+  pace: number;
+  /** Устал: работает медленнее */
+  tired: boolean;
+  /** Вымотан: добавляет ошибки */
+  exhausted: boolean;
+  coffeeActive: boolean;
+  /** Сколько дней ещё действует кофе */
+  coffeeDaysLeft: number;
+  /** Можно ли выпить кофе сейчас и через сколько дней будет можно */
+  coffeeReady: boolean;
+  coffeeReadyInDays: number;
+  /** Сосредоточенность 0…1 от набора кода и прибавка к скорости, которую она сейчас даёт (0.3 = +30%) */
+  focus: number;
+  focusBoost: number;
+}
+
 export interface RoomView {
   calendar: RoomCalendar;
   activity: FounderActivity;
@@ -69,6 +91,8 @@ export interface RoomView {
   canLaunch: boolean;
   /** Идёт ли игровое время: false, когда партия окончена или событие ждёт ответа */
   timeRuns: boolean;
+  /** Силы основателя и всё, что с ними связано */
+  founder: RoomFounder;
   alerts: RoomAlerts;
   product: RoomProduct;
 }
@@ -103,7 +127,7 @@ function currentTask(s: GameState, content: GameContent): RoomTask | null {
   const cfg = content.config;
   const cost = taskCost(task, s, content);
   // Тот же расчёт, что в шаге дня: основатель плюс разработчики, спешка ускоряет всех.
-  const workPerDay = (cfg.founderSkill * (1 - s.sideJobShare) + teamWorkPerDay(teamOf(s, content), cfg.team)) * (s.rush ? cfg.rushSpeed : 1);
+  const workPerDay = (founderWorkPerDay(s, cfg) + teamWorkPerDay(teamOf(s, content), cfg.team)) * (s.rush ? cfg.rushSpeed : 1);
   const left = Math.max(0, cost - task.progress);
   return {
     kind: task.kind,
@@ -135,6 +159,18 @@ export function roomView(s: GameState, content: GameContent): RoomView {
     launched: s.launched,
     canLaunch: !s.launched && coreReady && s.status === 'running',
     timeRuns: s.status === 'running' && s.pendingEvent === null,
+    founder: {
+      energy: energyOf(s),
+      pace: energyFactor(energyOf(s), content.config.founder),
+      tired: energyOf(s) < content.config.founder.tiredBelow,
+      exhausted: energyOf(s) < content.config.founder.exhaustedBelow,
+      coffeeActive: coffeeActive(s),
+      coffeeDaysLeft: Math.max(0, (s.coffeeUntilDay ?? 0) - s.day),
+      coffeeReady: coffeeReady(s),
+      coffeeReadyInDays: Math.max(0, (s.coffeeReadyDay ?? 0) - s.day),
+      focus: focusOf(s),
+      focusBoost: content.config.founder.focusBonus * focusOf(s),
+    },
     alerts: {
       cashNegative,
       daysToBankruptcy: cashNegative ? Math.max(0, content.config.bankruptcyDays - s.negativeCashDays) : null,

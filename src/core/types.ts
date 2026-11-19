@@ -67,6 +67,16 @@ export interface EventCondition {
   minDebt?: number;
   overloaded?: boolean;
   cashNegative?: boolean;
+  /** Силы основателя не выше этого числа */
+  maxEnergy?: number;
+  /** Номер офиса не ниже этого: 0 — комната основателя, 1 — коворкинг и так далее */
+  minOffice?: number;
+  /** Сколько функций готово, считая основу */
+  minFeatures?: number;
+  /** Доход продукта за последние 30 дней */
+  minRevenue30?: number;
+  /** Прибыль последнего закрытого месяца (доход продукта минус все расходы) */
+  minMonthProfit?: number;
   /** Сколько человек в команде, не считая основателя */
   minTeam?: number;
   maxTeam?: number;
@@ -101,6 +111,14 @@ export type Effect =
   | { type: 'modifier'; target: ModifierTarget; factor: number; days: number }
   /** Заём: деньги сейчас, возврат amount × repayFactor равными долями за days дней */
   | { type: 'loan'; amount: number; repayFactor: number; days: number }
+  /** Инвестиция: деньги сейчас в обмен на долю компании (0.1 = 10%) */
+  | { type: 'invest'; amount: number; share: number }
+  /** Силы основателя */
+  | { type: 'energy'; amount: number }
+  /** Работа над текущей функцией: плюс — продвинулись, минус — откатились */
+  | { type: 'taskProgress'; amount: number }
+  /** Очки качества продукта */
+  | { type: 'polish'; amount: number }
   /** Мотивация всей команды */
   | { type: 'teamMotivation'; amount: number }
   /** Последствия для сотрудника, о котором событие */
@@ -110,6 +128,30 @@ export type Effect =
   | { type: 'subjectSkill'; amount: number }
   | { type: 'subjectLeaves' }
   | { type: 'chance'; probability: number; then: Effect[]; otherwise?: Effect[] };
+
+/**
+ * Цель на пути компании. Цели идут по порядку: игрок всегда видит одну ближайшую.
+ * Достиг — получает награду, открывается следующая.
+ */
+export interface MilestoneDef {
+  id: string;
+  condition: EventCondition;
+  /** Награда. Случайных исходов здесь быть не должно. */
+  effects: Effect[];
+  /** По какому числу показывать прогресс и сколько нужно набрать */
+  progress?: { metric: MilestoneMetric; target: number };
+}
+export type MilestoneMetric = 'users' | 'revenue30' | 'features' | 'team';
+
+/** Офис: сколько человек вмещает и сколько стоит. Офисы идут по порядку, переезд — только в следующий. */
+export interface OfficeDef {
+  id: string;
+  /** Мест для сотрудников, не считая основателя */
+  seats: number;
+  /** Разовая плата за переезд */
+  moveCost: number;
+  rentPerMonth: number;
+}
 
 export interface EventChoiceDef {
   id: string;
@@ -125,6 +167,10 @@ export interface EventDef {
   once?: boolean;
   /** Срочное: случается сразу, как только выполнено условие */
   urgent?: boolean;
+  /** Радостное событие: показывается празднично */
+  mood?: 'good';
+  /** Развилка во время разработки: возникает на середине работы над функцией, а не случайно */
+  dev?: boolean;
   condition: EventCondition;
   choices: EventChoiceDef[];
 }
@@ -144,6 +190,8 @@ export interface DifficultyDef {
 export type EmployeeRole = 'developer' | 'marketer';
 /** Черта характера: старательный, спокойный, преданный, небрежный. */
 export type TraitId = 'diligent' | 'calm' | 'loyal' | 'sloppy';
+/** Что человеком движет: деньги, рост, спокойствие, идея, люди рядом. От этого зависит, что поднимает и роняет его мотивацию. */
+export type DriverId = 'money' | 'growth' | 'peace' | 'mission' | 'people';
 
 /** Настройки найма и команды. */
 export interface TeamConfig {
@@ -176,9 +224,59 @@ export interface TeamConfig {
   quitDailyChance: number;
   /** Прибавка к выработке старательного */
   diligentBonus: number;
+  /** Разговор один на один: прибавка к мотивации, цена в силах основателя и перерыв между разговорами */
+  talkBoost: number;
+  talkEnergy: number;
+  talkCooldownDays: number;
   /** Прибавка к притоку пользователей за единицу навыка маркетолога и её потолок */
   marketingPerPoint: number;
   marketingCap: number;
+}
+
+/** Банк: кредит и вклад. */
+export interface BankConfig {
+  /** Годовая ставка кредита и срок в днях */
+  loanRateYear: number;
+  loanTermDays: number;
+  minLoan: number;
+  /** Предел долга: столько дают без дохода плюс столько месячных доходов продукта */
+  baseLimit: number;
+  revenueMultiple: number;
+  /** Годовая ставка по вкладу */
+  depositRateYear: number;
+}
+
+/** Силы основателя: как он устаёт и отдыхает. */
+export interface FounderConfig {
+  /** Сколько сил уходит за рабочий день */
+  drainPerDay: number;
+  /** Во сколько раз быстрее уходят силы при спешке */
+  rushDrain: number;
+  /** Сколько сил возвращается за день без дел */
+  idleRecovery: number;
+  /** Сколько сил возвращает день отдыха */
+  restGain: number;
+  /** Ниже этого уровня основатель работает медленнее */
+  tiredBelow: number;
+  /** Во сколько раз медленнее он работает при нуле сил */
+  minFactor: number;
+  /** Ниже этого уровня к каждой готовой функции добавляется ошибка */
+  exhaustedBelow: number;
+  /** Во сколько раз кофе ускоряет работу и на сколько дней */
+  coffeeBoost: number;
+  coffeeDays: number;
+  /** Через сколько дней можно снова */
+  coffeeCooldownDays: number;
+  /** Сколько сил кофе отнимает сразу: рывок в долг */
+  coffeeCost: number;
+  /** Развилка возникает только у функций не короче этого числа дней работы */
+  dilemmaMinCost: number;
+  /** Сколько знаков кода игрок должен набрать сам, чтобы сосредоточенность стала полной */
+  focusChars: number;
+  /** На сколько полная сосредоточенность ускоряет работу основателя (0.5 = +50%) */
+  focusBonus: number;
+  /** Какая часть сосредоточенности уходит за день */
+  focusDecayPerDay: number;
 }
 
 export interface GameConfig {
@@ -206,6 +304,11 @@ export interface GameConfig {
   /** Насколько рынок каждой партии случайно отличается от базового, доля (0.15 = ±15%) */
   marketVariation: number;
   team: TeamConfig;
+  founder: FounderConfig;
+  /** Темп партии: во сколько раз быстрее приходят пользователи и деньги, чем в «честной» модели */
+  bank: BankConfig;
+  pace: { acquisition: number; revenue: number; /** Интерес к новинке: во сколько раз больше людей приходит первые дни после запуска */ launchBoost: number; launchDays: number };
+  offices: OfficeDef[];
 }
 
 export interface GameContent {
@@ -214,6 +317,7 @@ export interface GameContent {
   productTypes: Record<ProductTypeId, ProductTypeDef>;
   features: Record<ProductTypeId, FeatureDef[]>;
   events: EventDef[];
+  milestones: MilestoneDef[];
 }
 
 // ---------- Состояние партии ----------
@@ -237,7 +341,7 @@ export interface Market {
 }
 
 export type Task =
-  | { kind: 'feature'; featureId: string; progress: number }
+  | { kind: 'feature'; featureId: string; progress: number; /** Развилка по этой функции уже была */ asked?: boolean }
   | { kind: 'bugfix'; progress: number }
   | { kind: 'refactor'; progress: number }
   /** Улучшение продукта: повторяемая задача, идёт, пока её не снимут */
@@ -254,6 +358,19 @@ export interface Loan {
   untilDay: number;
 }
 
+/** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
+export interface NewsItem {
+  day: number;
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest';
+  /** Число, о котором новость: пользователей, платящих, долларов */
+  value?: number;
+  /** Для готовой функции — её id */
+  id?: string;
+  /** Для отзыва: тон и номер текста */
+  tone?: 'good' | 'mixed' | 'bad';
+  variant?: number;
+}
+
 export interface EventLogEntry {
   day: number;
   eventId: string;
@@ -263,6 +380,8 @@ export interface EventLogEntry {
   chanceResults: boolean[];
   /** Для событий о сотруднике: по этому числу интерфейс подбирает его имя */
   subjectNameSeed?: number;
+  /** Для развилок разработки: функция, над которой шла работа */
+  featureId?: string;
 }
 
 /** Кандидат на найм. Имя и внешность интерфейс подбирает сам по nameSeed. */
@@ -275,6 +394,8 @@ export interface Candidate {
   /** Зарплата в месяц, на которую он согласен */
   salaryAsk: number;
   nameSeed: number;
+  /** Что им движет. Необязательное: у людей из старых сохранений поля нет — считаются «за деньги». */
+  driver?: DriverId;
 }
 
 export interface Employee extends Candidate {
@@ -283,6 +404,8 @@ export interface Employee extends Candidate {
   hiredDay: number;
   /** Мотивация 0…100 */
   motivation: number;
+  /** День последнего разговора один на один */
+  lastTalkDay?: number;
 }
 
 export interface TeamLogEntry {
@@ -320,6 +443,8 @@ export interface DayBreakdown {
   feeCost: number;
   loanCost: number;
   livingCost: number;
+  /** Аренда офиса за день */
+  rentCost: number;
   /** Зарплаты команды за день */
   salaryCost: number;
   /** Доход от подработки основателя — не входит в доход продукта */
@@ -390,6 +515,25 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Деньги на вкладе в банке: приносят проценты, в расчёт «денег на счёте» не входят */
+  deposit?: number;
+  /** Офис компании (id из настроек); нет поля — комната основателя */
+  office?: string;
+  /** Доля основателя в компании, 1 = 100%; уменьшается с каждой инвестицией */
+  founderShare?: number;
+  /** Силы основателя 0…100. Необязательные поля ниже: в старых сохранениях их нет. */
+  energy?: number;
+  /** До какого дня действует кофе и с какого дня можно снова */
+  coffeeUntilDay?: number;
+  coffeeReadyDay?: number;
+  /** Сегодня основатель отдыхает и не работает */
+  resting?: boolean;
+  /** Сосредоточенность 0…1: растёт, когда игрок сам набирает код, и ускоряет работу основателя */
+  focus?: number;
+  /** Лента: последние заметные события */
+  news?: NewsItem[];
+  /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
+  milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
   team?: TeamState;
 
@@ -440,9 +584,21 @@ export type Command =
   | { type: 'removeTask'; index: number }
   | { type: 'setRush'; rush: boolean }
   | { type: 'launch' }
+  /** День отдыха: основатель не работает и восстанавливает силы */
+  | { type: 'rest' }
+  | { type: 'coffee' }
+  /** Игрок сам набрал столько знаков кода в редакторе */
+  | { type: 'typeCode'; chars: number }
+  /** Переезд в следующий по порядку офис */
+  | { type: 'moveOffice' }
   | { type: 'hire'; candidateId: number }
   | { type: 'fire'; employeeId: number }
   | { type: 'setSalary'; employeeId: number; salary: number }
+  /** Разговор с сотрудником один на один */
+  | { type: 'talk'; employeeId: number }
+  | { type: 'takeLoan'; amount: number }
+  | { type: 'deposit'; amount: number }
+  | { type: 'withdraw'; amount: number }
   | { type: 'chooseEvent'; choiceId: string }
   | { type: 'continueAsSandbox' };
 
@@ -457,6 +613,11 @@ export type CommandError =
   | 'alreadyQueued'
   | 'noSuchTask'
   | 'alreadyLaunched'
+  | 'coffeeTooSoon'
+  | 'notEnoughCash'
+  | 'talkTooSoon'
+  | 'overLoanLimit'
+  | 'noBiggerOffice'
   | 'noSuchCandidate'
   | 'noSuchEmployee'
   | 'teamFull'

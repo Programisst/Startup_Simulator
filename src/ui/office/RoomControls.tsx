@@ -2,6 +2,7 @@
 // Выглядит как остальные плашки квартиры, а не как строка меню.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { GoalCard } from '../components/GoalCard';
 import { useStore, type Speed } from '../store';
 
 const SPEEDS: Speed[] = [0, 1, 2, 5];
@@ -44,6 +45,9 @@ export function RoomControls() {
       >
         {saved ? t('top.saved') : t('top.save')}
       </button>
+      <div className="lm-card lm-goal">
+        <GoalCard variant="room" />
+      </div>
     </>
   );
 }

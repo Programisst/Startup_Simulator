@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
+import { FeedList } from '../components/Feed';
 import { LineChart } from '../components/LineChart';
 import { dec, gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
@@ -77,6 +78,8 @@ export function Overview() {
           </table>
         </section>
         <section className="panel">
+          <h3>{t('feed.title')}</h3>
+          <FeedList />
           <h3>{t('overview.events')}</h3>
           <ul className="log">
             {game.eventLog.length === 0 && <li className="muted">{t('overview.noEvents')}</li>}
@@ -85,7 +88,7 @@ export function Overview() {
               .reverse()
               .map((e, i) => (
                 <li key={i}>
-                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed) })}
+                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed), feature: !e.featureId ? '…' : e.featureId === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${e.featureId}`) })}
                 </li>
               ))}
           </ul>

@@ -51,7 +51,7 @@ describe('кандидаты', () => {
     const before = teamView(s, content);
     expect(before.daysToNewCandidates).toBe(cfg.candidatesEveryDays);
     const almost = advance(s, cfg.candidatesEveryDays - 1);
-    expect(teamView(almost, content).candidates).toEqual(before.candidates);
+    expect(teamView(almost, content).candidates.map((c) => c.id)).toEqual(before.candidates.map((c) => c.id));
     const after = teamView(advance(almost, 1), content);
     expect(after.candidates).toHaveLength(cfg.candidatesShown);
     for (const c of after.candidates) expect(before.candidates.map((b) => b.id)).not.toContain(c.id);
@@ -145,7 +145,7 @@ describe('вклад команды в работу', () => {
   });
 
   it('прибавка от маркетологов ограничена потолком', () => {
-    const many = withTeam(newGame(), [1, 2, 3].map((i) => employee({ id: 900 + i, role: 'marketer', skill: 1.6 })));
+    const many = withTeam(newGame(), Array.from({ length: 12 }, (_, i) => employee({ id: 900 + i, role: 'marketer', skill: 1.6 })));
     expect(teamView(many, content).marketingBoost).toBeCloseTo(1 + cfg.marketingCap, 6);
   });
 
@@ -259,5 +259,39 @@ describe('деньги и старые сохранения', () => {
   it('сводка команды не меняет состояние', () => {
     const s = deepFreeze(withTeam(newGame(), [employee()]));
     expect(teamView(s, content)).toEqual(teamView(s, content));
+  });
+});
+
+describe('предупреждение перед наймом', () => {
+  it('без дохода любой найм опасен: денег хватит меньше чем на три месяца', () => {
+    const v = teamView(newGame(), content);
+    for (const c of v.candidates) {
+      expect(c.risky).toBe(true);
+      // $3 000 при расходах «жизнь + инструменты + серверы + зарплата».
+      const burn = 800 + content.config.toolsCostPerMonth + content.config.startCapacity * newGame().market.serverCostPerUser + c.salaryAsk;
+      expect(c.cashDaysIfHired).toBe(Math.floor((3000 / burn) * 30));
+    }
+  });
+
+  it('прогноз сбывается: после найма счёт уходит в минус примерно в названный день', () => {
+    const s = newGame({ goal: 'sandbox' });
+    const c = teamView(s, content).candidates[0]!;
+    let x = run(s, { type: 'hire', candidateId: c.id });
+    const quiet = { ...content, events: [], milestones: [] };
+    let days = 0;
+    while (x.cash >= 0 && days < 1000) {
+      x = tick(x, quiet);
+      days += 1;
+    }
+    expect(Math.abs(days - c.cashDaysIfHired!)).toBeLessThanOrEqual(2);
+  });
+
+  it('когда денег много или доход покрывает зарплату, найм не опасен', () => {
+    expect(teamView({ ...newGame(), cash: 1_000_000 }, content).candidates.every((c) => !c.risky)).toBe(true);
+    const earning = { ...newGame(), recentDays: Array.from({ length: 30 }, (_, day) => ({ day, cash: 0, users: 0, paying: 0, revenue: 400, expenses: 0 })) };
+    for (const c of teamView(earning, content).candidates) {
+      expect(c.cashDaysIfHired).toBeNull();
+      expect(c.risky).toBe(false);
+    }
   });
 });

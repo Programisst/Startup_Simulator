@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { overload, type Task } from '../../core';
+import { FounderCare } from '../components/FounderCare';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -64,6 +65,9 @@ export function Product() {
             <input type="checkbox" checked={game.rush} onChange={(e) => dispatch({ type: 'setRush', rush: e.target.checked })} />
             {t('product.rush')}
           </label>
+
+          <h3>{t('founderCare.title')}</h3>
+          <FounderCare />
 
           <h3>{t('product.founderTime')}</h3>
           <div className="speeds">

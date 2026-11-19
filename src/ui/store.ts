@@ -5,7 +5,7 @@ import { content } from '../content';
 import { deleteSave, loadGame, saveGame } from '../save/storage';
 import { markTutorialSeen, tutorialSeen } from './tutorial';
 
-export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance';
+export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance' | 'feed' | 'mail' | 'goals' | 'settings' | 'bank';
 export type Speed = 0 | 1 | 2 | 5;
 /** Сколько настоящих миллисекунд длится игровой день на скорости ×1. */
 export const DAY_MS = 4000;
@@ -23,6 +23,7 @@ interface Store {
   tutorial: boolean;
   setComputerOpen: (open: boolean) => void;
   endTutorial: () => void;
+  restartTutorial: () => void;
   start: (setup: NewGameSetup) => void;
   dispatch: (cmd: Command) => void;
   step: () => void;
@@ -47,6 +48,7 @@ export const useStore = create<Store>((set, get) => ({
     markTutorialSeen();
     set({ tutorial: false });
   },
+  restartTutorial: () => set({ tutorial: true }),
 
   start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null, computerOpen: false, tutorial: !tutorialSeen() }),
 

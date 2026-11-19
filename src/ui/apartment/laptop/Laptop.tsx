@@ -91,9 +91,17 @@ interface Props {
   onClosed: () => void;
   /** Программа «Компания» из игры. Если задана, она открыта поверх остальных окон, а управление сразу у игрока. */
   company?: ReactNode;
+  /** Игрок сам набрал знак кода в редакторе */
+  onTyped?: () => void;
+  /** Игрок нажал значок программы на нижней панели (кроме редактора и браузера) */
+  onDockApp?: (item: DockItem) => void;
+  /** Строка о том, что даёт набор кода, — показывается, пока открыт редактор */
+  focusText?: string;
 }
 
-export function Laptop({ minutes, weekday, origin, closing, onClosed, company }: Props) {
+export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText }: Props) {
+  const typedRef = useRef(onTyped);
+  typedRef.current = onTyped;
   const { t } = useTranslation();
   const hasCompany = company !== undefined && company !== null;
   const [companyFront, setCompanyFront] = useState(true);
@@ -141,7 +149,13 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company }:
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return;
       if (!store.get().manual) store.set({ manual: true });
-      if (actions.handleKey(e)) e.preventDefault();
+      const before = store.get();
+      const inEditor = before.app === 'editor' && before.windows.editor === 'open' && (before.focus === 'editor' || before.focus === null);
+      if (actions.handleKey(e)) {
+        e.preventDefault();
+        // Знак кода, набранный игроком в редакторе, идёт в зачёт работы.
+        if (inEditor && !e.metaKey && !e.ctrlKey && (e.key.length === 1 || e.key === 'Enter' || e.key === 'Tab')) typedRef.current?.();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -183,6 +197,11 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company }:
     } else {
       store.set({ bounce: item });
       window.setTimeout(() => store.set({ bounce: null }), 900);
+      // В игре остальные значки открывают разделы программы «Компания».
+      if (hasCompany && onDockApp) {
+        onDockApp(item);
+        setCompanyFront(true);
+      }
     }
   };
 
@@ -283,9 +302,12 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company }:
 
               <div className={`os-pill${s.manual ? ' manual' : ''}`} hidden={hasCompany && companyFront}>
                 {hasCompany ? (
-                  <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setCompanyFront(true)}>
-                    ← {t('laptop.company.back')}
-                  </button>
+                  <>
+                    {focusText && <span>{focusText}</span>}
+                    <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setCompanyFront(true)}>
+                      ← {t('laptop.company.back')}
+                    </button>
+                  </>
                 ) : s.manual ? (
                   <>
                     <span>{t('laptop.autopilot.manual')}</span>

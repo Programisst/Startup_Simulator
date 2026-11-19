@@ -3,8 +3,12 @@ import { useTranslation } from 'react-i18next';
 import { Coach, useTutorialStep } from './components/Coach';
 import { EndScreen } from './components/EndScreen';
 import { EventModal } from './components/EventModal';
+import { FeedToasts } from './components/Feed';
+import { GoalCard, GoalToast } from './components/GoalCard';
 import { TopBar } from './components/TopBar';
 import { canDraw, GameRoom } from './office/GameRoom';
+import { FeedApp, GoalsApp, MailApp, SettingsApp } from './screens/Apps';
+import { Bank } from './screens/Bank';
 import { Finance } from './screens/Finance';
 import { Marketing } from './screens/Marketing';
 import { NewGame } from './screens/NewGame';
@@ -14,7 +18,7 @@ import { Team } from './screens/Team';
 import { DAY_MS, useStore, type ScreenId } from './store';
 
 /** Меню сбоку — только когда квартиру показать нельзя, поэтому «Офиса» в нём нет. */
-const SCREENS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
+const SCREENS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance', 'bank', 'feed', 'mail', 'goals', 'settings'];
 
 export function App() {
   const { t } = useTranslation();
@@ -56,6 +60,8 @@ export function App() {
         </main>
         {/* За компьютером подсказка показывается внутри его экрана. */}
         {!computerOpen && <Coach step={tutorial} />}
+        <GoalToast />
+        <FeedToasts />
         {overlays}
       </div>
     );
@@ -76,12 +82,20 @@ export function App() {
       </nav>
       <main className="content">
         <Coach step={tutorial} inline />
+        <GoalCard variant="app" />
+        <GoalToast />
+        <FeedToasts />
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
         {shown === 'overview' && <Overview />}
         {shown === 'product' && <Product />}
         {shown === 'team' && <Team />}
         {shown === 'marketing' && <Marketing />}
         {shown === 'finance' && <Finance />}
+        {shown === 'feed' && <FeedApp />}
+        {shown === 'mail' && <MailApp />}
+        {shown === 'goals' && <GoalsApp />}
+        {shown === 'settings' && <SettingsApp />}
+        {shown === 'bank' && <Bank />}
       </main>
       {overlays}
     </div>

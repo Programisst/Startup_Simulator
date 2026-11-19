@@ -1,7 +1,10 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { applyEffects } from './events';
-import { fire, hire, setSalary, type TeamChange } from './team';
+import { coffeeReady, energyOf, focusOf } from './founder';
+import { nextOffice } from './office';
+import { loanLimit, loanTerms } from './bank';
+import { fire, hire, setSalary, talk, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
 function fail(error: CommandError): CommandResult {
@@ -27,11 +30,83 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
   const features = content.features[state.productType];
 
   switch (cmd.type) {
+    case 'rest':
+      return { ok: true, state: { ...state, resting: true } };
+
+    case 'coffee': {
+      if (!coffeeReady(state)) return fail('coffeeTooSoon');
+      const f = content.config.founder;
+      return {
+        ok: true,
+        state: {
+          ...state,
+          coffeeUntilDay: state.day + f.coffeeDays,
+          coffeeReadyDay: state.day + f.coffeeCooldownDays,
+          energy: Math.max(0, energyOf(state) - f.coffeeCost),
+        },
+      };
+    }
+
+    case 'typeCode': {
+      if (!Number.isFinite(cmd.chars) || cmd.chars <= 0 || cmd.chars > 10_000) return fail('invalidValue');
+      return { ok: true, state: { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / content.config.founder.focusChars) } };
+    }
+
+    case 'moveOffice': {
+      const next = nextOffice(state, content.config);
+      if (!next) return fail('noBiggerOffice');
+      if (state.cash < next.moveCost) return fail('notEnoughCash');
+      return {
+        ok: true,
+        state: {
+          ...state,
+          office: next.id,
+          cash: Math.round((state.cash - next.moveCost) * 100) / 100,
+          news: [...(state.news ?? []), { day: state.day, kind: 'office' as const, id: next.id }].slice(-40),
+        },
+      };
+    }
+
     case 'hire':
       return applyTeam(state, hire(state, cmd.candidateId, content));
 
     case 'fire':
       return applyTeam(state, fire(state, cmd.employeeId, content));
+
+    case 'talk': {
+      const result = talk(state, cmd.employeeId, content);
+      if (!result.ok) return fail(result.error);
+      // Разговор по душам требует сил.
+      return { ok: true, state: { ...state, team: result.team, energy: Math.max(0, energyOf(state) - content.config.team.talkEnergy) } };
+    }
+
+    case 'takeLoan': {
+      const bank = content.config.bank;
+      if (!isMoney(cmd.amount, 1e9) || cmd.amount < bank.minLoan) return fail('invalidValue');
+      if (cmd.amount > loanLimit(state, bank)) return fail('overLoanLimit');
+      const terms = loanTerms(cmd.amount, bank);
+      return {
+        ok: true,
+        state: {
+          ...state,
+          cash: Math.round((state.cash + cmd.amount) * 100) / 100,
+          loans: [...state.loans, { dailyPayment: terms.total / bank.loanTermDays, untilDay: state.day + bank.loanTermDays }],
+        },
+      };
+    }
+
+    case 'deposit': {
+      if (!isMoney(cmd.amount, 1e12) || cmd.amount <= 0) return fail('invalidValue');
+      if (cmd.amount > state.cash) return fail('notEnoughCash');
+      return { ok: true, state: { ...state, cash: Math.round((state.cash - cmd.amount) * 100) / 100, deposit: Math.round(((state.deposit ?? 0) + cmd.amount) * 100) / 100 } };
+    }
+
+    case 'withdraw': {
+      const have = state.deposit ?? 0;
+      if (!isMoney(cmd.amount, 1e12) || cmd.amount <= 0 || cmd.amount > have + 0.005) return fail('invalidValue');
+      const amount = Math.min(cmd.amount, have);
+      return { ok: true, state: { ...state, cash: Math.round((state.cash + amount) * 100) / 100, deposit: Math.round((have - amount) * 100) / 100 } };
+    }
 
     case 'setSalary':
       if (!isMoney(cmd.salary, 1_000_000)) return fail('invalidValue');
@@ -104,7 +179,17 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       if (state.launched) return fail('alreadyLaunched');
       const core = features.find((f) => f.core);
       if (core && !state.doneFeatures.includes(core.id)) return fail('coreFeatureRequired');
-      return { ok: true, state: { ...state, launched: true, launchDay: state.day } };
+      // Первые недели после запуска к новинке приходит больше людей, чем потом.
+      const pace = content.config.pace;
+      return {
+        ok: true,
+        state: {
+          ...state,
+          launched: true,
+          launchDay: state.day,
+          modifiers: [...state.modifiers, { target: 'acquisition', factor: pace.launchBoost, untilDay: state.day + pace.launchDays }],
+        },
+      };
     }
 
     case 'chooseEvent': {

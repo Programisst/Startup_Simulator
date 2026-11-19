@@ -1,10 +1,16 @@
 // События с выбором: проверка условий, выбор очередного события, применение последствий.
 
 import { clamp, overload } from './formulas';
+import { energyOf } from './founder';
 import { nextFloat, type RngState } from './rng';
 import type { Effect, Employee, EventCondition, EventDef, EventSubject, GameContent, GameState, TeamState } from './types';
 
 const employeesOf = (s: GameState): Employee[] => s.team?.employees ?? [];
+
+/** Доход продукта за последние 30 дней. */
+export function revenue30(s: GameState): number {
+  return s.recentDays.slice(-30).reduce((sum, d) => sum + d.revenue, 0);
+}
 
 /** Сотрудник, о котором будет событие, или null, если подходящего нет. */
 export function eventSubject(subject: EventSubject, s: GameState): Employee | null {
@@ -26,7 +32,8 @@ export function eventSubject(subject: EventSubject, s: GameState): Employee | nu
   return [...fits].sort(better[subject.pick])[0] ?? null;
 }
 
-export function conditionHolds(c: EventCondition, s: GameState): boolean {
+export function conditionHolds(c: EventCondition, s: GameState, cfg?: { offices: { id: string }[] }): boolean {
+  if (c.minOffice !== undefined && Math.max(0, (cfg?.offices ?? []).findIndex((o) => o.id === s.office)) < c.minOffice) return false;
   if (c.launched !== undefined && c.launched !== s.launched) return false;
   if (c.minDay !== undefined && s.day < c.minDay) return false;
   if (c.minUsers !== undefined && s.users < c.minUsers) return false;
@@ -39,6 +46,10 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   if (c.minDebt !== undefined && s.debt < c.minDebt) return false;
   if (c.overloaded !== undefined && c.overloaded !== overload(s.users, s.capacity) > 0) return false;
   if (c.cashNegative !== undefined && c.cashNegative !== s.cash < 0) return false;
+  if (c.maxEnergy !== undefined && energyOf(s) > c.maxEnergy) return false;
+  if (c.minFeatures !== undefined && s.doneFeatures.length < c.minFeatures) return false;
+  if (c.minRevenue30 !== undefined && revenue30(s) < c.minRevenue30) return false;
+  if (c.minMonthProfit !== undefined && (s.months[s.months.length - 1]?.profit ?? -Infinity) < c.minMonthProfit) return false;
   const teamSize = employeesOf(s).length;
   if (c.minTeam !== undefined && teamSize < c.minTeam) return false;
   if (c.maxTeam !== undefined && teamSize > c.maxTeam) return false;
@@ -47,14 +58,14 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   return true;
 }
 
-function isAvailable(def: EventDef, s: GameState): boolean {
+function isAvailable(def: EventDef, s: GameState, content: GameContent): boolean {
   let lastDay = -Infinity;
   for (const entry of s.eventLog) {
     if (entry.eventId === def.id) lastDay = Math.max(lastDay, entry.day);
   }
   if (def.once && lastDay > -Infinity) return false;
   if (s.day - lastDay < def.cooldownDays) return false;
-  return conditionHolds(def.condition, s);
+  return conditionHolds(def.condition, s, content.config);
 }
 
 /**
@@ -67,7 +78,8 @@ export function rollEvent(
   content: GameContent,
   rng: RngState,
 ): { eventId: string | null; rng: RngState } {
-  const available = content.events.filter((e) => isAvailable(e, s));
+  // Развилки разработки возникают по ходу работы над функцией, а не случайно.
+  const available = content.events.filter((e) => !e.dev && isAvailable(e, s, content));
 
   const urgent = available.find((e) => e.urgent);
   if (urgent) return { eventId: urgent.id, rng };
@@ -112,6 +124,22 @@ export function applyEffects(
 
   for (const e of effects) {
     switch (e.type) {
+      case 'invest':
+        draft.cash = Math.round((draft.cash + e.amount) * 100) / 100;
+        draft.founderShare = Math.round((draft.founderShare ?? 1) * (1 - e.share) * 10_000) / 10_000;
+        draft.news = [...(draft.news ?? []), { day: draft.day, kind: 'invest' as const, value: e.amount }].slice(-40);
+        break;
+      case 'energy':
+        draft.energy = clamp(energyOf(draft) + e.amount, 0, 100);
+        break;
+      case 'taskProgress': {
+        const first = draft.tasks[0];
+        if (first?.kind === 'feature') draft.tasks = [{ ...first, progress: Math.max(0, first.progress + e.amount) }, ...draft.tasks.slice(1)];
+        break;
+      }
+      case 'polish':
+        draft.polish = Math.max(0, draft.polish + e.amount);
+        break;
       case 'teamMotivation':
         changeTeam((team) => ({ ...team, employees: team.employees.map((m) => ({ ...m, motivation: clamp(m.motivation + e.amount, 0, 100) })) }));
         break;

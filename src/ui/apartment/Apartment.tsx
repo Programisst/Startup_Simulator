@@ -115,7 +115,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         world.onArrive = (spot) => interactRef.current(spot);
         world.onCoffeeReady = () => {
           busy.current = false;
-          say(t('room.bubble.coffeeReady'));
+          say(t(linkRef.current ? 'room.bubble.coffeeBoost' : 'room.bubble.coffeeReady'));
         };
         onResize = () => world.resize();
         window.addEventListener('resize', onResize);
@@ -223,6 +223,11 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         // Уже сидит за столом — экран открывается сразу.
         window.setTimeout(() => setComputer('open'), alreadySeated ? 80 : 700);
       } else if (spot.id === 'coffee') {
+        // В игре кофе помогает не всегда: после чашки нужен перерыв в несколько дней.
+        if (linkRef.current && !linkRef.current.coffee()) {
+          say(t('room.bubble.coffeeTooSoon'), 2600);
+          return;
+        }
         busy.current = true;
         world.brew();
         say(t('room.bubble.brewing'), 2600);
@@ -243,7 +248,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
           setFade(null);
           busy.current = false;
           idleFor.current = 0;
-          say(t('room.bubble.wake'));
+          say(t(linkRef.current ? 'room.bubble.wakeRested' : 'room.bubble.wake'));
         }, 4500);
       } else if (isLamp(spot.id)) {
         world.toggleLamp(spot.id);
@@ -409,6 +414,14 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
             </div>
           </div>
           <div className="lm-card lm-status">{link.status}</div>
+          <div className="lm-card lm-energy">
+            <div>
+              <div className="lm-sub">{t('room.hud.energy')}</div>
+              <div className={`lm-energy-bar${link.tired ? ' low' : ''}`}>
+                <i style={{ width: `${Math.max(0, Math.min(100, link.energy))}%` }} />
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="lm-hud">
@@ -466,14 +479,24 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
       {fade && (
         <div className={`lm-fade ${fade}`}>
           <div className="lm-fade-title">{t('room.sleep.title')}</div>
-          <div className="lm-fade-sub">{link ? t('room.sleep.nextDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
+          <div className="lm-fade-sub">{link ? t('room.sleep.restDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
         </div>
       )}
 
       {error && <div className="lm-error">{error}</div>}
 
       {computer !== 'closed' && (
-        <Laptop minutes={hud.minutes} weekday={weekday} origin={origin} closing={computer === 'closing'} onClosed={onComputerClosed} company={link?.companyApp} />
+        <Laptop
+          minutes={hud.minutes}
+          weekday={weekday}
+          origin={origin}
+          closing={computer === 'closing'}
+          onClosed={onComputerClosed}
+          company={link?.companyApp}
+          onTyped={link?.onTyped}
+          onDockApp={link?.onDockApp}
+          focusText={link?.focusText}
+        />
       )}
     </div>
   );
