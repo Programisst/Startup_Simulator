@@ -1,11 +1,15 @@
 // Тесты баланса: проверяют не отдельные формулы, а то, как игра ведёт себя в целом.
 // Цели взяты из docs/01-GDD.md (раздел 8) и docs/02-economy.md.
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { content } from '../src/content';
 import type { DifficultyId } from '../src/core';
 import { runAll, summarize } from '../tools/balance/simulate';
 import { carefulHirer, expert, idle, novice, recklessHirer, sensible, sideJobOnly } from '../tools/balance/strategies';
 import { advance, newGame, run } from './helpers';
+
+// Эти тесты проигрывают сотни партий. На сервере проверок GitHub они идут в несколько раз медленнее,
+// чем на компьютере разработчика, и в обычные 5 секунд не укладываются.
+vi.setConfig({ testTimeout: 120_000 });
 
 const DIFFICULTIES: DifficultyId[] = ['easy', 'normal', 'hard'];
 const GAMES_PER_TYPE = 20;
