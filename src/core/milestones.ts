@@ -2,6 +2,7 @@
 // Цели идут строго по порядку; за день засчитывается не больше одной.
 
 import { applyEffects, conditionHolds, revenue30 } from './events';
+import { totalAdSpend } from './marketing';
 import type { GameContent, GameState, MilestoneDef, MilestoneMetric } from './types';
 
 const doneIds = (s: GameState): string[] => (s.milestones ?? []).map((m) => m.id);
@@ -97,7 +98,7 @@ const rentOf = (s: GameState): number => (s.lastDay.rentCost ?? 0) * 30;
 export function bankruptcyCause(s: GameState): BankruptcyCause {
   const monthly = {
     salaries: (s.team?.employees ?? []).reduce((sum, e) => sum + e.salary, 0),
-    ads: s.adSpendPerDay * 30,
+    ads: totalAdSpend(s) * 30,
     servers: s.capacity * s.market.serverCostPerUser,
     rent: rentOf(s),
     loans: s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30,

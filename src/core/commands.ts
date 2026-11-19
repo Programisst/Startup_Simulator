@@ -118,6 +118,14 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       if (!isMoney(cmd.perDay, 1_000_000)) return fail('invalidValue');
       return { ok: true, state: { ...state, adSpendPerDay: cmd.perDay } };
 
+    case 'setChannelSpend': {
+      if (!isMoney(cmd.perDay, 1_000_000)) return fail('invalidValue');
+      if (!content.config.marketing.channels.some((c) => c.id === cmd.channel)) return fail('invalidValue');
+      // Поиск хранится в прежнем поле: так работают старые сохранения и команда setAdSpend.
+      if (cmd.channel === 'search') return { ok: true, state: { ...state, adSpendPerDay: cmd.perDay } };
+      return { ok: true, state: { ...state, adChannels: { ...state.adChannels, [cmd.channel]: cmd.perDay } } };
+    }
+
     case 'setPrice':
       if (!isMoney(cmd.price, 100_000)) return fail('invalidValue');
       return { ok: true, state: { ...state, price: cmd.price } };

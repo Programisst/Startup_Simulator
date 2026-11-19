@@ -267,6 +267,39 @@ export interface TeamConfig {
   marketingCap: number;
 }
 
+/** Рекламный канал. Названия выдуманные: настоящие площадки в игре не упоминаются. */
+export type ChannelId = 'search' | 'feeds' | 'bloggers' | 'content';
+
+export interface ChannelDef {
+  id: ChannelId;
+  /**
+   * Во сколько раз пользователь из канала дороже или дешевле обычного — отдельно для продуктов
+   * «для людей» (соцсеть, приложение, игра, маркетплейс) и «для дела» (SaaS, AI, инструменты).
+   */
+  costFactor: { consumer: number; business: number };
+  /** Бюджет в день, при котором отдача падает вдвое: канал «выгорает», если лить в него слишком много */
+  halfAt: number;
+  /** Разброс результата изо дня в день, доля (0.6 = от −60% до +60%). 0 — канал предсказуем. */
+  noise: number;
+  /**
+   * 'direct' — деньги сразу приводят людей; 'content' — деньги копятся в «запас статей»,
+   * который сам приводит людей и понемногу устаревает.
+   */
+  kind: 'direct' | 'content';
+}
+
+/** Настройки маркетинга. */
+export interface MarketingConfig {
+  channels: ChannelDef[];
+  /** Какие типы продукта считаются «для дела»; остальные — «для людей» */
+  businessTypes: ProductTypeId[];
+  /** Сколько вложенных в статьи долларов дают +100% к тем, кто находит продукт сам, и потолок этой прибавки */
+  contentPerDouble: number;
+  contentCap: number;
+  /** Какая доля запаса статей устаревает за день */
+  contentDecayPerDay: number;
+}
+
 /** Банк: кредит и вклад. */
 export interface BankConfig {
   /** Годовая ставка кредита и срок в днях */
@@ -343,6 +376,7 @@ export interface GameConfig {
   founder: FounderConfig;
   /** Темп партии: во сколько раз быстрее приходят пользователи и деньги, чем в «честной» модели */
   bank: BankConfig;
+  marketing: MarketingConfig;
   pace: { acquisition: number; revenue: number; /** Интерес к новинке: во сколько раз больше людей приходит первые дни после запуска */ launchBoost: number; launchDays: number };
   offices: OfficeDef[];
 }
@@ -570,6 +604,10 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
+  adChannels?: Partial<Record<ChannelId, number>>;
+  /** Запас статей и гайдов в долларах вложений: приводит людей сам и понемногу устаревает */
+  contentStock?: number;
   /** Деньги на вкладе в банке: приносят проценты, в расчёт «денег на счёте» не входят */
   deposit?: number;
   /** Офис компании (id из настроек); нет поля — комната основателя */
@@ -631,6 +669,8 @@ export interface NewGameSetup {
 
 export type Command =
   | { type: 'setAdSpend'; perDay: number }
+  /** Бюджет одного рекламного канала в день */
+  | { type: 'setChannelSpend'; channel: ChannelId; perDay: number }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }

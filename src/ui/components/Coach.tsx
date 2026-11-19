@@ -1,7 +1,7 @@
 // Подсказка обучения: одна короткая фраза о том, что сделать сейчас.
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { featuresOf, roomView } from '../../core';
+import { featuresOf, roomView, totalAdSpend } from '../../core';
 import { useStore } from '../store';
 import { FriendAvatar } from '../opening/Avatar';
 import { tutorialStep, type TutorialStep } from '../tutorial';
@@ -29,7 +29,7 @@ export function useTutorialStep(menuAlwaysOpen = false): TutorialStep | null {
     coreQueued: game.tasks.some((task) => task.kind === 'feature' && task.featureId === core?.id),
     coreDone: !core || game.doneFeatures.includes(core.id),
     launched: game.launched,
-    adsOn: game.adSpendPerDay > 0,
+    adsOn: totalAdSpend(game) > 0,
     earned: game.lastDay.revenue > 0 || game.paying > 0,
   });
 }
