@@ -1,6 +1,7 @@
 // События с выбором: проверка условий, выбор очередного события, применение последствий.
 
 import { clamp, overload } from './formulas';
+import { energyOf } from './founder';
 import { nextFloat, type RngState } from './rng';
 import type { Effect, Employee, EventCondition, EventDef, EventSubject, GameContent, GameState, TeamState } from './types';
 
@@ -44,6 +45,7 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   if (c.minDebt !== undefined && s.debt < c.minDebt) return false;
   if (c.overloaded !== undefined && c.overloaded !== overload(s.users, s.capacity) > 0) return false;
   if (c.cashNegative !== undefined && c.cashNegative !== s.cash < 0) return false;
+  if (c.maxEnergy !== undefined && energyOf(s) > c.maxEnergy) return false;
   if (c.minFeatures !== undefined && s.doneFeatures.length < c.minFeatures) return false;
   if (c.minRevenue30 !== undefined && revenue30(s) < c.minRevenue30) return false;
   if (c.minMonthProfit !== undefined && (s.months[s.months.length - 1]?.profit ?? -Infinity) < c.minMonthProfit) return false;
@@ -75,7 +77,8 @@ export function rollEvent(
   content: GameContent,
   rng: RngState,
 ): { eventId: string | null; rng: RngState } {
-  const available = content.events.filter((e) => isAvailable(e, s));
+  // Развилки разработки возникают по ходу работы над функцией, а не случайно.
+  const available = content.events.filter((e) => !e.dev && isAvailable(e, s));
 
   const urgent = available.find((e) => e.urgent);
   if (urgent) return { eventId: urgent.id, rng };
@@ -120,6 +123,17 @@ export function applyEffects(
 
   for (const e of effects) {
     switch (e.type) {
+      case 'energy':
+        draft.energy = clamp(energyOf(draft) + e.amount, 0, 100);
+        break;
+      case 'taskProgress': {
+        const first = draft.tasks[0];
+        if (first?.kind === 'feature') draft.tasks = [{ ...first, progress: Math.max(0, first.progress + e.amount) }, ...draft.tasks.slice(1)];
+        break;
+      }
+      case 'polish':
+        draft.polish = Math.max(0, draft.polish + e.amount);
+        break;
       case 'teamMotivation':
         changeTeam((team) => ({ ...team, employees: team.employees.map((m) => ({ ...m, motivation: clamp(m.motivation + e.amount, 0, 100) })) }));
         break;

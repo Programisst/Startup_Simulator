@@ -1,7 +1,8 @@
 // Шаг дня: берёт состояние и возвращает состояние на следующий день.
 // Формулы — в formulas.ts, их описание — в docs/02-economy.md.
 
-import { eventSubject, rollEvent } from './events';
+import { conditionHolds, eventSubject, rollEvent } from './events';
+import { energyAfterDay, energyOf, founderBusy, founderWorkPerDay } from './founder';
 import {
   DAYS_IN_MONTH,
   churnMonthly,
@@ -19,6 +20,7 @@ import {
   viralPerDay,
 } from './formulas';
 import { stepMilestones } from './milestones';
+import { collectNews, withNews } from './news';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -55,8 +57,9 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
   let r = rng;
   const team = teamOf(draft, content);
   // Основатель делит день с подработкой, команда работает полный день; спешка ускоряет всех.
-  let work = (cfg.founderSkill * (1 - draft.sideJobShare) + teamWorkPerDay(team, cfg.team)) * (draft.rush ? cfg.rushSpeed : 1);
-  const sloppy = sloppyDevelopers(team);
+  let work = (founderWorkPerDay(draft, cfg) + teamWorkPerDay(team, cfg.team)) * (draft.rush ? cfg.rushSpeed : 1);
+  // Небрежные разработчики и вымотанный основатель добавляют ошибки к готовой функции.
+  const sloppy = sloppyDevelopers(team) + (energyOf(draft) < cfg.founder.exhaustedBelow && founderWorkPerDay(draft, cfg) > 0 ? 1 : 0);
   const tasks: Task[] = draft.tasks.map((t) => ({ ...t }));
 
   // Ограничение на число проходов защищает от зацикливания при нулевых стоимостях.
@@ -78,6 +81,21 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
       } else {
         task.progress += work;
         work = 0;
+        // Середина работы над крупной функцией — время развилки: игроку предлагают решение.
+        if (def && !task.asked && def.cost >= cfg.founder.dilemmaMinCost && task.progress >= def.cost / 2) {
+          task.asked = true;
+          if (draft.pendingEvent === null) {
+            draft.tasks = tasks;
+            const pool = content.events.filter((e) => e.dev && conditionHolds(e.condition, draft));
+            const dilemma = pool[Math.abs(draft.seed + draft.day + draft.doneFeatures.length * 7) % Math.max(1, pool.length)];
+            if (dilemma) {
+              draft.pendingEvent = dilemma.id;
+              draft.pendingSubject = null;
+              draft.lastEventDay = draft.day;
+              draft.eventLog = [...draft.eventLog, { day: draft.day, eventId: dilemma.id, choiceId: null, chanceResults: [] }];
+            }
+          }
+        }
       }
     } else if (task.kind === 'bugfix') {
       if (draft.bugs <= 0) {
@@ -126,7 +144,10 @@ export function tick(state: GameState, content: GameContent): GameState {
   let rng = s.rng;
 
   // 1. Разработка и качество
+  const busy = founderBusy(s);
   rng = develop(s, content, rng);
+  s.energy = energyAfterDay(s, cfg.founder, busy);
+  s.resting = false;
   s.quality = currentQuality(s, content);
 
   // 2. Пользователи
@@ -269,7 +290,8 @@ export function tick(state: GameState, content: GameContent): GameState {
 
   // 9. Событие
   s.modifiers = s.modifiers.filter((mod) => mod.untilDay > s.day);
-  if (s.status === 'running') {
+  // Если сегодня уже возникла развилка в разработке, случайное событие не накладывается.
+  if (s.status === 'running' && s.pendingEvent === null) {
     const rolled = rollEvent(s, content, rng);
     rng = rolled.rng;
     if (rolled.eventId !== null) {
@@ -285,6 +307,9 @@ export function tick(state: GameState, content: GameContent): GameState {
       ];
     }
   }
+
+  // 10. Лента: что заметного случилось за день
+  s.news = withNews(s, collectNews(state, s));
 
   s.rng = rng;
   s.day += 1;

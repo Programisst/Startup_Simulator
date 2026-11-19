@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Coach, useTutorialStep } from './components/Coach';
 import { EndScreen } from './components/EndScreen';
 import { EventModal } from './components/EventModal';
+import { FeedToasts } from './components/Feed';
 import { GoalCard, GoalToast } from './components/GoalCard';
 import { TopBar } from './components/TopBar';
 import { GameRoom, has3D, SimpleRoom } from './office/GameRoom';
@@ -57,6 +58,7 @@ export function App() {
         {/* За компьютером подсказка показывается внутри его экрана. */}
         {!computerOpen && <Coach step={tutorial} />}
         <GoalToast />
+        <FeedToasts />
         {overlays}
       </div>
     );
@@ -76,6 +78,7 @@ export function App() {
         <Coach step={tutorial} inline />
         <GoalCard variant="app" />
         <GoalToast />
+        <FeedToasts />
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
         {screen === 'office' && <SimpleRoom />}
         {screen === 'overview' && <Overview />}

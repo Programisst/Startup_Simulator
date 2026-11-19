@@ -41,7 +41,7 @@ export function EndScreen() {
           {game.eventLog.length === 0 && <li>{t('overview.noEvents')}</li>}
           {game.eventLog.map((e, i) => (
             <li key={i}>
-              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed) })}
+              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed), feature: '…' })}
               {e.choiceId && <> — {t(`events.${e.eventId}.choices.${e.choiceId}`)}</>}
             </li>
           ))}

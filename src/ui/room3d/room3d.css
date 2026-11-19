@@ -445,3 +445,10 @@ html.r3-standalone body {
 .r3-goal .goal-hint, .r3-goal .goal-meta { color: #c4baad; }
 .r3-goal .goal-bar { background: rgba(255, 255, 255, 0.14); }
 .r3-goal .goal-bar i { background: #a6e28a; }
+
+/* Силы основателя. */
+.r3-hud { flex-wrap: wrap; max-width: calc(100% - 380px); }
+.r3-energy .r3-sub { margin: 0 0 5px; }
+.r3-energy-bar { width: 92px; height: 7px; border-radius: 4px; background: rgba(255, 255, 255, 0.14); overflow: hidden; }
+.r3-energy-bar i { display: block; height: 100%; border-radius: 4px; background: #a6e28a; transition: width 0.5s ease; }
+.r3-energy-bar.low i { background: #ff8f8f; }

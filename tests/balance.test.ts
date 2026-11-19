@@ -76,7 +76,8 @@ describe('сложность партии', () => {
   it('сложная: проходима только хорошей игрой — опытный иногда выживает, новичок никогда', () => {
     const good = summarize(runAll(expert, 'hard', GAMES_PER_TYPE)).survived;
     expect(good).toBeGreaterThan(0.05);
-    expect(good).toBeLessThanOrEqual(0.5);
+    // Верхняя граница поднята с 50% до 60%, когда появились силы основателя: умелый отдых и кофе дают опытному игроку чуть больше.
+    expect(good).toBeLessThanOrEqual(0.6);
     expect(summarize(runAll(novice, 'hard', GAMES_PER_TYPE)).survived).toBe(0);
   });
 

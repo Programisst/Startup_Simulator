@@ -57,6 +57,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
   const speed = useStore((s) => s.speed);
   const stepDay = useStore((s) => s.step);
   const setComputerOpen = useStore((s) => s.setComputerOpen);
+  const dispatch = useStore((s) => s.dispatch);
   const view = roomView(game, content);
 
   const featureName = (id: string) => (id === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${id}`));
@@ -78,7 +79,17 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     status: t(`office.status.${view.activity}`),
     timeRuns: view.timeRuns && speed > 0,
     locked: !view.timeRuns,
-    sleep: stepDay,
+    sleep: () => {
+      dispatch({ type: 'rest' });
+      stepDay();
+    },
+    energy: view.founder.energy,
+    tired: view.founder.tired,
+    coffee: () => {
+      if (!view.founder.coffeeReady) return false;
+      dispatch({ type: 'coffee' });
+      return true;
+    },
     companyApp: <CompanyApp step={step} />,
     onComputer: setComputerOpen,
   };

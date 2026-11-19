@@ -101,7 +101,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
     world.onArrive = (target) => interactRef.current(target);
     world.onCoffeeReady = () => {
       busy.current = false;
-      say(t('room.bubble.coffeeReady'));
+      say(t(linkRef.current ? 'room.bubble.coffeeBoost' : 'room.bubble.coffeeReady'));
     };
     const onResize = () => world.resize();
     window.addEventListener('resize', onResize);
@@ -212,6 +212,11 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
         // Уже сидит за столом — экран открывается сразу.
         window.setTimeout(() => setComputer('open'), alreadySeated ? 80 : 650);
       } else if (target.id === 'coffee') {
+        // В игре кофе помогает не всегда: после чашки нужен перерыв в несколько дней.
+        if (linkRef.current && !linkRef.current.coffee()) {
+          say(t('room.bubble.coffeeTooSoon'), 2600);
+          return;
+        }
         busy.current = true;
         world.brew();
         say(t('room.bubble.brewing'), 2600);
@@ -232,7 +237,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
           setFade(null);
           busy.current = false;
           idleFor.current = 0;
-          say(t('room.bubble.wake'));
+          say(t(linkRef.current ? 'room.bubble.wakeRested' : 'room.bubble.wake'));
         }, 4300);
       } else if (isLamp(target.id)) {
         // Щёлк — и свет плавно загорается или гаснет.
@@ -413,6 +418,14 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
             <div className="r3-card">
               <div className="r3-status">{link.status}</div>
             </div>
+            <div className="r3-card r3-energy" title={t('room.hud.energy')}>
+              <div>
+                <div className="r3-sub">{t('room.hud.energy')}</div>
+                <div className={`r3-energy-bar${link.tired ? ' low' : ''}`}>
+                  <i style={{ width: `${link.energy}%` }} />
+                </div>
+              </div>
+            </div>
           </>
         ) : (
           <>
@@ -472,7 +485,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       {fade && (
         <div className={`r3-fade ${fade}`}>
           <div className="r3-fade-title">{t('room.sleep.title')}</div>
-          <div className="r3-fade-sub">{link ? t('room.sleep.nextDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
+          <div className="r3-fade-sub">{link ? t('room.sleep.restDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
         </div>
       )}
 
