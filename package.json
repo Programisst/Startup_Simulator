@@ -11,7 +11,9 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "balance": "tsx tools/balance/run.ts",
-    "share": "npm run build && node tools/singlefile.mjs"
+    "share": "npm run build && node tools/singlefile.mjs",
+    "server:build": "esbuild tools/ai-server/server.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist-server/server.mjs --banner:js=\"import { createRequire as __cr } from 'node:module'; const require = __cr(import.meta.url);\"",
+    "deploy": "bash tools/deploy.sh"
   },
   "dependencies": {
     "i18next": "^26.7.2",
