@@ -294,3 +294,121 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
 .layout.room-mode > .coach .coach-label { color: #f6c34a; }
 .layout.room-mode > .coach button.coach-skip { color: #c4baad; }
 .layout.room-mode > .coach button.primary { background: #f6c34a; border-color: #f6c34a; color: #1c1620; }
+
+/* ---------- Окна событий и конца партии в игре с квартирой ----------
+   За компьютером это системное окно-вопрос, в квартире — плашка в её стиле. */
+
+/* За компьютером: системное окно. */
+.layout.at-computer .overlay {
+  background: rgba(0, 0, 0, 0.28);
+}
+.layout.at-computer .modal {
+  --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --hair: rgba(0, 0, 0, 0.09);
+  max-width: 380px;
+  padding: 22px 18px 16px;
+  color: #1d1d1f;
+  font: 13px/1.4 var(--ui);
+  text-align: center;
+  background: rgba(246, 246, 248, 0.97);
+  border: 0;
+  border-radius: 14px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.3),
+    0 24px 60px rgba(0, 0, 0, 0.45);
+  -webkit-font-smoothing: antialiased;
+}
+/* Значок вопроса над заголовком. */
+.layout.at-computer .modal::before {
+  content: '!';
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 12px;
+  border-radius: 11px;
+  background: linear-gradient(#ffb340, #f28c18);
+  color: #fff;
+  font: 700 26px/1 var(--ui);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.layout.at-computer .modal h2 { margin: 0 0 6px; font: 700 15px/1.3 var(--ui); }
+.layout.at-computer .modal p { margin: 0; font-size: 12.5px; color: #3a3a3c; }
+.layout.at-computer .modal .choices { gap: 6px; margin-top: 16px; }
+.layout.at-computer .modal .choices button {
+  width: 100%;
+  padding: 7px 12px;
+  text-align: center;
+  font: 500 13px/1.3 var(--ui);
+  color: #1d1d1f;
+  background: rgba(0, 0, 0, 0.07);
+  border: 0;
+  border-radius: 7px;
+}
+.layout.at-computer .modal .choices button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.12); }
+.layout.at-computer .modal .choices button:last-child:not(:only-child) { margin-top: 0; }
+
+/* Конец партии за компьютером: то же окно, но шире и с итогами. */
+.layout.at-computer .modal.wide { max-width: 520px; text-align: left; padding: 22px 22px 18px; }
+.layout.at-computer .modal.wide::before { margin-left: 0; content: '★'; font-size: 22px; background: linear-gradient(#5aa9ff, #0a72f5); }
+.layout.at-computer .modal.wide h2 { font-size: 17px; }
+.layout.at-computer .modal.wide .cards {
+  gap: 0;
+  margin: 14px 0;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 0 0 0.5px var(--hair);
+  overflow: hidden;
+}
+.layout.at-computer .modal.wide .card { padding: 9px 12px; background: none; border: 0; border-left: 1px solid var(--hair); border-radius: 0; margin-left: -1px; }
+.layout.at-computer .modal.wide .card span { font-size: 11.5px; color: #6e6e73; }
+.layout.at-computer .modal.wide .card b { font: 600 19px/1.25 ui-rounded, var(--ui); }
+.layout.at-computer .modal.wide h3 { margin: 0 0 4px; font: 600 13px/1.3 var(--ui); letter-spacing: 0; text-transform: none; color: #1d1d1f; }
+.layout.at-computer .modal.wide .log li { padding: 5px 0; border-bottom: 1px solid var(--hair); font-size: 12.5px; }
+.layout.at-computer .modal.wide .muted { color: #6e6e73; }
+.layout.at-computer .modal.wide .choices { flex-direction: row-reverse; }
+.layout.at-computer .modal.wide .choices button { width: auto; padding: 6px 16px; }
+.layout.at-computer .modal.wide .choices button:last-child { color: #fff; background: linear-gradient(#2b8fff, #0a72f5); }
+
+/* В квартире: плашка в её стиле. */
+.layout.room-mode:not(.at-computer) .overlay {
+  background: rgba(10, 7, 16, 0.5);
+  backdrop-filter: blur(3px);
+}
+.layout.room-mode:not(.at-computer) .modal {
+  max-width: 440px;
+  padding: 20px 20px 18px;
+  color: #f6efe3;
+  background: rgba(24, 20, 28, 0.82);
+  border: 0;
+  border-radius: 16px;
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 18px 50px rgba(0, 0, 0, 0.45);
+}
+.layout.room-mode:not(.at-computer) .modal.wide { max-width: 600px; }
+.layout.room-mode:not(.at-computer) .modal h2 { margin: 0 0 6px; font-size: 20px; }
+.layout.room-mode:not(.at-computer) .modal p { color: #d9cfc1; }
+.layout.room-mode:not(.at-computer) .modal .choices { gap: 6px; margin-top: 14px; }
+.layout.room-mode:not(.at-computer) .modal .choices button {
+  padding: 10px 14px;
+  text-align: left;
+  color: #f6efe3;
+  background: rgba(255, 255, 255, 0.07);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08);
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+.layout.room-mode:not(.at-computer) .modal .choices button:hover:not(:disabled) {
+  background: rgba(246, 195, 74, 0.16);
+  box-shadow: inset 0 0 0 1px #f6c34a;
+}
+.layout.room-mode:not(.at-computer) .modal .cards { gap: 8px; margin: 12px 0; }
+.layout.room-mode:not(.at-computer) .modal .card { background: rgba(255, 255, 255, 0.06); border: 0; border-radius: 10px; }
+.layout.room-mode:not(.at-computer) .modal .card span,
+.layout.room-mode:not(.at-computer) .modal .muted,
+.layout.room-mode:not(.at-computer) .modal h3 { color: #c4baad; }
+.layout.room-mode:not(.at-computer) .modal .card b { font: 600 20px/1.2 'SF Mono', Menlo, Consolas, monospace; color: #a6e28a; }
+.layout.room-mode:not(.at-computer) .modal .log li { border-bottom-color: rgba(255, 255, 255, 0.08); }
