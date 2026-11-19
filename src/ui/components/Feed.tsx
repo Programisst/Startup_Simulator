@@ -1,6 +1,7 @@
 // Лента: что заметного происходит с компанией. Мир откликается на решения игрока.
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { content } from '../../content';
 import type { NewsItem } from '../../core';
 import { gameDate, money, num } from '../format';
 import { useStore } from '../store';
@@ -22,6 +23,13 @@ export function useFeedText(): (item: NewsItem) => string {
       case 'monthProfit':
       case 'monthLoss':
         return t(`feed.items.${item.kind}`, { value: money(item.value ?? 0) });
+      case 'chapter': {
+        // Глава пройдена: называем её и следующую, если она есть.
+        const index = content.chapters.findIndex((c) => c.id === item.id);
+        const next = content.chapters[index + 1];
+        const name = t(`goalsLadder.chapters.${item.id}`);
+        return next ? t('feed.items.chapter', { name, next: t(`goalsLadder.chapters.${next.id}`) }) : t('feed.items.chapterLast', { name });
+      }
       case 'office':
         return t('feed.items.office', { name: t(`office.tiers.${item.id}`) });
       case 'invest':

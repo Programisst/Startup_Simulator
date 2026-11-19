@@ -91,6 +91,8 @@ export interface EventCondition {
   cashNegative?: boolean;
   /** Силы основателя не выше этого числа */
   maxEnergy?: number;
+  /** Событие с таким id уже случалось в партии (как бы игрок на него ни ответил) */
+  eventSeen?: string;
   /** Номер офиса не ниже этого: 0 — комната основателя, 1 — коворкинг и так далее */
   minOffice?: number;
   /** Сколько функций готово, считая основу */
@@ -164,6 +166,13 @@ export interface MilestoneDef {
   progress?: { metric: MilestoneMetric; target: number };
 }
 export type MilestoneMetric = 'users' | 'revenue30' | 'features' | 'team';
+
+/** Глава пути компании: несколько целей подряд. Главы идут по порядку и покрывают все цели. */
+export interface ChapterDef {
+  id: string;
+  /** id целей этой главы, в том же порядке, что в общем списке */
+  milestones: string[];
+}
 
 /** Офис: сколько человек вмещает и сколько стоит. Офисы идут по порядку, переезд — только в следующий. */
 export interface OfficeDef {
@@ -345,6 +354,7 @@ export interface GameContent {
   features: Record<ProductTypeId, FeatureDef[]>;
   events: EventDef[];
   milestones: MilestoneDef[];
+  chapters: ChapterDef[];
   themes: ThemeDef[];
 }
 
@@ -389,7 +399,7 @@ export interface Loan {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter';
   /** Число, о котором новость: пользователей, платящих, долларов */
   value?: number;
   /** Для готовой функции — её id */

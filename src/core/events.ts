@@ -46,6 +46,7 @@ export function conditionHolds(c: EventCondition, s: GameState, cfg?: { offices:
   if (c.minDebt !== undefined && s.debt < c.minDebt) return false;
   if (c.overloaded !== undefined && c.overloaded !== overload(s.users, s.capacity) > 0) return false;
   if (c.cashNegative !== undefined && c.cashNegative !== s.cash < 0) return false;
+  if (c.eventSeen !== undefined && !s.eventLog.some((e) => e.eventId === c.eventSeen)) return false;
   if (c.maxEnergy !== undefined && energyOf(s) > c.maxEnergy) return false;
   if (c.minFeatures !== undefined && s.doneFeatures.length < c.minFeatures) return false;
   if (c.minRevenue30 !== undefined && revenue30(s) < c.minRevenue30) return false;
