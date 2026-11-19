@@ -91,3 +91,30 @@ export function analyzeIdea(text: string, lexicon: IdeaLexicon, content: GameCon
 export function cleanIdea(text: string): string {
   return text.replace(/\s+/g, ' ').trim().slice(0, IDEA_MAX_LENGTH);
 }
+
+/** Проверенный ответ о том, что это за продукт. */
+export interface IdeaVerdict {
+  productType: ProductTypeId;
+  audienceId: string;
+  businessModel: BusinessModel;
+}
+
+/**
+ * Проверяет ответ внешнего источника (нейросети) о типе продукта.
+ * Чужому ответу игра не доверяет: неизвестный тип — ответ отброшен целиком (null);
+ * аудитория или способ заработка не из списка — заменяются разбором по словам.
+ */
+export function checkIdeaAnswer(raw: unknown, text: string, lexicon: IdeaLexicon, content: GameContent): IdeaVerdict | null {
+  if (typeof raw !== 'object' || raw === null) return null;
+  const r = raw as Record<string, unknown>;
+  const types = Object.keys(content.productTypes) as ProductTypeId[];
+  const productType = types.find((t) => t === r.productType);
+  if (!productType) return null;
+  const audiences = content.productTypes[productType].audiences.map((a) => a.id);
+  const models = Object.keys(lexicon.models) as BusinessModel[];
+  return {
+    productType,
+    audienceId: audiences.find((a) => a === r.audienceId) ?? audienceForIdea(text, productType, lexicon, content),
+    businessModel: models.find((m) => m === r.businessModel) ?? modelForIdea(text, productType, lexicon),
+  };
+}

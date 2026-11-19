@@ -1,7 +1,8 @@
 // Создание компании: игрок записывает идею своими словами в «блокнот основателя»,
 // игра по словам определяет тип продукта, аудиторию и способ заработка. Нет идеи — есть готовые подсказки.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { aiAnalyzeIdea, aiAvailable, aiSuggestIdeas } from '../../ai/client';
 import { content } from '../../content';
 import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
 import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
@@ -27,10 +28,20 @@ function pick<T>(list: T[]): T {
   return list[Math.floor(Math.random() * list.length)]!;
 }
 
-/** Несколько случайных идей по теме, по возможности не те, что показаны сейчас. */
-function drawIdeas(theme: IdeaThemeId | null, shown: IdeaSeed[]): IdeaSeed[] {
+/** Идея-подсказка на стикере: из готового списка или от нейросети. */
+interface Offer {
+  key: string;
+  label: string;
+  text: string;
+  productType: ProductTypeId;
+  audienceId: string;
+  businessModel: BusinessModel;
+}
+
+/** Несколько случайных готовых идей по теме, по возможности не те, что показаны сейчас. */
+function drawIdeas(theme: IdeaThemeId | null, shownKeys: string[]): IdeaSeed[] {
   const pool = ideaSeeds.filter((s) => theme === null || s.theme === theme);
-  const fresh = pool.filter((s) => !shown.includes(s));
+  const fresh = pool.filter((s) => !shownKeys.includes(s.id));
   const from = (fresh.length >= IDEAS_SHOWN ? fresh : pool).slice();
   const out: IdeaSeed[] = [];
   while (out.length < IDEAS_SHOWN && from.length > 0) out.push(from.splice(Math.floor(Math.random() * from.length), 1)[0]!);
@@ -38,17 +49,37 @@ function drawIdeas(theme: IdeaThemeId | null, shown: IdeaSeed[]): IdeaSeed[] {
 }
 
 export function NewGame() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language === 'en' ? 'en' : 'ru';
   const start = useStore((s) => s.start);
   const load = useStore((s) => s.load);
 
   const [idea, setIdea] = useState('');
   const [manual, setManual] = useState<Manual>({});
   const [theme, setTheme] = useState<IdeaThemeId | null>(null);
-  const [offers, setOffers] = useState<IdeaSeed[]>([]);
+  const [offers, setOffers] = useState<Offer[]>([]);
+  const [offersOpen, setOffersOpen] = useState(false);
+  // Нейросеть есть только рядом с AI-посредником; без неё экран работает на словаре и готовых идеях.
+  const [ai, setAi] = useState(false);
+  const [busy, setBusy] = useState<'ideas' | 'review' | null>(null);
+  const [fromAi, setFromAi] = useState(false);
+  const [review, setReview] = useState<{ strengths: string; risks: string } | null>(null);
+  const [aiFailed, setAiFailed] = useState(false);
+  const alive = useRef(true);
+  const ideaRef = useRef('');
   const [name, setName] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyId>('normal');
   const [goal, setGoal] = useState<GoalId>('profit');
+
+  useEffect(() => {
+    alive.current = true;
+    void aiAvailable().then((ok) => {
+      if (alive.current) setAi(ok);
+    });
+    return () => {
+      alive.current = false;
+    };
+  }, []);
 
   const analysis = useMemo(() => analyzeIdea(idea, ideaLexicon, content), [idea]);
   const diff = content.difficulties[difficulty];
@@ -66,20 +97,65 @@ export function NewGame() {
   const hasText = idea.trim().length > 0;
   const reading = productType ? 'readingHint' : hasText ? 'readingUnknown' : 'readingEmpty';
 
-  function writeIdea(text: string) {
+  function setText(text: string) {
+    ideaRef.current = text;
     setIdea(text);
+    setReview(null);
+    setAiFailed(false);
+  }
+
+  function writeIdea(text: string) {
+    setText(text);
     // Игрок переписал идею — разбираем заново, прежние ручные поправки не держим.
     setManual({});
   }
 
-  function takeIdea(seed: IdeaSeed) {
-    setIdea(t(`new.ideas.${seed.id}`));
-    setManual({ productType: seed.productType, audienceId: seed.audienceId, businessModel: seed.businessModel });
+  function takeIdea(offer: Offer) {
+    setText(offer.text);
+    setManual({ productType: offer.productType, audienceId: offer.audienceId, businessModel: offer.businessModel });
   }
 
-  function suggest(nextTheme: IdeaThemeId | null = theme) {
+  function showReadyIdeas(nextTheme: IdeaThemeId | null) {
+    setFromAi(false);
+    setOffers((shown) =>
+      drawIdeas(
+        nextTheme,
+        shown.map((o) => o.key),
+      ).map((seed) => ({ ...seed, key: seed.id, label: t(`new.themes.${seed.theme}`), text: t(`new.ideas.${seed.id}`) })),
+    );
+  }
+
+  async function suggest(nextTheme: IdeaThemeId | null = theme) {
     setTheme(nextTheme);
-    setOffers((shown) => drawIdeas(nextTheme, shown));
+    setOffersOpen(true);
+    setAiFailed(false);
+    if (!ai) return showReadyIdeas(nextTheme);
+    setBusy('ideas');
+    const label = nextTheme ? t(`new.themes.${nextTheme}`) : null;
+    const fresh = await aiSuggestIdeas(label, lang);
+    if (!alive.current) return;
+    setBusy(null);
+    if (!fresh) {
+      // Нейросеть не ответила — молча берём готовые идеи.
+      setAiFailed(true);
+      return showReadyIdeas(nextTheme);
+    }
+    setFromAi(true);
+    setOffers(fresh.slice(0, IDEAS_SHOWN).map((o, i) => ({ ...o, key: `ai-${Date.now()}-${i}`, label: label ?? t(`productTypes.${o.productType}.name`) })));
+  }
+
+  async function askReview() {
+    const asked = idea;
+    setBusy('review');
+    setAiFailed(false);
+    const result = await aiAnalyzeIdea(asked, lang);
+    if (!alive.current) return;
+    setBusy(null);
+    // Пока нейросеть думала, игрок мог переписать идею — тогда ответ уже не про неё.
+    if (ideaRef.current !== asked) return;
+    if (!result) return setAiFailed(true);
+    setManual({ productType: result.productType, audienceId: result.audienceId, businessModel: result.businessModel });
+    setReview({ strengths: result.strengths, risks: result.risks });
   }
 
   function begin() {
@@ -119,36 +195,38 @@ export function NewGame() {
             onChange={(e) => writeIdea(e.target.value)}
           />
           <div className="ng-idea-foot">
-            <button className="ng-link" onClick={() => (offers.length > 0 ? setOffers([]) : suggest())}>
-              {offers.length > 0 ? t('new.hideIdeas') : t('new.noIdea')}
+            <button className="ng-link" disabled={busy !== null} onClick={() => (offersOpen ? setOffersOpen(false) : void suggest())}>
+              {offersOpen ? t('new.hideIdeas') : t('new.noIdea')}
             </button>
             <span className="ng-count">
               {idea.length} / {IDEA_MAX_LENGTH}
             </span>
           </div>
 
-          {offers.length > 0 && (
+          {offersOpen && (
             <div className="ng-offers">
               <div className="ng-themes">
-                <button className={theme === null ? 'ng-tag on' : 'ng-tag'} onClick={() => suggest(null)}>
+                <button className={theme === null ? 'ng-tag on' : 'ng-tag'} disabled={busy !== null} onClick={() => void suggest(null)}>
                   {t('new.allThemes')}
                 </button>
                 {ideaThemes.map((id) => (
-                  <button key={id} className={theme === id ? 'ng-tag on' : 'ng-tag'} onClick={() => suggest(id)}>
+                  <button key={id} className={theme === id ? 'ng-tag on' : 'ng-tag'} disabled={busy !== null} onClick={() => void suggest(id)}>
                     {t(`new.themes.${id}`)}
                   </button>
                 ))}
               </div>
-              <p className="ng-note">{t('new.ideasTitle')}</p>
-              <div className="ng-stickers">
-                {offers.map((seed) => (
-                  <button key={seed.id} className="ng-sticker" onClick={() => takeIdea(seed)}>
-                    <small>{t(`new.themes.${seed.theme}`)}</small>
-                    {t(`new.ideas.${seed.id}`)}
+              <p className="ng-note" aria-live="polite">
+                {busy === 'ideas' ? t('new.aiThinking') : aiFailed && !fromAi ? t('new.aiIdeasFailed') : fromAi ? t('new.aiIdeasTitle') : t('new.ideasTitle')}
+              </p>
+              <div className={busy === 'ideas' ? 'ng-stickers waiting' : 'ng-stickers'}>
+                {offers.map((offer) => (
+                  <button key={offer.key} className="ng-sticker" disabled={busy !== null} onClick={() => takeIdea(offer)}>
+                    <small>{offer.label}</small>
+                    {offer.text}
                   </button>
                 ))}
               </div>
-              <button className="ng-link" onClick={() => suggest()}>
+              <button className="ng-link" disabled={busy !== null} onClick={() => void suggest()}>
                 {t('new.moreIdeas')}
               </button>
             </div>
@@ -215,6 +293,25 @@ export function NewGame() {
               </dd>
             </div>
           </dl>
+          {ai && hasText && (
+            <div className="ng-review" aria-live="polite">
+              {review ? (
+                <div className="ng-review-note">
+                  <p>
+                    <b>{t('new.aiStrengths')}</b> {review.strengths}
+                  </p>
+                  <p>
+                    <b>{t('new.aiRisks')}</b> {review.risks}
+                  </p>
+                </div>
+              ) : (
+                <button className="ng-link" disabled={busy !== null} onClick={() => void askReview()}>
+                  {busy === 'review' ? t('new.aiThinking') : t('new.aiReview')}
+                </button>
+              )}
+              {aiFailed && !offersOpen && <span className="ng-note">{t('new.aiReviewFailed')}</span>}
+            </div>
+          )}
         </section>
 
         <section className="ng-name">

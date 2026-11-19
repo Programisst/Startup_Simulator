@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { analyzeIdea, audienceForIdea, cleanIdea, createGame, IDEA_MAX_LENGTH, modelForIdea, type ProductTypeId } from '../src/core';
+import { analyzeIdea, audienceForIdea, checkIdeaAnswer, cleanIdea, createGame, IDEA_MAX_LENGTH, modelForIdea, type ProductTypeId } from '../src/core';
 import { content } from '../src/content';
 import { ideaLexicon, ideaSeeds, ideaThemes, nameParts } from '../src/content/ideas';
 import ru from '../src/content/ru/ui.json';
@@ -113,5 +113,35 @@ describe('идея в партии', () => {
     const b = createGame({ ...baseSetup, idea: 'Гениальная нейросеть для всех' }, content);
     expect(b.market).toEqual(a.market);
     expect(b.cash).toBe(a.cash);
+  });
+});
+
+describe('проверка ответа нейросети', () => {
+  const check = (raw: unknown, text = '') => checkIdeaAnswer(raw, text, ideaLexicon, content);
+
+  it('правильный ответ проходит как есть', () => {
+    const answer = { productType: 'mobile', audienceId: 'parents', businessModel: 'oneTime' };
+    expect(check(answer)).toEqual(answer);
+  });
+
+  it('мусор и неизвестный тип продукта отбрасываются целиком', () => {
+    expect(check(null)).toBeNull();
+    expect(check('mobile')).toBeNull();
+    expect(check({})).toBeNull();
+    expect(check({ productType: 'unicorn', audienceId: 'parents', businessModel: 'ads' })).toBeNull();
+  });
+
+  it('аудитория не из списка этого типа заменяется разбором по словам', () => {
+    const fixed = check({ productType: 'saas', audienceId: 'parents', businessModel: 'subscription' }, 'сервис для фрилансеров');
+    expect(fixed).toEqual({ productType: 'saas', audienceId: 'freelancers', businessModel: 'subscription' });
+  });
+
+  it('неизвестный способ заработка заменяется обычным для типа', () => {
+    expect(check({ productType: 'marketplace', audienceId: 'everyone', businessModel: 'magic' })!.businessModel).toBe('commission');
+  });
+
+  it('лишние поля не попадают в ответ: нейросеть не может подсунуть числа', () => {
+    const out = check({ productType: 'ai', audienceId: 'students', businessModel: 'ads', startCash: 1e9, marketSize: 1e12 });
+    expect(Object.keys(out!).sort()).toEqual(['audienceId', 'businessModel', 'productType']);
   });
 });
