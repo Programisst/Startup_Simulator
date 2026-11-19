@@ -1,6 +1,7 @@
 // Мир квартиры: герой, предметы, свет, камера. Рисуем сцену в маленьком холсте 384×240,
 // затем увеличиваем в целое число раз (пиксели чёткие), а свет кладём поверх плавными пятнами.
 import { advanceClock } from '../link';
+import { MonitorTyping, textAmount } from './monitor';
 import { findPath } from './nav';
 import { COFFEE_LED, FLOOR_LAMP_SHADE, MONITOR_SCREEN, hash, make, type Art, type Spr } from './art';
 import { City } from './city';
@@ -49,6 +50,21 @@ const NAV_UNIT = 40;
 const SPEED = 56;
 
 const LAMP_COLOR: RGB = [255, 194, 116];
+/** Цвета кода — как в редакторе компьютера (laptop.css, .tk-*). */
+const TOKEN_COLORS: Record<string, string> = {
+  keyword: '#569cd6',
+  tag: '#569cd6',
+  control: '#c586c0',
+  type: '#4ec9b0',
+  function: '#dcdcaa',
+  string: '#ce9178',
+  number: '#b5cea8',
+  comment: '#6a9955',
+  property: '#9cdcfe',
+  variable: '#9cdcfe',
+  constant: '#4fc1ff',
+  punct: '#b4b4b4',
+};
 const MONITOR_COLOR: RGB = [120, 160, 255];
 
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
@@ -62,6 +78,10 @@ export class World {
   clockPaused = false;
   /** День ведёт игра: после сна квартира сама не прибавляет день. */
   externalDay = false;
+  /** Код на мониторе: печатается, пока герой сидит за компьютером. */
+  readonly monitor = new MonitorTyping();
+  /** Показывать на мониторе настоящий текст и издалека (?monitor=text), а не только вблизи. */
+  monitorText = false;
   readonly hero = { x: HERO_START.x, y: HERO_START.y, dir: 3 as Dir, moving: false, anim: 0, mode: 'free' as Mode };
   onArrive: ((spot: Spot) => void) | null = null;
   onCoffeeReady: (() => void) | null = null;
@@ -287,6 +307,7 @@ export class World {
 
   update(dt: number, input: { x: number; y: number }): void {
     this.time += dt;
+    if (this.hero.mode === 'sit') this.monitor.advance(dt);
     this.minutes = advanceClock(this.minutes, dt, { rate: this.clockRate, paused: this.clockPaused, sleeping: this.hero.mode === 'sleep' });
     const h = this.hero;
     let moving = false;
@@ -468,6 +489,7 @@ export class World {
     c.fillRect(0, 0, this.canvas.width, this.canvas.height);
     c.drawImage(this.base, o.x, o.y, MAP_W * this.scale, MAP_H * this.scale);
     this.drawLight(day, o);
+    if (this.hero.mode === 'sit') this.drawScreenText(o);
   }
 
   private drawProp(p: Prop): void {
@@ -499,25 +521,30 @@ export class World {
     const b = this.bctx;
     const { w, h } = MONITOR_SCREEN;
     if (this.hero.mode === 'sit') {
-      b.fillStyle = '#1c2230';
+      // Тот же код, что печатается в компьютере: одна буква — один пиксель, строка через строку.
+      b.fillStyle = '#1f1f1f';
       b.fillRect(x, y, w, h);
-      b.fillStyle = '#2a3244';
-      b.fillRect(x, y, 4, h);
-      const scroll = Math.floor(this.time * 3);
-      const cols = ['#7fd1b9', '#f2c46d', '#a6b3ff', '#e88b8b', '#d7dbe6'];
-      for (let row = 0; row < 5; row++) {
-        const n = scroll + row;
-        const indent = Math.floor(hash(n, 1) * 3) * 2;
-        const len = 3 + Math.floor(hash(n, 2) * 9);
-        const last = row === 4;
-        const shown = last ? Math.min(len, Math.floor((this.time * 9) % (len + 4))) : len;
-        b.fillStyle = cols[Math.floor(hash(n, 3) * cols.length)]!;
-        b.fillRect(x + 5 + indent, y + 1 + row * 2, Math.min(shown, w - 6 - indent), 1);
-        if (!last && hash(n, 4) > 0.5) {
-          b.fillStyle = cols[Math.floor(hash(n, 5) * cols.length)]!;
-          b.fillRect(x + 6 + indent + len, y + 1 + row * 2, Math.min(4, Math.max(0, w - 7 - indent - len)), 1);
+      b.fillStyle = '#2b2b2b';
+      b.fillRect(x, y, 3, h);
+      const cols = w - 4;
+      const rows = this.monitor.rows(cols, Math.floor(h / 2), 0);
+      rows.forEach((row, r) => {
+        let col = row.indent;
+        for (const t of row.tokens) {
+          if (t.kind !== 'space' && t.text.trim()) {
+            // Пробелы внутри куска не закрашиваем: видно отдельные слова.
+            for (const word of t.text.matchAll(/\S+/g)) {
+              b.fillStyle = TOKEN_COLORS[t.kind] ?? '#cccccc';
+              b.fillRect(x + 4 + col + word.index, y + 1 + r * 2, word[0].length, 1);
+            }
+          }
+          col += t.text.length;
         }
-      }
+        if (row.caret !== null && Math.floor(this.time * 2) % 2 === 0) {
+          b.fillStyle = '#aeafad';
+          b.fillRect(x + 4 + Math.min(row.indent + row.caret, cols - 1), y + 1 + r * 2, 1, 1);
+        }
+      });
     } else {
       // заставка: ночное небо Pulse и кольцо-логотип
       for (let j = 0; j < h; j++) {
@@ -539,6 +566,81 @@ export class World {
       b.fillRect(cx - 2, cy, 1, 2);
       b.fillRect(cx + 1, cy, 1, 2);
     }
+  }
+
+  /**
+   * Вблизи на мониторе — настоящий текст, как в редакторе: вкладка с файлом, номера строк, перенос длинных строк.
+   * Рисуется поверх увеличенной сцены в точных пикселях экрана и плавно проступает при приближении.
+   */
+  private drawScreenText(o: { x: number; y: number }): void {
+    const amount = textAmount(this.scale, this.baseScale, this.monitorText);
+    if (amount <= 0) return;
+    const monitor = PROPS.find((p) => p.key === 'monitor')!;
+    const s = this.scale;
+    const X = (monitor.x + MONITOR_SCREEN.x) * s + o.x;
+    const Y = (monitor.y + MONITOR_SCREEN.y) * s + o.y;
+    const W = MONITOR_SCREEN.w * s;
+    const H = MONITOR_SCREEN.h * s;
+    const c = this.ctx;
+    c.save();
+    c.globalAlpha = amount;
+    c.beginPath();
+    c.rect(X, Y, W, H);
+    c.clip();
+    c.fillStyle = '#1f1f1f';
+    c.fillRect(X, Y, W, H);
+
+    // Размер букв — от высоты экрана: восемь строк кода.
+    const tab = H * 0.13;
+    const status = H * 0.08;
+    const font = (H - tab - status) / (8.6 * 1.3);
+    c.font = `${font}px Menlo, ui-monospace, Consolas, monospace`;
+    c.textBaseline = 'middle';
+    const charW = c.measureText('M').width;
+    const line = font * 1.3;
+
+    // Вкладка с именем файла.
+    c.fillStyle = '#181818';
+    c.fillRect(X, Y, W, tab);
+    const name = this.monitor.fileName;
+    c.font = `${font * 0.9}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`;
+    const nameW = c.measureText(name).width;
+    c.fillStyle = '#1f1f1f';
+    c.fillRect(X + font * 0.4, Y, nameW + font * 1.6, tab);
+    c.fillStyle = '#3c8ce6';
+    c.fillRect(X + font * 0.4, Y, nameW + font * 1.6, Math.max(1, s * 0.12));
+    c.fillStyle = '#e8e8e8';
+    c.fillText(name, X + font * 1.2, Y + tab / 2);
+
+    // Строка состояния снизу.
+    c.fillStyle = '#007acc';
+    c.fillRect(X, Y + H - status, W, status);
+
+    // Код.
+    c.font = `${font}px Menlo, ui-monospace, Consolas, monospace`;
+    const gutter = charW * 3.4;
+    const top = Y + tab + line * 0.6;
+    const cols = Math.max(8, Math.floor((W - gutter - charW) / charW));
+    const rows = this.monitor.rows(cols, Math.floor((H - tab - status - line * 0.2) / line));
+    rows.forEach((row, r) => {
+      const ry = top + r * line;
+      if (row.number !== null) {
+        c.fillStyle = row.caret !== null ? '#cccccc' : '#6e7681';
+        const num = String(row.number);
+        c.fillText(num, X + gutter - charW * (num.length + 0.9), ry);
+      }
+      let cx = X + gutter + row.indent * charW;
+      for (const t of row.tokens) {
+        c.fillStyle = TOKEN_COLORS[t.kind] ?? '#cccccc';
+        c.fillText(t.text, cx, ry);
+        cx += t.text.length * charW;
+      }
+      if (row.caret !== null && Math.floor(this.time * 2) % 2 === 0) {
+        c.fillStyle = '#aeafad';
+        c.fillRect(X + gutter + (row.indent + row.caret) * charW, ry - font * 0.55, Math.max(1, s * 0.12), font * 1.1);
+      }
+    });
+    c.restore();
   }
 
   private drawHero(): void {
