@@ -38,7 +38,7 @@ export function canDraw(): boolean {
 }
 
 /** Квартира сломалась на ходу — сообщаем игре, чтобы она вернула обычное меню. */
-class RoomGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
+export class RoomGuard extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
   static getDerivedStateFromError() {
     return { failed: true };

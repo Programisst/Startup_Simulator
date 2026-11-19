@@ -97,9 +97,13 @@ interface Props {
   onDockApp?: (item: DockItem) => void;
   /** Строка о том, что даёт набор кода, — показывается, пока открыт редактор */
   focusText?: string;
+  /** Название программы в верхней строке, если поверх открыта не «Компания» (например, мессенджер в начале игры). */
+  appTitle?: string;
+  /** Можно ли отойти от экрана по Esc (в начале игры — нельзя, пока не договорили с другом). */
+  canLeave?: boolean;
 }
 
-export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText }: Props) {
+export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText, appTitle, canLeave = true }: Props) {
   const typedRef = useRef(onTyped);
   typedRef.current = onTyped;
   const { t } = useTranslation();
@@ -242,7 +246,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
 
               <div className="os-menubar" style={{ height: MENU_H }}>
                 <span className="os-logo" />
-                <b>{hasCompany && companyFront ? t('laptop.company.title') : s.app === 'browser' ? t('laptop.os.browser') : t('laptop.os.editor')}</b>
+                <b>{hasCompany && companyFront ? (appTitle ?? t('laptop.company.title')) : s.app === 'browser' ? t('laptop.os.browser') : t('laptop.os.editor')}</b>
                 {menu.map((m, i) => (
                   <button
                     type="button"
@@ -348,7 +352,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
           <i />
         </div>
       </div>
-      <div className="lp-hint">
+      <div className="lp-hint" hidden={!canLeave}>
         <kbd>Esc</kbd> {t('laptop.autopilot.leave')}
       </div>
     </div>

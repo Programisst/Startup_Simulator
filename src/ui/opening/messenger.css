@@ -1,0 +1,289 @@
+/* Мессенджер в стиле «дневной город»: светлое небо, тёмно-синие рамки со ступенькой, жёлтый акцент. */
+
+.ms-app {
+  --ink: #26324a;
+  --ink-soft: #5c6a85;
+  --sky: #eef3f7;
+  --paper: #fffaf2;
+  --sun: #f6c34a;
+  --brick: #c4553b;
+  display: grid;
+  grid-template-columns: 270px 1fr;
+  height: 100%;
+  background: var(--sky);
+  color: var(--ink);
+  font: 15px/1.45 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  user-select: none;
+}
+
+/* Список чатов слева */
+.ms-chats {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px 12px;
+  background: #e3ebf2;
+  border-right: 3px solid var(--ink);
+}
+.ms-chats-title {
+  padding: 0 8px 10px;
+  font: 800 15px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.ms-chat {
+  display: grid;
+  grid-template-columns: 38px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 9px 10px;
+  border-radius: 4px;
+  opacity: 0.55;
+}
+.ms-chat.active {
+  opacity: 1;
+  background: var(--paper);
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 4px 0 var(--ink);
+}
+.ms-chat div {
+  min-width: 0;
+}
+.ms-chat b {
+  display: block;
+  font-size: 14px;
+}
+.ms-chat div span {
+  display: block;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.ms-avatar {
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px var(--ink);
+  image-rendering: pixelated;
+}
+.ms-avatar-plain {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  background: #cfdbe6;
+  font: 800 16px/1 'SF Mono', ui-monospace, Menlo, monospace;
+}
+
+/* Переписка */
+.ms-talk {
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  min-height: 0;
+}
+.ms-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: var(--paper);
+  border-bottom: 3px solid var(--ink);
+}
+.ms-head b {
+  display: block;
+  font-size: 16px;
+}
+.ms-head span {
+  font: 600 12px/1 'SF Mono', ui-monospace, Menlo, monospace;
+  color: #2f8f52;
+}
+.ms-head span.typing {
+  color: var(--ink-soft);
+}
+
+.ms-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  padding: 20px 22px 12px;
+  overflow-y: auto;
+  /* Небо в клетку, как пиксельный фон заставки. */
+  background:
+    linear-gradient(90deg, rgba(38, 50, 74, 0.035) 1px, transparent 1px) 0 0 / 16px 16px,
+    linear-gradient(rgba(38, 50, 74, 0.035) 1px, transparent 1px) 0 0 / 16px 16px,
+    var(--sky);
+}
+.ms-msg {
+  max-width: 72%;
+  margin-top: 8px;
+  animation: msPop 0.32s cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.ms-msg.cont {
+  margin-top: 0;
+}
+.ms-msg p {
+  margin: 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  white-space: pre-wrap;
+}
+.ms-msg.friend {
+  align-self: flex-start;
+  transform-origin: 0 100%;
+}
+.ms-msg.friend p {
+  background: var(--paper);
+  border-bottom-left-radius: 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 3px 0 var(--ink);
+}
+.ms-msg.me {
+  align-self: flex-end;
+  transform-origin: 100% 100%;
+}
+.ms-msg.me p {
+  background: var(--ink);
+  color: var(--paper);
+  border-bottom-right-radius: 4px;
+  box-shadow: 0 3px 0 #141b2b;
+}
+
+/* «Печатает…»: три квадратика прыгают по очереди. */
+.ms-dots {
+  display: flex;
+  gap: 5px;
+  padding: 14px 16px;
+  background: var(--paper);
+  border-radius: 14px 14px 14px 4px;
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 3px 0 var(--ink);
+}
+.ms-dots i {
+  width: 7px;
+  height: 7px;
+  background: var(--ink);
+  animation: msDot 1s infinite ease-in-out;
+}
+.ms-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.ms-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Кнопки-ответы */
+.ms-quick {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+  padding: 0 22px;
+  max-height: 0;
+  overflow: hidden;
+  transition:
+    max-height 0.35s ease,
+    padding 0.35s ease;
+}
+.ms-quick.shown {
+  max-height: 200px;
+  padding: 6px 22px 14px;
+}
+.ms-chip {
+  padding: 10px 16px 9px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--sun);
+  color: var(--ink);
+  font: 700 13.5px/1 'SF Mono', ui-monospace, Menlo, monospace;
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 4px 0 var(--ink);
+  animation: msPop 0.3s cubic-bezier(0.2, 0.9, 0.25, 1.2) both;
+  transition: transform 0.1s ease;
+}
+.ms-chip:hover {
+  transform: translateY(-2px);
+}
+.ms-chip:active {
+  transform: translateY(3px);
+}
+.ms-chip:focus-visible {
+  outline: 3px solid var(--brick);
+  outline-offset: 3px;
+}
+
+/* Поле ввода */
+.ms-input {
+  display: flex;
+  gap: 10px;
+  padding: 12px 18px 16px;
+  background: var(--paper);
+  border-top: 3px solid var(--ink);
+}
+.ms-input input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--sky);
+  color: var(--ink);
+  font: inherit;
+  box-shadow: inset 0 0 0 2px var(--ink);
+  outline: none;
+}
+.ms-input input:focus {
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 0 0 3px rgba(246, 195, 74, 0.6);
+}
+.ms-input.off input {
+  opacity: 0.55;
+}
+.ms-input button {
+  display: grid;
+  place-items: center;
+  width: 46px;
+  border: 0;
+  border-radius: 4px;
+  background: var(--sun);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow:
+    inset 0 0 0 2px var(--ink),
+    0 4px 0 var(--ink);
+}
+.ms-input button:disabled {
+  background: #dfe6ee;
+  cursor: default;
+}
+
+@keyframes msPop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+}
+@keyframes msDot {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-5px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ms-msg,
+  .ms-chip,
+  .ms-dots i {
+    animation: none;
+  }
+}

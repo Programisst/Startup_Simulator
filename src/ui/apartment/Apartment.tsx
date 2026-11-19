@@ -1,6 +1,6 @@
 // Квартира основателя: пиксель-арт, вид сверху. Ходьба клавишами и мышью, компьютер, кофе, сон, лампы, окно, время суток.
 // В игре (есть link) показывает настоящие дату и деньги, сон проматывает игровой день, а герой сам садится работать.
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { money } from '../format';
 import { loadArt } from './engine/art';
@@ -26,17 +26,32 @@ const MOVE: Record<string, [number, number]> = {
 
 const isLamp = (id: string): id is LampId => id.startsWith('lamp');
 const DESK = SPOTS.find((s) => s.id === 'computer')!;
+const BED = SPOTS.find((s) => s.id === 'bed')!;
+
+/** Начало игры: вечер перед первым днём. Герой за компьютером, на экране — переписка с другом. */
+export interface OpeningLink {
+  /** Программа, открытая на экране компьютера (мессенджер) */
+  app: ReactNode;
+  /** Её название в верхней строке экрана */
+  title: string;
+  /** Переписка закончена: герой встаёт и идёт спать */
+  finished: boolean;
+  /** Герой уснул — пора начинать партию */
+  onSlept: () => void;
+}
 
 function clock(minutes: number): string {
   const m = Math.floor(minutes) % 1440;
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
-export function Apartment({ link }: { link?: RoomLink } = {}) {
+export function Apartment({ link, opening }: { link?: RoomLink; opening?: OpeningLink } = {}) {
   const { t } = useTranslation();
   // Связь с партией читается из ref: главный цикл создаётся один раз и не перезапускается каждый игровой день.
   const linkRef = useRef(link);
   linkRef.current = link;
+  const openingRef = useRef(opening);
+  openingRef.current = opening;
   const linked = link !== undefined;
   /** Герой сел за компьютер сам, без игрока: экран компьютера не открывается. */
   const autoSeated = useRef(false);
@@ -119,6 +134,16 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         };
         onResize = () => world.resize();
         window.addEventListener('resize', onResize);
+        if (openingRef.current) {
+          // Начало игры: герой уже сидит за компьютером, через миг экран приближается — там пишет друг.
+          world.stand();
+          world.sit();
+          busy.current = true;
+          window.setTimeout(() => {
+            setOrigin(world.monitorOnScreen());
+            setComputer('open');
+          }, 1500);
+        }
 
         let last = performance.now();
         let hudTimer = 0;
@@ -136,7 +161,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
             }
           }
           const game = linkRef.current;
-          if (game?.locked) {
+          if (game?.locked || openingRef.current) {
             ix = 0;
             iy = 0;
           }
@@ -239,6 +264,12 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         window.setTimeout(() => setFade('out'), 1100);
         window.setTimeout(() => {
           // В игре сон — это переход на следующий игровой день.
+          // Начало игры: герой уснул — партия начинается утром.
+          const start = openingRef.current;
+          if (start) {
+            start.onSlept();
+            return;
+          }
           linkRef.current?.sleep();
           world.wakeUp();
           setHud({ minutes: world.minutes, day: world.day });
@@ -284,7 +315,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
   }, [heroThought, say]);
 
   // Мышь: клик по полу — идти туда, по предмету — подойти и использовать.
-  const canClick = computer === 'closed' && !fade && !link?.locked;
+  const canClick = computer === 'closed' && !fade && !link?.locked && !opening;
   const onPointerMove = useCallback(
     (e: React.PointerEvent) => {
       const world = worldRef.current;
@@ -327,7 +358,8 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      if (linkRef.current?.locked) return;
+      // В начале игры управляет сцена: клавиши идут только в мессенджер.
+      if (linkRef.current?.locked || openingRef.current) return;
       // За компьютером клавиши принадлежат его программам; квартира слушает только Esc.
       if (computer !== 'closed') {
         if (e.code === 'Escape' && computer === 'open') setComputer('closing');
@@ -363,10 +395,26 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
     };
   }, [computer, interact, touched]);
 
+  // Переписка закончена — экран отъезжает.
+  const openingDone = opening?.finished ?? false;
+  useEffect(() => {
+    if (openingDone) setComputer((c) => (c === 'open' ? 'closing' : c));
+  }, [openingDone]);
+
   // Экран закрыт (Esc): камера снова показывает комнату, а герой остаётся за столом и печатает.
   // Встаёт он, когда игрок пошёл (клавиши или клик по комнате); E снова открывает экран.
   const onComputerClosed = useCallback(() => {
     setComputer('closed');
+    const world = worldRef.current;
+    if (openingRef.current && world) {
+      // Переписка закончена: герой встаёт и идёт спать.
+      seat(false);
+      world.stand();
+      busy.current = false;
+      autoWalking.current = false;
+      world.walkTo(BED.at, BED);
+      return;
+    }
     seatedBy.current = 'player';
     seat(true);
     busy.current = false;
@@ -394,7 +442,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
       />
       <div className="lm-vignette" />
 
-      {link ? (
+      {opening ? null : link ? (
         <div className="lm-hud-row">
           <div className="lm-card">
             <span className={`lm-sun${night ? ' moon' : ''}`} />
@@ -451,7 +499,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
           {t('room.prompt.standUp')}
         </div>
       )}
-      {near && promptText && computer === 'closed' && !fade && !bubble && (
+      {near && promptText && computer === 'closed' && !fade && !bubble && !opening && (
         <div ref={promptRef} key={near.id} className="lm-prompt">
           <kbd>E</kbd>
           {promptText}
@@ -461,7 +509,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         <span key={bubble?.id}>{bubble?.text}</span>
       </div>
 
-      <div className={`lm-keys${hintGone ? ' gone' : ''}`}>
+      <div className={`lm-keys${hintGone || opening ? ' gone' : ''}`}>
         <kbd>W</kbd>
         <kbd>A</kbd>
         <kbd>S</kbd>
@@ -479,7 +527,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
       {fade && (
         <div className={`lm-fade ${fade}`}>
           <div className="lm-fade-title">{t('room.sleep.title')}</div>
-          <div className="lm-fade-sub">{link ? t('room.sleep.restDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
+          <div className="lm-fade-sub">{link ? t('room.sleep.restDay') : opening ? t('opening.morning') : t('room.sleep.subtitle', { day: wakeDay })}</div>
         </div>
       )}
 
@@ -492,7 +540,9 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
           origin={origin}
           closing={computer === 'closing'}
           onClosed={onComputerClosed}
-          company={link?.companyApp}
+          company={opening?.app ?? link?.companyApp}
+          appTitle={opening?.title}
+          canLeave={!opening}
           onTyped={link?.onTyped}
           onDockApp={link?.onDockApp}
           focusText={link?.focusText}
