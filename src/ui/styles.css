@@ -232,46 +232,9 @@ td:not(:first-child), th:not(:first-child) { text-align: right; }
 .person .choices { margin-top: 0; }
 
 /* ---------- Игра в квартире: меню компании живёт в компьютере ---------- */
-.layout.room-mode { grid-template: 'top' auto 'main' 1fr / 1fr; height: 100vh; min-height: 0; }
+.layout.room-mode { grid-template: 'main' 1fr / 1fr; height: 100vh; min-height: 0; }
 .content.full { position: relative; padding: 0; overflow: hidden; min-height: 320px; }
 .office-loading { padding: 24px; }
-
-/* Программа «Компания» на экране компьютера. */
-.company-app {
-  display: grid;
-  grid-template: 'top top' auto 'side main' 1fr / 170px 1fr;
-  height: 100%;
-  background: var(--bg);
-  color: var(--text);
-  font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
-  text-align: left;
-}
-.company-app .content { overflow: auto; min-height: 0; }
-.company-app .sidebar { min-height: 0; }
-/* У экрана компьютера свой сброс вида кнопок, и он подключается позже этих стилей.
-   Поэтому внутри «Компании» вид кнопок и полей задаётся заново, с большим весом. */
-.company-app button,
-.company-app input,
-.company-app select {
-  font: inherit;
-  color: var(--text);
-  background: var(--panel-2);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 12px;
-}
-.company-app button { cursor: pointer; }
-.company-app button:hover:not(:disabled) { border-color: var(--accent); }
-.company-app button:disabled { opacity: 0.45; cursor: default; }
-.company-app button.active,
-.company-app button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-.company-app button.primary { font-weight: 600; }
-.company-app .sidebar button { text-align: left; }
-.company-app .modal .choices button { text-align: left; padding: 10px 12px; }
-.company-app button.coach-skip { background: none; border-color: transparent; color: var(--muted); padding: 2px 0; font-size: 12px; }
-.company-app button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: transparent; }
-.company-app [data-coach-target],
-.company-app [data-nav] { transition: box-shadow 0.2s ease; }
 
 /* ---------- Обучение ---------- */
 .coach {
@@ -316,4 +279,18 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
 @media (prefers-reduced-motion: reduce) {
   [data-coach] [data-nav], [data-coach] [data-coach-target] { animation: none; }
 }
-.company-app table button { white-space: nowrap; }
+
+/* Подсказка обучения в квартире — в том же виде, что её плашки. */
+.layout.room-mode > .coach {
+  border: 0;
+  border-radius: 14px;
+  background: rgba(24, 20, 28, 0.72);
+  color: #f6efe3;
+  backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 10px 30px rgba(0, 0, 0, 0.3);
+}
+.layout.room-mode > .coach .coach-label { color: #f6c34a; }
+.layout.room-mode > .coach button.coach-skip { color: #c4baad; }
+.layout.room-mode > .coach button.primary { background: #f6c34a; border-color: #f6c34a; color: #1c1620; }

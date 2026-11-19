@@ -1,0 +1,347 @@
+/* Программа «Компания» на компьютере основателя.
+   Выглядит как обычная программа той же системы, что нарисована на экране компьютера:
+   окно с заголовком, боковой список со значками, светлые сгруппированные блоки.
+   Все правила начинаются с .company-app: у экрана компьютера свой сброс вида кнопок,
+   он подключается позже общих стилей, и перебить его можно только большим весом. */
+
+.company-app {
+  /* Общие экраны берут цвета из этих переменных — здесь они переопределены под светлое окно. */
+  --bg: #f5f5f7;
+  --panel: #ffffff;
+  --panel-2: #f0f0f3;
+  --border: rgba(0, 0, 0, 0.1);
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --accent: #0a7aff;
+  --green: #1f8a3d;
+  --blue: #0a7aff;
+  --red: #d42a1e;
+  --yellow: #b56a00;
+  --hair: rgba(0, 0, 0, 0.09);
+  --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+  --num: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+
+  display: grid;
+  grid-template: 'title title' 30px 'side top' auto 'side main' 1fr / 168px 1fr;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 13px/1.4 var(--ui);
+  text-align: left;
+  user-select: text;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- Заголовок окна ---------- */
+.ca-title {
+  grid-area: title;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(#ececee, #e2e2e5);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: #3a3a3c;
+}
+.ca-lights { position: absolute; left: 11px; top: 50%; display: flex; gap: 6px; transform: translateY(-50%); }
+.ca-lights i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.25); }
+.ca-lights i:nth-child(1) { background: #ff5f57; }
+.ca-lights i:nth-child(2) { background: #febc2e; }
+.ca-lights i:nth-child(3) { background: #28c840; }
+
+/* ---------- Боковой список разделов ---------- */
+.company-app .sidebar {
+  grid-area: side;
+  gap: 1px;
+  padding: 10px 8px;
+  min-height: 0;
+  background: #e8e8ec;
+  border-right: 1px solid rgba(0, 0, 0, 0.12);
+}
+.ca-side-label { padding: 2px 8px 5px; font-size: 10.5px; font-weight: 600; color: #8a8a8f; }
+.company-app .sidebar button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  text-align: left;
+  font: 13px/1.3 var(--ui);
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: 6px;
+  box-shadow: none;
+}
+.company-app .sidebar button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.05); }
+.company-app .sidebar button.active { color: var(--text); background: rgba(0, 0, 0, 0.1); font-weight: 600; }
+/* Цветной значок раздела, как в настройках системы. */
+.ca-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--ico, #8e8e93);
+  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18);
+}
+.ca-ico svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.company-app [data-nav='overview'] .ca-ico { --ico: #8e8e93; }
+.company-app [data-nav='product'] .ca-ico { --ico: #0a7aff; }
+.company-app [data-nav='team'] .ca-ico { --ico: #30b158; }
+.company-app [data-nav='marketing'] .ca-ico { --ico: #ff6b35; }
+.company-app [data-nav='finance'] .ca-ico { --ico: #af52de; }
+
+/* ---------- Панель инструментов: дата, деньги, ход времени ---------- */
+.company-app .topbar {
+  grid-area: top;
+  gap: 4px 14px;
+  padding: 8px 16px;
+  background: #fbfbfd;
+  border-bottom: 1px solid var(--hair);
+}
+.company-app .topbar .company { display: none; }
+.company-app .topbar .date { font-size: 12px; color: var(--muted); }
+.company-app .topbar .cash { font: 600 17px/1 var(--num); color: var(--green); font-variant-numeric: tabular-nums; }
+.company-app .topbar .cash.negative { color: var(--red); }
+.company-app .topbar .warning { font-size: 12px; font-weight: 600; color: var(--red); }
+
+/* Сегментированный переключатель: пауза и скорости, а также любые ряды-переключатели на экранах. */
+.company-app .speeds {
+  gap: 0;
+  flex-wrap: nowrap;
+  width: fit-content;
+  margin: 6px 0;
+  padding: 2px;
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 7px;
+}
+.company-app .topbar .speeds { margin: 0 0 0 auto; }
+.company-app .speeds button {
+  min-width: 38px;
+  padding: 3px 10px;
+  font: 500 12px/1.4 var(--ui);
+  color: var(--text);
+  background: none;
+  border: 0;
+  border-radius: 5px;
+  box-shadow: none;
+}
+.company-app .speeds button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.05); }
+.company-app .speeds button.active {
+  color: var(--text);
+  background: #fff;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.16);
+}
+
+/* ---------- Страница ---------- */
+.company-app .content { grid-area: main; overflow: auto; min-height: 0; padding: 16px 18px 24px; }
+.company-app .screen { gap: 18px; }
+.company-app h3 {
+  margin: 0 0 7px;
+  padding: 0 2px;
+  font: 600 13px/1.3 var(--ui);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+.company-app .muted { color: var(--muted); }
+.company-app .negative { color: var(--red); }
+.company-app .positive { color: var(--green); }
+.company-app p { margin: 6px 0; }
+
+/* Показатели: одна белая группа со столбцами, а не отдельные плитки. */
+.company-app .cards {
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  gap: 0;
+  background: var(--panel);
+  border-radius: 10px;
+  box-shadow: 0 0 0 0.5px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+.company-app .card {
+  gap: 0;
+  padding: 11px 14px 12px;
+  background: none;
+  border: 0;
+  border-left: 1px solid var(--hair);
+  border-radius: 0;
+  margin-left: -1px;
+}
+.company-app .card span { font-size: 11.5px; color: var(--muted); }
+.company-app .card b { font: 600 23px/1.25 var(--num); font-variant-numeric: tabular-nums; }
+.company-app .card small { font-size: 11.5px; color: var(--muted); }
+
+/* Блок раздела: заголовок над белой группой. */
+.company-app .two { gap: 18px; }
+.company-app .panel {
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 0 0 0.5px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.company-app .panel h3 { padding: 0; }
+.company-app .panel h3:not(:first-child) { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair); }
+
+.company-app table { font-size: 13px; }
+.company-app th,
+.company-app td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--hair); }
+.company-app tr:last-child td { border-bottom: 0; }
+.company-app th { font-size: 11.5px; font-weight: 500; color: var(--muted); }
+.company-app td:not(:first-child) { font-variant-numeric: tabular-nums; }
+.company-app table button { white-space: nowrap; }
+.company-app .log li { padding: 6px 0; border-bottom: 1px solid var(--hair); }
+.company-app .log li:last-child { border-bottom: 0; }
+
+/* Сообщение системы: значок слева и текст. */
+.company-app .notice,
+.company-app .error {
+  position: relative;
+  margin: 0;
+  padding: 10px 14px 10px 40px;
+  font-size: 13px;
+  color: var(--text);
+  background: #fff8e6;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 0 0 0.5px rgba(181, 106, 0, 0.35);
+}
+.company-app .notice::before,
+.company-app .error::before {
+  content: '!';
+  position: absolute;
+  left: 13px;
+  top: 10px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f5a623;
+  color: #fff;
+  font: 700 12px/1 var(--ui);
+}
+.company-app .error { margin-bottom: 14px; background: #ffeceb; box-shadow: 0 0 0 0.5px rgba(212, 42, 30, 0.4); }
+.company-app .error::before { background: var(--red); }
+
+/* ---------- Кнопки и поля ---------- */
+.company-app button,
+.company-app input,
+.company-app select {
+  font: 13px/1.3 var(--ui);
+  color: var(--text);
+  background: #fff;
+  border: 0;
+  border-radius: 6px;
+  padding: 4px 11px;
+  box-shadow:
+    0 0 0 0.5px rgba(0, 0, 0, 0.16),
+    0 1px 1.5px rgba(0, 0, 0, 0.12);
+}
+.company-app button { cursor: pointer; }
+.company-app button:hover:not(:disabled) { background: #f4f4f6; }
+.company-app button:active:not(:disabled) { background: #e9e9ec; }
+.company-app button:disabled { color: #b0b0b5; cursor: default; opacity: 1; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
+.company-app button.active { color: #fff; background: var(--accent); }
+/* Главное действие — синяя кнопка, как кнопка по умолчанию в диалогах системы. */
+.company-app button.primary {
+  font-weight: 500;
+  color: #fff;
+  background: linear-gradient(#2b8fff, #0a72f5);
+  box-shadow:
+    0 0 0 0.5px rgba(0, 60, 160, 0.5),
+    0 1px 1.5px rgba(0, 60, 160, 0.35);
+}
+.company-app button.primary:hover:not(:disabled) { background: linear-gradient(#3b98ff, #1a7af7); }
+.company-app button.primary:disabled { color: #fff; background: #b9d4f7; box-shadow: none; }
+.company-app .notice button { margin-left: 8px; }
+
+.company-app input[type='number'],
+.company-app select {
+  padding: 4px 8px;
+  box-shadow:
+    inset 0 0 0 0.5px rgba(0, 0, 0, 0.22),
+    inset 0 1px 1.5px rgba(0, 0, 0, 0.08);
+  font-variant-numeric: tabular-nums;
+}
+.company-app input[type='checkbox'] { width: 14px; height: 14px; padding: 0; accent-color: var(--accent); box-shadow: none; }
+.company-app :focus-visible { outline: 3px solid rgba(10, 122, 255, 0.45); outline-offset: 1px; }
+.company-app .choices { gap: 6px; }
+
+/* ---------- Графики ---------- */
+.company-app .chart,
+.company-app .chart-empty {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--hair);
+  background: repeating-linear-gradient(transparent 0 29px, rgba(0, 0, 0, 0.05) 29px 30px);
+}
+.company-app .chart-zero { stroke: rgba(212, 42, 30, 0.5); }
+
+/* ---------- Команда ---------- */
+.company-app .person { border-bottom: 1px solid var(--hair); }
+.company-app .person-head b { font-size: 14px; font-weight: 600; }
+.company-app .person-head div span { font-size: 12px; color: var(--muted); }
+.company-app .avatar { width: 38px; height: 38px; font-size: 13px; }
+.company-app .meter { font-size: 12px; }
+.company-app .meter-bar { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.09); }
+.company-app .salary input { width: 96px; }
+
+/* ---------- Подсказка обучения: всплывающая подсказка системы ---------- */
+.company-app .coach.inline {
+  position: relative;
+  inset: auto;
+  width: auto;
+  margin: 0 0 16px;
+  padding: 10px 14px 10px 44px;
+  color: var(--text);
+  background: #eaf3ff;
+  border: 0;
+  border-radius: 10px;
+  box-shadow: 0 0 0 0.5px rgba(10, 122, 255, 0.4);
+}
+.company-app .coach.inline::before {
+  content: '→';
+  position: absolute;
+  left: 13px;
+  top: 12px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  font: 700 12px/1 var(--ui);
+}
+.company-app .coach-label { font: 600 11.5px/1.3 var(--ui); letter-spacing: 0; text-transform: none; color: var(--accent); }
+.company-app .coach p { font: 13.5px/1.4 var(--ui); }
+.company-app button.coach-skip { padding: 0; font-size: 12px; color: var(--muted); background: none; box-shadow: none; }
+.company-app button.coach-skip:hover:not(:disabled) { color: var(--text); background: none; text-decoration: underline; }
+
+/* Кнопка, которую сейчас нужно нажать: мигает синим кольцом фокуса. */
+[data-coach='openProduct'] .company-app [data-nav='product'],
+[data-coach='openProductLaunch'] .company-app [data-nav='product'],
+[data-coach='queueCore'] .company-app [data-coach-target='queueCore'],
+[data-coach='launch'] .company-app [data-coach-target='launch'],
+[data-coach='startTime'] .company-app [data-coach-target='speed1'] {
+  border-color: transparent;
+  animation: ca-ring 1.1s ease-in-out infinite;
+}
+@keyframes ca-ring {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(10, 122, 255, 0.9); }
+  50% { box-shadow: 0 0 0 6px rgba(10, 122, 255, 0.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-coach] .company-app [data-nav],
+  [data-coach] .company-app [data-coach-target] { animation: none; box-shadow: 0 0 0 2px rgba(10, 122, 255, 0.9); }
+}
+
+.company-app ::-webkit-scrollbar { width: 8px; height: 8px; }
+.company-app ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.22); border-radius: 4px; }
+.company-app ::-webkit-scrollbar-track { background: transparent; }

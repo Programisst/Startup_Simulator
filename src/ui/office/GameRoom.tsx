@@ -9,6 +9,7 @@ import { useStore } from '../store';
 import type { TutorialStep } from '../tutorial';
 import { CompanyApp } from './CompanyApp';
 import { OfficeScene } from './OfficeScene';
+import { RoomControls } from './RoomControls';
 
 // Квартира тяжёлая (3D-библиотека), поэтому подгружается отдельным файлом.
 const Room3D = lazy(() => import('../room3d/Room3D').then((m) => ({ default: m.Room3D })));
@@ -70,6 +71,8 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     date: { year: view.calendar.year, month: view.calendar.month, day: view.calendar.dayOfMonth },
     weekday: view.calendar.weekday,
     cash: game.cash,
+    daysToBankruptcy: view.alerts.daysToBankruptcy,
+    controls: <RoomControls />,
     activity: view.activity,
     thought,
     status: t(`office.status.${view.activity}`),

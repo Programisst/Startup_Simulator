@@ -9,6 +9,10 @@ export interface RoomLink {
   /** День недели, 0 — понедельник */
   weekday: number;
   cash: number;
+  /** Сколько дней осталось до банкротства; null — счёт не в минусе */
+  daysToBankruptcy: number | null;
+  /** Кнопки управления временем — рисуются в правом верхнем углу квартиры */
+  controls: ReactNode;
   /** Чем занят основатель по расчёту игры */
   activity: FounderActivity;
   /** Мысль героя о текущем деле — уже готовым текстом */

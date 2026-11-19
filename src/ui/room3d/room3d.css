@@ -381,3 +381,57 @@ html.r3-standalone body {
   transform: translateX(-50%);
   animation: none;
 }
+
+/* ---------- Плашки игры в квартире ---------- */
+.r3-sub.alert {
+  color: #ff9d9d;
+}
+.r3-hud.r3-hud-right {
+  left: auto;
+  right: 22px;
+  pointer-events: auto;
+}
+.r3-speed {
+  gap: 2px;
+  padding: 5px;
+}
+.r3-speed button,
+.r3-save {
+  font: 600 12px/1 'SF Mono', Menlo, Consolas, monospace;
+  color: #c4baad;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.r3-speed button {
+  min-width: 42px;
+  padding: 10px 8px;
+  border-radius: 10px;
+  letter-spacing: -0.12em;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.r3-speed button:hover {
+  color: #f6efe3;
+  background: rgba(255, 255, 255, 0.08);
+}
+.r3-speed button.on {
+  color: #1c1620;
+  background: #f6c34a;
+}
+.r3-save {
+  padding: 0 15px;
+  letter-spacing: 0.02em;
+}
+.r3-save:hover {
+  color: #f6efe3;
+}
+[data-coach='startTime'] .r3-speed [data-coach-target='speed1'] {
+  box-shadow: 0 0 0 2px #f6c34a;
+  animation: r3-nudge 1.1s ease-in-out infinite;
+}
+@keyframes r3-nudge {
+  0%, 100% { box-shadow: 0 0 0 2px #f6c34a; }
+  50% { box-shadow: 0 0 0 7px rgba(246, 195, 74, 0); }
+}
