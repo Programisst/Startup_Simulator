@@ -1,12 +1,13 @@
 // Вся игра по одной ссылке: заставка → «Новая игра» → вечер и переписка с другом → утро первого дня.
 // «Продолжить» сразу открывает сохранённую партию. Где рисовать нельзя (старый браузер, проверки) — обычный экран игры.
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { hasSave } from '../save/storage';
 import { App } from './App';
 import { Intro } from './intro/Intro';
 import { canDraw } from './office/GameRoom';
 import { Opening } from './opening/Opening';
+import { lastAnswers, quickSetup, sampleAnswers, wantsSkip } from './opening/quick';
 import { useStore } from './store';
 import './opening/curtain.css';
 
@@ -30,6 +31,15 @@ export function Root() {
   useEffect(() => {
     if (game) setStage('intro');
   }, [game]);
+
+  // Для разработчиков: ссылка с ?skip — сразу утро первого дня с готовой компанией (один раз за загрузку).
+  const skip = useRef(import.meta.env.DEV && wantsSkip(window.location.search));
+  useEffect(() => {
+    if (!skip.current || !showStart) return;
+    skip.current = false;
+    setCurtain('dawn');
+    start(quickSetup(lastAnswers(), sampleAnswers(t), Math.floor(Math.random() * 2 ** 31)));
+  }, [showStart, start, t]);
 
   // Пока идёт заставка, квартира уже подгружается — после полёта она открывается без ожидания.
   useEffect(() => {

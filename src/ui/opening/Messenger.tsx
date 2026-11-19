@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { money } from '../format';
 import { FriendAvatar as Avatar } from './Avatar';
 import { quickReplies, type ChatState, type Line } from './chat';
+import { lastAnswers, rememberAnswer, sampleAnswers, type Typed } from './quick';
 import './messenger.css';
 
 interface Props {
@@ -72,11 +73,21 @@ export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {
   }, [shown, options.length]);
 
   useEffect(() => {
-    if (canType) inputRef.current?.focus();
-  }, [canType]);
+    if (!canType) return;
+    // Для разработчиков: в поле уже стоит прошлый ответ (или образец) — достаточно нажать Enter.
+    if (import.meta.env.DEV) {
+      const stage = chat.stage as Typed;
+      setDraft(lastAnswers()[stage] ?? sampleAnswers(t)[stage]);
+      window.setTimeout(() => inputRef.current?.select(), 0);
+    }
+    inputRef.current?.focus();
+    // Подставляем один раз на каждый вопрос, не на каждую перерисовку.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canType, chat.stage, chat.lines.length]);
 
   const send = () => {
     if (!canType || !draft.trim()) return;
+    if (import.meta.env.DEV) rememberAnswer(chat.stage as Typed, draft.trim());
     onReply(draft);
     setDraft('');
   };
