@@ -1,5 +1,5 @@
 // Простые автоматические игроки для проверки баланса.
-import { cac, type Command, type GameContent, type GameState } from '../../src/core';
+import { cac, teamView, type Command, type GameContent, type GameState } from '../../src/core';
 
 export type Strategy = (s: GameState, content: GameContent) => Command[];
 
@@ -118,4 +118,30 @@ export const novice: Strategy = (s, content) => {
   return cmds;
 };
 
-export const strategies: Record<string, Strategy> = { idle, sideJobOnly, adsOnly, novice, sensible, expert };
+/**
+ * Опытный игрок, который нанимает осторожно: только когда прибыль прошлого месяца
+ * покрывает зарплату с запасом и на счёте есть деньги на полгода этой зарплаты.
+ * Берёт кандидата с лучшим отношением навыка к зарплате.
+ */
+export const carefulHirer: Strategy = (s, content) => {
+  const cmds = expert(s, content);
+  const team = teamView(s, content);
+  const lastMonth = s.months[s.months.length - 1];
+  if (!team.canHire || !lastMonth) return cmds;
+  const best = [...team.candidates].sort((a, b) => b.skill / b.salaryAsk - a.skill / a.salaryAsk)[0];
+  if (best && lastMonth.profit >= best.salaryAsk * 1.5 && s.cash >= best.salaryAsk * 6) cmds.push({ type: 'hire', candidateId: best.id });
+  return cmds;
+};
+
+/** Нетерпеливый игрок: в первый же день нанимает самого сильного разработчика, не глядя на деньги. */
+export const recklessHirer: Strategy = (s, content) => {
+  const cmds = expert(s, content);
+  const team = teamView(s, content);
+  if (team.size === 0 && s.day === 0) {
+    const top = [...team.candidates].sort((a, b) => b.skill - a.skill)[0];
+    if (top) cmds.push({ type: 'hire', candidateId: top.id });
+  }
+  return cmds;
+};
+
+export const strategies: Record<string, Strategy> = { idle, sideJobOnly, adsOnly, novice, sensible, expert, carefulHirer, recklessHirer };

@@ -8,3 +8,4 @@ export { applyCommand } from './commands';
 export { conditionHolds } from './events';
 export { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
 export { roomView, roomClock, type FounderActivity, type RoomAlerts, type RoomCalendar, type RoomProduct, type RoomTask, type RoomView } from './room';
+export { teamView, teamOf, createTeam, motivationFactor, motivationTarget, teamWorkPerDay, marketingBoost, payrollPerMonth, type TeamView, type TeamMemberView } from './team';

@@ -3,6 +3,7 @@
 // что у него в работе и какие есть тревожные сигналы. Состояние игры эти функции не меняют.
 
 import { overload } from './formulas';
+import { teamOf, teamWorkPerDay } from './team';
 import type { GameContent, GameState, Task } from './types';
 
 /** Чем сейчас занят основатель. */
@@ -101,7 +102,8 @@ function currentTask(s: GameState, content: GameContent): RoomTask | null {
   if (!task) return null;
   const cfg = content.config;
   const cost = taskCost(task, s, content);
-  const workPerDay = cfg.founderSkill * (1 - s.sideJobShare) * (s.rush ? cfg.rushSpeed : 1);
+  // Тот же расчёт, что в шаге дня: основатель плюс разработчики, спешка ускоряет всех.
+  const workPerDay = (cfg.founderSkill * (1 - s.sideJobShare) + teamWorkPerDay(teamOf(s, content), cfg.team)) * (s.rush ? cfg.rushSpeed : 1);
   const left = Math.max(0, cost - task.progress);
   return {
     kind: task.kind,
