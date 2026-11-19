@@ -1,6 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { overload, type Task } from '../../core';
+import { featuresOf, overload, type Task } from '../../core';
 import { FounderCare } from '../components/FounderCare';
 import { money, num } from '../format';
 import { useStore } from '../store';
@@ -10,7 +10,7 @@ export function Product() {
   const game = useStore((s) => s.game)!;
   const dispatch = useStore((s) => s.dispatch);
   const cfg = content.config;
-  const defs = content.features[game.productType];
+  const defs = featuresOf(game, content);
   const core = defs.find((f) => f.core);
   const coreDone = !core || game.doneFeatures.includes(core.id);
   const hasPrice = game.businessModel === 'subscription' || game.businessModel === 'oneTime';
@@ -87,6 +87,7 @@ export function Product() {
 
         <section className="panel">
           <h3>{t('product.features')}</h3>
+          {game.themeId && <p className="muted">{t('product.themeLine', { name: t(`new.themes.${game.themeId}`), note: t(`themeNotes.${game.themeId}`) })}</p>}
           <table>
             <thead>
               <tr><th>{t('product.feature')}</th><th>{t('product.cost')}</th><th>{t('product.value')}</th><th /></tr>

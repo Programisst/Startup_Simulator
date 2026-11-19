@@ -52,7 +52,7 @@ describe('экран создания компании', () => {
 
   it('идея словами определяет продукт, аудиторию и доход и попадает в партию', () => {
     type(idea(), 'Приложение для родителей: расписание ребёнка, по подписке');
-    expect(selects().map((s) => s.value)).toEqual(['mobile', 'parents', 'subscription']);
+    expect(selects().slice(0, 3).map((s) => s.value)).toEqual(['mobile', 'parents', 'subscription']);
     expect(startButton().disabled).toBe(false);
     click(startButton());
     const game = useStore.getState().game!;
@@ -75,9 +75,9 @@ describe('экран создания компании', () => {
   it('ручная поправка держится, пока игрок не перепишет идею', () => {
     type(idea(), 'Нейросеть для студентов');
     type(selects()[2]!, 'oneTime');
-    expect(selects().map((s) => s.value)).toEqual(['ai', 'students', 'oneTime']);
+    expect(selects().slice(0, 3).map((s) => s.value)).toEqual(['ai', 'students', 'oneTime']);
     type(idea(), 'Маркетплейс для фрилансеров');
-    expect(selects().map((s) => s.value)).toEqual(['marketplace', 'freelancers', 'commission']);
+    expect(selects().slice(0, 3).map((s) => s.value)).toEqual(['marketplace', 'freelancers', 'commission']);
   });
 
   it('«Нет идеи?» показывает три подсказки, выбранная заполняет всё сама', () => {
@@ -96,6 +96,20 @@ describe('экран создания компании', () => {
     click(button('Еда'));
     const labels = [...box.querySelectorAll('.ng-sticker small')].map((s) => s.textContent);
     expect(labels).toEqual(['Еда', 'Еда', 'Еда']);
+  });
+
+  it('тема определяется по идее, её можно сменить, и она попадает в партию вместе со своими функциями', () => {
+    type(idea(), 'Игра-головоломка с уровнями и таблицей лидеров');
+    const theme = () => [...box.querySelectorAll('select')][3]!;
+    expect(selects().slice(0, 3).map((s) => s.value)[0]).toBe('game');
+    expect(theme().value).toBe('games');
+    expect(box.textContent).toContain('Игры разлетаются по друзьям');
+    type(theme(), 'education');
+    click(startButton());
+    const game = useStore.getState().game!;
+    expect(game.themeId).toBe('education');
+    expect(game.featureIds).toContain('t_quizzes');
+    expect(game.featureIds![0]).toBe('core');
   });
 
   it('кнопка «Придумать» даёт название компании', () => {

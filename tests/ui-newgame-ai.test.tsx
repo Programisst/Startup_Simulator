@@ -56,7 +56,7 @@ async function typeIdea(value: string) {
 }
 
 const button = (text: string) => [...box.querySelectorAll('button')].find((b) => b.textContent?.includes(text));
-const selects = () => [...box.querySelectorAll('select')].map((s) => s.value);
+const selects = () => [...box.querySelectorAll('select')].slice(0, 3).map((s) => s.value);
 const ON = { body: { available: true } };
 
 describe('экран создания компании с нейросетью', () => {

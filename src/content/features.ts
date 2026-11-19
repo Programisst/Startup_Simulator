@@ -63,4 +63,14 @@ export const features: Record<ProductTypeId, FeatureDef[]> = {
     { id: 'plugins', cost: 30, value: 13 },
     { id: 'selfHosted', cost: 35, value: 12 },
   ],
+  game: [
+    { id: 'core', cost: 22, value: 16, core: true },
+    { id: 'gameLevels', cost: 16, value: 12 },
+    { id: 'gameTutorial', cost: 8, value: 8 },
+    { id: 'gameAchievements', cost: 12, value: 9 },
+    { id: 'gameShop', cost: 22, value: 11 },
+    { id: 'gameMultiplayer', cost: 40, value: 18 },
+    { id: 'gameSound', cost: 14, value: 9 },
+    { id: 'gameEvents', cost: 24, value: 13 },
+  ],
 };
