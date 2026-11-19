@@ -37,7 +37,7 @@ export function Product() {
       {!game.launched && (
         <p className="notice">
           {coreDone ? t('product.readyToLaunch') : t('product.needCore')}{' '}
-          <button className="primary" disabled={!coreDone} onClick={() => dispatch({ type: 'launch' })}>
+          <button className="primary" data-coach-target="launch" disabled={!coreDone} onClick={() => dispatch({ type: 'launch' })}>
             {t('product.launch')}
           </button>
         </p>
@@ -98,7 +98,7 @@ export function Product() {
                     <td>{f.value}</td>
                     <td>
                       {done ? t('product.done') : queued ? t('product.queued') : (
-                        <button onClick={() => dispatch({ type: 'queueFeature', featureId: f.id })}>{t('product.add')}</button>
+                        <button data-coach-target={f.core ? 'queueCore' : undefined} onClick={() => dispatch({ type: 'queueFeature', featureId: f.id })}>{t('product.add')}</button>
                       )}
                     </td>
                   </tr>

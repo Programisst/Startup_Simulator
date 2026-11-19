@@ -124,6 +124,8 @@ td:not(:first-child), th:not(:first-child) { text-align: right; }
 .overlay {
   position: fixed;
   inset: 0;
+  /* Поверх экрана компьютера: событие должно быть видно, даже если игрок сидит за столом. */
+  z-index: 70;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -229,8 +231,89 @@ td:not(:first-child), th:not(:first-child) { text-align: right; }
 .salary input { width: 110px; }
 .person .choices { margin-top: 0; }
 
-/* ---------- Экран «Офис»: квартира на всю область ---------- */
-.content.full { position: relative; padding: 0; overflow: hidden; min-height: 420px; }
-.content.full > .error { position: absolute; z-index: 5; top: 12px; left: 50%; transform: translateX(-50%); margin: 0; background: var(--panel); }
-.office-fallback { padding: 16px; }
+/* ---------- Игра в квартире: меню компании живёт в компьютере ---------- */
+.layout.room-mode { grid-template: 'top' auto 'main' 1fr / 1fr; height: 100vh; min-height: 0; }
+.content.full { position: relative; padding: 0; overflow: hidden; min-height: 320px; }
 .office-loading { padding: 24px; }
+
+/* Программа «Компания» на экране компьютера. */
+.company-app {
+  display: grid;
+  grid-template: 'top top' auto 'side main' 1fr / 170px 1fr;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+  text-align: left;
+}
+.company-app .content { overflow: auto; min-height: 0; }
+.company-app .sidebar { min-height: 0; }
+/* У экрана компьютера свой сброс вида кнопок, и он подключается позже этих стилей.
+   Поэтому внутри «Компании» вид кнопок и полей задаётся заново, с большим весом. */
+.company-app button,
+.company-app input,
+.company-app select {
+  font: inherit;
+  color: var(--text);
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 12px;
+}
+.company-app button { cursor: pointer; }
+.company-app button:hover:not(:disabled) { border-color: var(--accent); }
+.company-app button:disabled { opacity: 0.45; cursor: default; }
+.company-app button.active,
+.company-app button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.company-app button.primary { font-weight: 600; }
+.company-app .sidebar button { text-align: left; }
+.company-app .modal .choices button { text-align: left; padding: 10px 12px; }
+.company-app button.coach-skip { background: none; border-color: transparent; color: var(--muted); padding: 2px 0; font-size: 12px; }
+.company-app button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: transparent; }
+.company-app [data-coach-target],
+.company-app [data-nav] { transition: box-shadow 0.2s ease; }
+
+/* ---------- Обучение ---------- */
+.coach {
+  position: fixed;
+  z-index: 40;
+  left: 20px;
+  bottom: 76px;
+  width: min(360px, calc(100vw - 40px));
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--yellow);
+  background: #1d1a12;
+  color: var(--text);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.coach p { margin: 4px 0 10px; font-size: 15px; line-height: 1.4; }
+.coach-label { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--yellow); }
+.coach.inline { position: static; width: auto; margin-bottom: 14px; box-shadow: none; display: grid; grid-template-columns: 1fr auto; gap: 2px 14px; align-items: center; }
+.coach.inline .coach-label { grid-column: 1 / -1; }
+.coach.inline p { margin: 0; }
+button.coach-skip { background: none; border-color: transparent; color: var(--muted); padding: 2px 0; font-size: 12px; }
+button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: transparent; }
+
+/* Кнопка, которую сейчас нужно нажать, пульсирует. */
+[data-coach='openProduct'] [data-nav='product'],
+[data-coach='openProductLaunch'] [data-nav='product'],
+[data-coach='queueCore'] [data-coach-target='queueCore'],
+[data-coach='launch'] [data-coach-target='launch'],
+[data-coach='startTime'] [data-coach-target='speed1'],
+[data-coach='openProduct'] .company-app [data-nav='product'],
+[data-coach='openProductLaunch'] .company-app [data-nav='product'],
+[data-coach='queueCore'] .company-app [data-coach-target='queueCore'],
+[data-coach='launch'] .company-app [data-coach-target='launch'],
+[data-coach='startTime'] .company-app [data-coach-target='speed1'] {
+  border-color: var(--yellow);
+  animation: coach-pulse 1.2s ease-in-out infinite;
+}
+@keyframes coach-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245, 196, 81, 0.75); }
+  50% { box-shadow: 0 0 0 7px rgba(245, 196, 81, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-coach] [data-nav], [data-coach] [data-coach-target] { animation: none; }
+}
+.company-app table button { white-space: nowrap; }

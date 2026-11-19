@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { applyCommand, createGame, tick, type Command, type CommandError, type GameState, type NewGameSetup } from '../core';
 import { content } from '../content';
 import { deleteSave, loadGame, saveGame } from '../save/storage';
+import { markTutorialSeen, tutorialSeen } from './tutorial';
 
 export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance';
 export type Speed = 0 | 1 | 2 | 5;
@@ -12,6 +13,14 @@ interface Store {
   speed: Speed;
   screen: ScreenId;
   lastError: CommandError | null;
+  /** Игрок сидит за компьютером в квартире */
+  computerOpen: boolean;
+  /** Квартира не загрузилась — игра показывает обычное меню сбоку */
+  roomBroken: boolean;
+  /** Идёт обучение первой партии */
+  tutorial: boolean;
+  setComputerOpen: (open: boolean) => void;
+  endTutorial: () => void;
   start: (setup: NewGameSetup) => void;
   dispatch: (cmd: Command) => void;
   step: () => void;
@@ -27,8 +36,17 @@ export const useStore = create<Store>((set, get) => ({
   speed: 0,
   screen: 'office',
   lastError: null,
+  computerOpen: false,
+  roomBroken: false,
+  tutorial: false,
 
-  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null }),
+  setComputerOpen: (computerOpen) => set({ computerOpen }),
+  endTutorial: () => {
+    markTutorialSeen();
+    set({ tutorial: false });
+  },
+
+  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null, computerOpen: false, tutorial: !tutorialSeen() }),
 
   dispatch: (cmd) => {
     const { game } = get();
@@ -59,12 +77,12 @@ export const useStore = create<Store>((set, get) => ({
   load: () => {
     const game = loadGame();
     if (!game) return false;
-    set({ game, speed: 0, screen: 'office', lastError: null });
+    set({ game, speed: 0, screen: 'office', lastError: null, computerOpen: false, tutorial: false });
     return true;
   },
 
   quit: () => {
     deleteSave();
-    set({ game: null, speed: 0, lastError: null });
+    set({ game: null, speed: 0, lastError: null, computerOpen: false, tutorial: false });
   },
 }));

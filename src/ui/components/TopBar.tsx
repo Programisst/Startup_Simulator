@@ -21,7 +21,7 @@ export function TopBar() {
       )}
       <div className="speeds">
         {SPEEDS.map((sp) => (
-          <button key={sp} className={sp === speed ? 'active' : ''} onClick={() => setSpeed(sp)}>
+          <button key={sp} data-coach-target={sp === 1 ? 'speed1' : undefined} className={sp === speed ? 'active' : ''} onClick={() => setSpeed(sp)}>
             {sp === 0 ? t('top.pause') : `×${sp}`}
           </button>
         ))}
