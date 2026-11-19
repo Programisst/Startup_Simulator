@@ -21,6 +21,8 @@ describe('вход в игру после заставки', () => {
     expect(setup.companyName.length).toBeGreaterThan(0);
     expect(setup.companyName).not.toMatch(/^intro\./);
     expect(setup.idea?.length ?? 0).toBeGreaterThan(10);
+    // Тема стартапа даёт партии свои функции и рынок.
+    expect(content.themes.some((th) => th.id === setup.themeId)).toBe(true);
     expect(() => createGame(setup, content)).not.toThrow();
   });
 

@@ -13,6 +13,7 @@ export function quickSetup(seed: number): NewGameSetup {
     seed,
     companyName: i18n.t('intro.quickName'),
     idea: i18n.t(`new.ideas.${QUICK_IDEA.id}`),
+    themeId: QUICK_IDEA.theme,
     productType: QUICK_IDEA.productType,
     audienceId: QUICK_IDEA.audienceId,
     businessModel: QUICK_IDEA.businessModel,
