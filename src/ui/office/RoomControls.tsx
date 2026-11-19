@@ -17,7 +17,7 @@ export function RoomControls() {
 
   return (
     <>
-      <div className="r3-card r3-speed" role="group" aria-label={t('top.speed')}>
+      <div className="lm-card lm-speed" role="group" aria-label={t('top.speed')}>
         {SPEEDS.map((sp) => (
           <button
             key={sp}
@@ -35,7 +35,7 @@ export function RoomControls() {
       </div>
       <button
         type="button"
-        className="r3-card r3-save"
+        className="lm-card lm-save"
         onClick={() => {
           if (!save()) return;
           setSaved(true);

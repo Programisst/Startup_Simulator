@@ -1,7 +1,7 @@
 // Концепт «Люмио»: свой герой (пиксели без ошибок в рисунке) и приближение колёсиком.
 import { describe, expect, it } from 'vitest';
-import { HERO_FRAME_H, HERO_FRAME_W, HERO_PALETTE, heroFrames } from '../src/concepts/lumio/engine/heroPixels';
-import { zoomLimits, zoomStep } from '../src/concepts/lumio/engine/zoom';
+import { HERO_FRAME_H, HERO_FRAME_W, HERO_PALETTE, heroFrames } from '../src/ui/apartment/engine/heroPixels';
+import { zoomLimits, zoomStep } from '../src/ui/apartment/engine/zoom';
 
 describe('пиксели героя', () => {
   const frames = heroFrames();

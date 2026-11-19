@@ -1,6 +1,7 @@
 // Мир квартиры: герой, предметы, свет, камера. Рисуем сцену в маленьком холсте 384×240,
 // затем увеличиваем в целое число раз (пиксели чёткие), а свет кладём поверх плавными пятнами.
-import { findPath } from '../../../ui/room3d/nav';
+import { advanceClock } from '../link';
+import { findPath } from './nav';
 import { COFFEE_LED, FLOOR_LAMP_SHADE, MONITOR_SCREEN, hash, make, type Art, type Spr } from './art';
 import { City } from './city';
 import { zoomLimits, zoomStep } from './zoom';
@@ -55,6 +56,12 @@ const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y
 export class World {
   minutes = 21 * 60 + 30;
   day = 1;
+  /** Сколько игровых минут проходит за реальную секунду. */
+  clockRate = 1;
+  /** Часы стоят: игра на паузе или поверх открыто окно игры. */
+  clockPaused = false;
+  /** День ведёт игра: после сна квартира сама не прибавляет день. */
+  externalDay = false;
   readonly hero = { x: HERO_START.x, y: HERO_START.y, dir: 3 as Dir, moving: false, anim: 0, mode: 'free' as Mode };
   onArrive: ((spot: Spot) => void) | null = null;
   onCoffeeReady: (() => void) | null = null;
@@ -207,8 +214,9 @@ export class World {
     return { target: spot ? spot.at : p, spot };
   }
 
-  walkTo(target: { x: number; y: number }, spot: Spot | null): void {
-    if (this.hero.mode !== 'free') return;
+  /** Идти к точке или к предмету. false — идти некуда (герой занят или пути нет). */
+  walkTo(target: { x: number; y: number }, spot: Spot | null): boolean {
+    if (this.hero.mode !== 'free') return false;
     const U = NAV_UNIT;
     const to = spot ? spot.at : target;
     const route = findPath(
@@ -218,10 +226,16 @@ export class World {
       { x: WALK.x / U, y: WALK.y / U, w: WALK.w / U, h: WALK.h / U },
       8 / U,
     );
-    if (!route) return;
+    if (!route) return false;
     this.path = route.map((p) => ({ x: p.x * U, y: p.z * U }));
     if (spot) this.path.push({ ...spot.at });
     this.pending = spot;
+    return true;
+  }
+
+  /** Герой свободен: стоит или идёт, не сидит и не спит. */
+  get idle(): boolean {
+    return this.hero.mode === 'free';
   }
 
   isLampOn(id: LampId): boolean {
@@ -261,7 +275,7 @@ export class World {
   }
 
   wakeUp(): void {
-    if (this.minutes % 1440 > 7 * 60 + 30) this.day += 1;
+    if (this.minutes % 1440 > 7 * 60 + 30 && !this.externalDay) this.day += 1;
     this.minutes = 7 * 60 + 30;
     this.hero.mode = 'free';
     this.hero.x = SPOTS[2]!.at.x;
@@ -273,8 +287,7 @@ export class World {
 
   update(dt: number, input: { x: number; y: number }): void {
     this.time += dt;
-    // Одна реальная секунда — одна игровая минута.
-    if (this.hero.mode !== 'sleep') this.minutes += dt;
+    this.minutes = advanceClock(this.minutes, dt, { rate: this.clockRate, paused: this.clockPaused, sleeping: this.hero.mode === 'sleep' });
     const h = this.hero;
     let moving = false;
 

@@ -1,9 +1,7 @@
-// Проверки «мозгов» пробной квартиры: подсветка кода, столкновения, время суток, печать кода.
+// Проверки компьютера в квартире: подсветка кода и печать кода.
 import { describe, expect, it } from 'vitest';
-import { highlightLine } from '../src/ui/room/laptop/highlight';
-import { buildTypingScript, applyTypingSteps } from '../src/ui/room/laptop/typing';
-import { moveWithCollision, type Box } from '../src/ui/room/engine/physics';
-import { skyAt } from '../src/ui/room/engine/sky';
+import { highlightLine } from '../src/ui/apartment/laptop/highlight';
+import { buildTypingScript, applyTypingSteps } from '../src/ui/apartment/laptop/typing';
 
 describe('подсветка кода', () => {
   it('не теряет и не добавляет символы', () => {
@@ -45,42 +43,5 @@ describe('печать кода', () => {
 
   it('один и тот же seed даёт одну и ту же печать', () => {
     expect(buildTypingScript(source, 5)).toEqual(buildTypingScript(source, 5));
-  });
-});
-
-describe('движение по комнате', () => {
-  const bounds: Box = { x: 0, y: 0, w: 100, h: 100 };
-  const table: Box = { x: 40, y: 40, w: 20, h: 20 };
-  const foot = { w: 10, h: 4 };
-
-  it('не проходит сквозь мебель', () => {
-    const next = moveWithCollision({ x: 20, y: 45 }, 30, 0, foot, [table], bounds);
-    expect(next.x + foot.w).toBeLessThanOrEqual(table.x);
-  });
-
-  it('скользит вдоль препятствия, если идёт по диагонали', () => {
-    const next = moveWithCollision({ x: 25, y: 45 }, 10, 5, foot, [table], bounds);
-    expect(next.x).toBe(30);
-    expect(next.y).toBe(50);
-  });
-
-  it('не выходит за стены', () => {
-    const next = moveWithCollision({ x: 5, y: 5 }, -20, -20, foot, [], bounds);
-    expect(next).toEqual({ x: 0, y: 0 });
-  });
-});
-
-describe('время суток', () => {
-  it('днём светло, ночью темно', () => {
-    expect(skyAt(12 * 60).darkness).toBe(0);
-    expect(skyAt(0).darkness).toBeGreaterThan(0.5);
-    expect(skyAt(23 * 60).stars).toBe(true);
-    expect(skyAt(13 * 60).stars).toBe(false);
-  });
-
-  it('рассвет плавный, без скачков', () => {
-    for (let m = 0; m < 24 * 60; m += 5) {
-      expect(Math.abs(skyAt(m + 5).darkness - skyAt(m).darkness)).toBeLessThan(0.08);
-    }
   });
 });

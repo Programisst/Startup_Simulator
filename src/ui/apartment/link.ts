@@ -40,3 +40,8 @@ export const AUTOPILOT_IDLE_SECONDS = 5;
 export function worksAtDesk(activity: FounderActivity): boolean {
   return activity === 'building' || activity === 'sideJob';
 }
+
+/** Сколько игровых минут показывают часы квартиры после dt секунд. Стоят на паузе и пока герой спит. */
+export function advanceClock(minutes: number, dt: number, o: { rate: number; paused: boolean; sleeping: boolean }): number {
+  return o.paused || o.sleeping ? minutes : minutes + dt * o.rate;
+}

@@ -1,6 +1,6 @@
 // Логика «настоящего компьютера»: адресная строка, печать кода игроком, терминал, поиск.
 import { describe, expect, it } from 'vitest';
-import { advanceCode, navigateFromInput, repairPrefix, resultsFor, runCommand } from '../src/ui/room/laptop/logic';
+import { advanceCode, navigateFromInput, repairPrefix, resultsFor, runCommand } from '../src/ui/apartment/laptop/logic';
 
 describe('адресная строка', () => {
   it('открывает свой продукт по адресу localhost', () => {
@@ -77,7 +77,7 @@ describe('поиск', () => {
 
 describe('дерево файлов', () => {
   it('свёрнутая папка прячет всё, что внутри', async () => {
-    const { visibleTree } = await import('../src/ui/room/laptop/project');
+    const { visibleTree } = await import('../src/ui/apartment/laptop/project');
     const names = visibleTree(['src']).map((n) => n.name);
     expect(names).toContain('src');
     expect(names).not.toContain('session.ts');
@@ -85,7 +85,7 @@ describe('дерево файлов', () => {
   });
 
   it('знает, какие папки раскрыть, чтобы показать файл', async () => {
-    const { foldersOf } = await import('../src/ui/room/laptop/project');
+    const { foldersOf } = await import('../src/ui/apartment/laptop/project');
     expect(foldersOf('session.ts')).toEqual(['api', 'src']);
     expect(foldersOf('package.json')).toEqual([]);
   });

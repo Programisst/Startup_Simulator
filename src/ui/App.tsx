@@ -4,7 +4,7 @@ import { Coach, useTutorialStep } from './components/Coach';
 import { EndScreen } from './components/EndScreen';
 import { EventModal } from './components/EventModal';
 import { TopBar } from './components/TopBar';
-import { GameRoom, has3D, SimpleRoom } from './office/GameRoom';
+import { canDraw, GameRoom } from './office/GameRoom';
 import { Finance } from './screens/Finance';
 import { Marketing } from './screens/Marketing';
 import { NewGame } from './screens/NewGame';
@@ -13,7 +13,8 @@ import { Product } from './screens/Product';
 import { Team } from './screens/Team';
 import { DAY_MS, useStore, type ScreenId } from './store';
 
-const SCREENS: ScreenId[] = ['office', 'overview', 'product', 'team', 'marketing', 'finance'];
+/** Меню сбоку — только когда квартиру показать нельзя, поэтому «Офиса» в нём нет. */
+const SCREENS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
 
 export function App() {
   const { t } = useTranslation();
@@ -25,8 +26,8 @@ export function App() {
   const lastError = useStore((s) => s.lastError);
   const computerOpen = useStore((s) => s.computerOpen);
   const roomBroken = useStore((s) => s.roomBroken);
-  // С 3D игра идёт в квартире, а меню компании — в компьютере. Без 3D — прежний вид с меню сбоку.
-  const roomMode = useMemo(has3D, []) && !roomBroken;
+  // Игра идёт в квартире, а меню компании — в компьютере. Если квартиру нарисовать нельзя — обычный вид с меню сбоку.
+  const roomMode = useMemo(canDraw, []) && !roomBroken;
   const tutorial = useTutorialStep(!roomMode);
 
   const running = game !== null && game.status === 'running' && game.pendingEvent === null && speed > 0;
@@ -60,12 +61,15 @@ export function App() {
     );
   }
 
+  // Без квартиры вместо «Офиса» открывается сводка.
+  const shown: ScreenId = screen === 'office' ? 'overview' : screen;
+
   return (
     <div className="layout" data-coach={tutorial ?? undefined}>
       <TopBar />
       <nav className="sidebar">
         {SCREENS.map((id) => (
-          <button key={id} data-nav={id} className={id === screen ? 'active' : ''} onClick={() => setScreen(id)}>
+          <button key={id} data-nav={id} className={id === shown ? 'active' : ''} onClick={() => setScreen(id)}>
             {t(`nav.${id}`)}
           </button>
         ))}
@@ -73,12 +77,11 @@ export function App() {
       <main className="content">
         <Coach step={tutorial} inline />
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
-        {screen === 'office' && <SimpleRoom />}
-        {screen === 'overview' && <Overview />}
-        {screen === 'product' && <Product />}
-        {screen === 'team' && <Team />}
-        {screen === 'marketing' && <Marketing />}
-        {screen === 'finance' && <Finance />}
+        {shown === 'overview' && <Overview />}
+        {shown === 'product' && <Product />}
+        {shown === 'team' && <Team />}
+        {shown === 'marketing' && <Marketing />}
+        {shown === 'finance' && <Finance />}
       </main>
       {overlays}
     </div>

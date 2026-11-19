@@ -1,6 +1,12 @@
 // Поиск пути по квартире: пол делится на клетки по 10 см, герой идёт по свободным клеткам
 // в обход мебели, а потом маршрут выпрямляется — остаются только точки поворота.
-import type { Box } from '../room/engine/physics';
+/** Прямоугольник на полу. */
+export interface Box {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 export interface FloorPoint {
   x: number;
