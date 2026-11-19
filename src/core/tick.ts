@@ -18,6 +18,7 @@ import {
   valuation,
   viralPerDay,
 } from './formulas';
+import { stepMilestones } from './milestones';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -256,6 +257,9 @@ export function tick(state: GameState, content: GameContent): GameState {
     s.monthExpenses = 0;
     s.monthSideIncome = 0;
   }
+
+  // 7а. Цели на пути компании: награда за ближайшую достигнутую
+  stepMilestones(s, content);
 
   // 8. Победа
   if (s.status === 'running') {

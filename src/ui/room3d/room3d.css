@@ -435,3 +435,13 @@ html.r3-standalone body {
   0%, 100% { box-shadow: 0 0 0 2px #f6c34a; }
   50% { box-shadow: 0 0 0 7px rgba(246, 195, 74, 0); }
 }
+
+/* Ближайшая цель — под кнопками времени. */
+.r3-hud.r3-hud-right { flex-wrap: wrap; justify-content: flex-end; max-width: 330px; }
+.r3-goal { flex: 1 1 100%; align-items: flex-start; padding: 11px 14px 12px; pointer-events: none; }
+.r3-goal .goal { width: 100%; }
+.r3-goal b { font-size: 14px; color: #f6efe3; }
+.r3-goal .goal-label { color: #f6c34a; }
+.r3-goal .goal-hint, .r3-goal .goal-meta { color: #c4baad; }
+.r3-goal .goal-bar { background: rgba(255, 255, 255, 0.14); }
+.r3-goal .goal-bar i { background: #a6e28a; }

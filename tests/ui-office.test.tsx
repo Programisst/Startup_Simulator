@@ -9,7 +9,7 @@ import { App } from '../src/ui/App';
 import { has3D } from '../src/ui/office/GameRoom';
 import { worksAtDesk } from '../src/ui/room3d/link';
 import { useStore, type ScreenId } from '../src/ui/store';
-import { advance, baseSetup, newGame, run } from './helpers';
+import { advance, baseSetup, launchedGame, newGame, run } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -81,5 +81,32 @@ describe('когда герой сам садится работать', () => {
     expect(worksAtDesk('sideJob')).toBe(true);
     expect(worksAtDesk('idle')).toBe(false);
     expect(worksAtDesk('broke')).toBe(false);
+  });
+});
+
+describe('цель компании на экране', () => {
+  it('ближайшая цель видна с подсказкой и наградой', () => {
+    show(newGame(), 'overview');
+    expect(box.textContent).toContain('Ближайшая цель');
+    expect(box.textContent).toContain('Сделать основу продукта');
+    expect(box.textContent?.match(/\bgoalsLadder\.[A-Za-z0-9_.]+/g) ?? []).toEqual([]);
+  });
+
+  it('когда цель достигнута, всплывает уведомление, а при загрузке старые цели не всплывают', () => {
+    const s = { ...launchedGame(), users: 40 };
+    show(s, 'overview');
+    expect(box.querySelector('.goal-toast')).toBeNull();
+    act(() => useStore.getState().step());
+    expect(box.querySelector('.goal-toast')?.textContent).toContain('Цель достигнута');
+    // Цели засчитываются по порядку, по одной в день: первой идёт запуск.
+    expect(box.querySelector('.goal-toast')?.textContent).toContain('Выпустить продукт');
+    act(() => useStore.getState().step());
+    expect(box.querySelector('.goal-toast')?.textContent).toContain('Первые 10 пользователей');
+  });
+
+  it('после банкротства игра объясняет, что пошло не так', () => {
+    show({ ...newGame(), status: 'bankrupt' }, 'overview');
+    expect(box.textContent).toContain('Что пошло не так.');
+    expect(box.textContent).toContain('раньше, чем продукт вышел на рынок');
   });
 });
