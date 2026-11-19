@@ -3,7 +3,8 @@
 import { applyEffects } from './events';
 import { coffeeReady, energyOf, focusOf } from './founder';
 import { nextOffice } from './office';
-import { fire, hire, setSalary, type TeamChange } from './team';
+import { loanLimit, loanTerms } from './bank';
+import { fire, hire, setSalary, talk, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
 function fail(error: CommandError): CommandResult {
@@ -71,6 +72,41 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
 
     case 'fire':
       return applyTeam(state, fire(state, cmd.employeeId, content));
+
+    case 'talk': {
+      const result = talk(state, cmd.employeeId, content);
+      if (!result.ok) return fail(result.error);
+      // Разговор по душам требует сил.
+      return { ok: true, state: { ...state, team: result.team, energy: Math.max(0, energyOf(state) - content.config.team.talkEnergy) } };
+    }
+
+    case 'takeLoan': {
+      const bank = content.config.bank;
+      if (!isMoney(cmd.amount, 1e9) || cmd.amount < bank.minLoan) return fail('invalidValue');
+      if (cmd.amount > loanLimit(state, bank)) return fail('overLoanLimit');
+      const terms = loanTerms(cmd.amount, bank);
+      return {
+        ok: true,
+        state: {
+          ...state,
+          cash: Math.round((state.cash + cmd.amount) * 100) / 100,
+          loans: [...state.loans, { dailyPayment: terms.total / bank.loanTermDays, untilDay: state.day + bank.loanTermDays }],
+        },
+      };
+    }
+
+    case 'deposit': {
+      if (!isMoney(cmd.amount, 1e12) || cmd.amount <= 0) return fail('invalidValue');
+      if (cmd.amount > state.cash) return fail('notEnoughCash');
+      return { ok: true, state: { ...state, cash: Math.round((state.cash - cmd.amount) * 100) / 100, deposit: Math.round(((state.deposit ?? 0) + cmd.amount) * 100) / 100 } };
+    }
+
+    case 'withdraw': {
+      const have = state.deposit ?? 0;
+      if (!isMoney(cmd.amount, 1e12) || cmd.amount <= 0 || cmd.amount > have + 0.005) return fail('invalidValue');
+      const amount = Math.min(cmd.amount, have);
+      return { ok: true, state: { ...state, cash: Math.round((state.cash + amount) * 100) / 100, deposit: Math.round((have - amount) * 100) / 100 } };
+    }
 
     case 'setSalary':
       if (!isMoney(cmd.salary, 1_000_000)) return fail('invalidValue');

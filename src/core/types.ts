@@ -190,6 +190,8 @@ export interface DifficultyDef {
 export type EmployeeRole = 'developer' | 'marketer';
 /** Черта характера: старательный, спокойный, преданный, небрежный. */
 export type TraitId = 'diligent' | 'calm' | 'loyal' | 'sloppy';
+/** Что человеком движет: деньги, рост, спокойствие, идея, люди рядом. От этого зависит, что поднимает и роняет его мотивацию. */
+export type DriverId = 'money' | 'growth' | 'peace' | 'mission' | 'people';
 
 /** Настройки найма и команды. */
 export interface TeamConfig {
@@ -222,9 +224,26 @@ export interface TeamConfig {
   quitDailyChance: number;
   /** Прибавка к выработке старательного */
   diligentBonus: number;
+  /** Разговор один на один: прибавка к мотивации, цена в силах основателя и перерыв между разговорами */
+  talkBoost: number;
+  talkEnergy: number;
+  talkCooldownDays: number;
   /** Прибавка к притоку пользователей за единицу навыка маркетолога и её потолок */
   marketingPerPoint: number;
   marketingCap: number;
+}
+
+/** Банк: кредит и вклад. */
+export interface BankConfig {
+  /** Годовая ставка кредита и срок в днях */
+  loanRateYear: number;
+  loanTermDays: number;
+  minLoan: number;
+  /** Предел долга: столько дают без дохода плюс столько месячных доходов продукта */
+  baseLimit: number;
+  revenueMultiple: number;
+  /** Годовая ставка по вкладу */
+  depositRateYear: number;
 }
 
 /** Силы основателя: как он устаёт и отдыхает. */
@@ -287,6 +306,7 @@ export interface GameConfig {
   team: TeamConfig;
   founder: FounderConfig;
   /** Темп партии: во сколько раз быстрее приходят пользователи и деньги, чем в «честной» модели */
+  bank: BankConfig;
   pace: { acquisition: number; revenue: number; /** Интерес к новинке: во сколько раз больше людей приходит первые дни после запуска */ launchBoost: number; launchDays: number };
   offices: OfficeDef[];
 }
@@ -374,6 +394,8 @@ export interface Candidate {
   /** Зарплата в месяц, на которую он согласен */
   salaryAsk: number;
   nameSeed: number;
+  /** Что им движет. Необязательное: у людей из старых сохранений поля нет — считаются «за деньги». */
+  driver?: DriverId;
 }
 
 export interface Employee extends Candidate {
@@ -382,6 +404,8 @@ export interface Employee extends Candidate {
   hiredDay: number;
   /** Мотивация 0…100 */
   motivation: number;
+  /** День последнего разговора один на один */
+  lastTalkDay?: number;
 }
 
 export interface TeamLogEntry {
@@ -491,6 +515,8 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Деньги на вкладе в банке: приносят проценты, в расчёт «денег на счёте» не входят */
+  deposit?: number;
   /** Офис компании (id из настроек); нет поля — комната основателя */
   office?: string;
   /** Доля основателя в компании, 1 = 100%; уменьшается с каждой инвестицией */
@@ -568,6 +594,11 @@ export type Command =
   | { type: 'hire'; candidateId: number }
   | { type: 'fire'; employeeId: number }
   | { type: 'setSalary'; employeeId: number; salary: number }
+  /** Разговор с сотрудником один на один */
+  | { type: 'talk'; employeeId: number }
+  | { type: 'takeLoan'; amount: number }
+  | { type: 'deposit'; amount: number }
+  | { type: 'withdraw'; amount: number }
   | { type: 'chooseEvent'; choiceId: string }
   | { type: 'continueAsSandbox' };
 
@@ -584,6 +615,8 @@ export type CommandError =
   | 'alreadyLaunched'
   | 'coffeeTooSoon'
   | 'notEnoughCash'
+  | 'talkTooSoon'
+  | 'overLoanLimit'
   | 'noBiggerOffice'
   | 'noSuchCandidate'
   | 'noSuchEmployee'

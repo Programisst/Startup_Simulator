@@ -13,3 +13,5 @@ export { milestoneView, nextMilestone, bankruptcyCause, type MilestoneView, type
 export { energyOf, energyFactor, founderWorkPerDay, coffeeReady, coffeeActive } from './founder';
 export { REVIEW_VARIANTS } from './news';
 export { officeView, officeOf, nextOffice, officeIndex, type OfficeView } from './office';
+export { bankView, loanLimit, loanTerms, debtLeft, type BankView } from './bank';
+export { driverOf } from './team';

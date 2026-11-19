@@ -1,6 +1,7 @@
 // Шаг дня: берёт состояние и возвращает состояние на следующий день.
 // Формулы — в formulas.ts, их описание — в docs/02-economy.md.
 
+import { stepBank } from './bank';
 import { conditionHolds, eventSubject, rollEvent } from './events';
 import { energyAfterDay, energyOf, focusOf, founderBusy, founderWorkPerDay } from './founder';
 import {
@@ -241,6 +242,7 @@ export function tick(state: GameState, content: GameContent): GameState {
 
   s.cash = cents(s.cash + b.revenue + b.sideIncome - b.expenses);
   s.lastDay = b;
+  stepBank(s, cfg.bank);
 
   // 5. Репутация
   s.scandal = s.scandal * 0.98;

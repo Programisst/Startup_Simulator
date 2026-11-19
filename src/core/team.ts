@@ -5,9 +5,12 @@ import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
 import { officeIndex, officeOf } from './office';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
-import type { Candidate, Employee, EmployeeRole, GameContent, GameState, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
+import type { Candidate, DriverId, Employee, EmployeeRole, GameContent, GameState, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
 const TRAITS: TraitId[] = ['diligent', 'calm', 'loyal', 'sloppy'];
+const DRIVERS: DriverId[] = ['money', 'growth', 'peace', 'mission', 'people'];
+/** Что движет человеком; у людей из старых сохранений поля нет. */
+export const driverOf = (e: Candidate): DriverId => e.driver ?? 'money';
 /** Сдвиг seed, чтобы случайность найма не совпадала со случайностью рынка. */
 const TEAM_SEED_SALT = 0x5eed7ea3;
 const LOG_LIMIT = 50;
@@ -20,11 +23,12 @@ function makeCandidate(rng: RngState, id: number, cfg: TeamConfig): { candidate:
   const traitRoll = nextInt(skillRoll.next, 0, TRAITS.length - 1);
   const spread = nextRange(traitRoll.next, 1 - cfg.salarySpread, 1 + cfg.salarySpread);
   const nameRoll = nextInt(spread.next, 0, 9999);
+  const driverRoll = nextInt(nameRoll.next, 0, DRIVERS.length - 1);
   // Зарплата растёт с навыком быстрее, чем сам навык: сильные специалисты стоят непропорционально дорого.
   const ask = cfg.salaryBase[role] * skill ** cfg.salaryExponent * spread.value;
   return {
-    candidate: { id, role, skill, trait: TRAITS[traitRoll.value]!, salaryAsk: Math.max(50, Math.round(ask / 50) * 50), nameSeed: nameRoll.value },
-    rng: nameRoll.next,
+    candidate: { id, role, skill, trait: TRAITS[traitRoll.value]!, salaryAsk: Math.max(50, Math.round(ask / 50) * 50), nameSeed: nameRoll.value, driver: DRIVERS[driverRoll.value]! },
+    rng: driverRoll.next,
   };
 }
 
@@ -81,14 +85,26 @@ export function sloppyDevelopers(team: TeamState): number {
 }
 
 /** К какой мотивации сотрудник стремится при нынешних условиях. */
-export function motivationTarget(e: Employee, s: Pick<GameState, 'rush' | 'cash' | 'months'>, cfg: TeamConfig): number {
+/** Что нужно знать о компании, чтобы понять настроение человека. */
+export type MoodContext = Pick<GameState, 'rush' | 'cash' | 'months' | 'reputation'> & { teamSize: number };
+
+/** К какой мотивации сотрудник стремится при нынешних условиях. Зависит от того, что им движет. */
+export function motivationTarget(e: Employee, s: MoodContext, cfg: TeamConfig): number {
+  const driver = driverOf(e);
   let target = cfg.startMotivation;
   // Платят меньше ожиданий — мотивация падает быстро; больше — растёт, но с потолком.
-  target += clamp((e.salary / e.salaryAsk - 1) * 100, -40, 20);
-  if (s.rush && e.trait !== 'calm') target -= cfg.rushPenalty;
+  // Тому, кто работает за деньги, зарплата важна в полтора раза сильнее; идейному — вдвое слабее.
+  const salaryWeight = driver === 'money' ? 1.5 : driver === 'mission' ? 0.5 : 1;
+  target += clamp((e.salary / e.salaryAsk - 1) * 100 * salaryWeight, -40, 20);
+  if (s.rush && e.trait !== 'calm') target -= cfg.rushPenalty * (driver === 'peace' ? 2 : 1);
+  if (!s.rush && driver === 'peace') target += 5;
   if (s.cash < 0) target -= cfg.brokePenalty;
   const lastMonth = s.months[s.months.length - 1];
+  const prevMonth = s.months[s.months.length - 2];
   if (lastMonth && lastMonth.profit > 0) target += cfg.profitBonus;
+  if (driver === 'growth' && lastMonth && prevMonth) target += lastMonth.users > prevMonth.users * 1.05 ? 8 : -8;
+  if (driver === 'mission') target += s.reputation >= 50 ? 10 : s.reputation < 25 ? -5 : 0;
+  if (driver === 'people') target += s.teamSize <= 1 ? -8 : Math.min(9, (s.teamSize - 1) * 3);
   if (e.trait === 'loyal') target += cfg.loyalBonus;
   return clamp(target, 0, 100);
 }
@@ -106,7 +122,7 @@ export function stepTeam(s: GameState, content: GameContent): TeamState {
   const employees: Employee[] = [];
 
   for (const e of team.employees) {
-    const target = motivationTarget(e, s, cfg);
+    const target = motivationTarget(e, { ...s, teamSize: team.employees.length }, cfg);
     const motivation = clamp(e.motivation + (target - e.motivation) * cfg.motivationSpeed, 0, 100);
     if (motivation < cfg.quitBelow) {
       const roll = nextFloat(rng);
@@ -163,6 +179,27 @@ export function fire(s: GameState, employeeId: number, content: GameContent): Te
   };
 }
 
+function talkInDays(e: Employee, day: number, cfg: TeamConfig): number {
+  return e.lastTalkDay === undefined ? 0 : Math.max(0, cfg.talkCooldownDays - (day - e.lastTalkDay));
+}
+
+/** Разговор один на один: поднимает мотивацию, но не чаще раза в несколько недель. */
+export function talk(s: GameState, employeeId: number, content: GameContent): TeamChange | { ok: false; error: 'talkTooSoon' } {
+  const cfg = content.config.team;
+  const team = teamOf(s, content);
+  const employee = team.employees.find((e) => e.id === employeeId);
+  if (!employee) return { ok: false, error: 'noSuchEmployee' };
+  if (talkInDays(employee, s.day, cfg) > 0) return { ok: false, error: 'talkTooSoon' };
+  return {
+    ok: true,
+    cashDelta: 0,
+    team: {
+      ...team,
+      employees: team.employees.map((e) => (e.id === employeeId ? { ...e, motivation: clamp(e.motivation + cfg.talkBoost, 0, 100), lastTalkDay: s.day } : e)),
+    },
+  };
+}
+
 export function setSalary(s: GameState, employeeId: number, salary: number, content: GameContent): TeamChange {
   const team = teamOf(s, content);
   if (!team.employees.some((e) => e.id === employeeId)) return { ok: false, error: 'noSuchEmployee' };
@@ -202,6 +239,12 @@ export interface TeamMemberView extends Employee {
   motivationTarget: number;
   /** Может уйти сам, если ничего не менять */
   mayQuit: boolean;
+  driver: DriverId;
+  /** Настроение для реплики: доволен, спокоен, недоволен */
+  mood: 'high' | 'mid' | 'low';
+  /** Можно ли поговорить сейчас и через сколько дней будет можно */
+  canTalk: boolean;
+  talkInDays: number;
   severance: number;
 }
 
@@ -238,12 +281,16 @@ export function teamView(s: GameState, content: GameContent): TeamView {
   const founder = founderWorkPerDay(s, cfg) * rush;
   return {
     members: team.employees.map((e) => {
-      const target = motivationTarget(e, s, cfg.team);
+      const target = motivationTarget(e, { ...s, teamSize: team.employees.length }, cfg.team);
       return {
         ...e,
         motivationFactor: motivationFactor(e.motivation, cfg.team),
         motivationTarget: target,
         mayQuit: target < cfg.team.quitBelow,
+        driver: driverOf(e),
+        mood: e.motivation >= 75 ? ('high' as const) : e.motivation >= 45 ? ('mid' as const) : ('low' as const),
+        canTalk: talkInDays(e, s.day, cfg.team) === 0,
+        talkInDays: talkInDays(e, s.day, cfg.team),
         severance: e.salary * cfg.team.severanceMonths,
       };
     }),

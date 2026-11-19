@@ -6,6 +6,7 @@ import { Coach } from '../components/Coach';
 import { GoalCard } from '../components/GoalCard';
 import { TopBar } from '../components/TopBar';
 import { FeedApp, GoalsApp, MailApp, SettingsApp } from '../screens/Apps';
+import { Bank } from '../screens/Bank';
 import { Finance } from '../screens/Finance';
 import { Marketing } from '../screens/Marketing';
 import { Overview } from '../screens/Overview';
@@ -71,6 +72,7 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
         {tab === 'mail' && <MailApp />}
         {tab === 'goals' && <GoalsApp />}
         {tab === 'settings' && <SettingsApp />}
+        {tab === 'bank' && <Bank />}
       </main>
     </div>
   );

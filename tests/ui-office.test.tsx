@@ -42,7 +42,7 @@ describe('экран «Офис»', () => {
   it('в меню есть и офис, и сводка', () => {
     show(newGame(), 'office');
     const nav = [...box.querySelectorAll('.sidebar button')].map((b) => b.textContent);
-    expect(nav).toEqual(['Офис', 'Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы', 'Сообщения', 'Почта', 'Цели', 'Настройки']);
+    expect(nav).toEqual(['Офис', 'Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы', 'Банк', 'Сообщения', 'Почта', 'Цели', 'Настройки']);
   });
 
   it('без 3D показывает запасную комнату с занятием основателя, без пропущенных текстов', () => {
@@ -116,7 +116,7 @@ describe('разделы из нижней панели компьютера', (
 
   it('сообщения, почта, цели и настройки открываются без пропущенных текстов', () => {
     const s = advance(launchedGame(), 60);
-    for (const screen of ['feed', 'mail', 'goals', 'settings', 'finance', 'team', 'product'] as const) {
+    for (const screen of ['feed', 'mail', 'goals', 'settings', 'finance', 'team', 'product', 'bank'] as const) {
       show(s, screen);
       noMissing();
     }
@@ -156,5 +156,47 @@ describe('разделы из нижней панели компьютера', (
       again.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     });
     expect(useStore.getState().tutorial).toBe(true);
+  });
+});
+
+describe('банк и характеры на экране', () => {
+  const click = (el: Element) =>
+    act(() => {
+      el.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+
+  it('кредит берётся кнопкой, долг появляется на экране', () => {
+    show(newGame(), 'bank');
+    const before = useStore.getState().game!.cash;
+    click(box.querySelector('[data-bank="take"]')!);
+    const game = useStore.getState().game!;
+    expect(game.cash).toBeGreaterThan(before);
+    expect(game.loans).toHaveLength(1);
+    expect(box.textContent).toContain('Ваши кредиты');
+  });
+
+  it('вклад: положить и снять всё', () => {
+    show({ ...newGame(), cash: 10_000 }, 'bank');
+    const input = box.querySelector<HTMLInputElement>('[data-bank="amount"]')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '4000');
+    act(() => {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    click(box.querySelector('[data-bank="put"]')!);
+    expect(useStore.getState().game).toMatchObject({ cash: 6000, deposit: 4000 });
+    click(box.querySelector('[data-bank="withdrawAll"]')!);
+    expect(useStore.getState().game).toMatchObject({ cash: 10_000, deposit: 0 });
+  });
+
+  it('у сотрудника видны характер, биография и реплика; разговор поднимает мотивацию', () => {
+    const s = newGame();
+    const worker = { id: 900, role: 'developer' as const, skill: 1, trait: 'calm' as const, salaryAsk: 3000, salary: 3000, nameSeed: 5, hiredDay: 0, motivation: 30, driver: 'people' as const };
+    show({ ...s, cash: 1e6, team: { ...s.team!, employees: [worker] } }, 'team');
+    expect(box.textContent).toContain('Держится за команду');
+    expect(box.textContent).toContain('Мне не с кем даже кофе выпить');
+    expect(box.querySelector('.profile')).not.toBeNull();
+    click(box.querySelector('[data-talk="900"]')!);
+    expect(useStore.getState().game!.team!.employees[0]!.motivation).toBeGreaterThan(30);
+    expect(box.textContent).toContain('Говорили недавно');
   });
 });

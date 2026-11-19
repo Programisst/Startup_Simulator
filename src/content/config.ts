@@ -45,6 +45,9 @@ export const config: GameConfig = {
     quitBelow: 25,
     quitDailyChance: 0.05,
     diligentBonus: 0.15,
+    talkBoost: 8,
+    talkEnergy: 3,
+    talkCooldownDays: 20,
     marketingPerPoint: 0.2,
     marketingCap: 2,
   },
@@ -65,6 +68,7 @@ export const config: GameConfig = {
     focusBonus: 0.5,
     focusDecayPerDay: 0.34,
   },
+  bank: { loanRateYear: 0.18, loanTermDays: 360, minLoan: 1000, baseLimit: 3000, revenueMultiple: 4, depositRateYear: 0.06 },
   // Партия про рост, а не про выживание впроголодь: рынок откликается быстрее, чем в «честной» модели.
   pace: { acquisition: 1.3, revenue: 1.5, launchBoost: 3, launchDays: 30 },
   offices: [
