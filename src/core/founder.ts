@@ -13,6 +13,9 @@ export function energyFactor(energy: number, cfg: FounderConfig): number {
   return cfg.minFactor + (1 - cfg.minFactor) * (Math.max(0, energy) / cfg.tiredBelow);
 }
 
+/** Сосредоточенность 0…1: её даёт набор кода самим игроком. */
+export const focusOf = (s: GameState): number => clamp(s.focus ?? 0, 0, 1);
+
 export const coffeeActive = (s: GameState): boolean => (s.coffeeUntilDay ?? -1) > s.day;
 export const coffeeReady = (s: GameState): boolean => s.day >= (s.coffeeReadyDay ?? 0);
 
@@ -20,7 +23,8 @@ export const coffeeReady = (s: GameState): boolean => s.day >= (s.coffeeReadyDay
 export function founderWorkPerDay(s: GameState, cfg: GameConfig): number {
   if (s.resting) return 0;
   const coffee = coffeeActive(s) ? cfg.founder.coffeeBoost : 1;
-  return cfg.founderSkill * (1 - s.sideJobShare) * energyFactor(energyOf(s), cfg.founder) * coffee;
+  const focus = 1 + cfg.founder.focusBonus * focusOf(s);
+  return cfg.founderSkill * (1 - s.sideJobShare) * energyFactor(energyOf(s), cfg.founder) * coffee * focus;
 }
 
 /** Был ли у основателя сегодня рабочий день: есть задачи или подработка. */

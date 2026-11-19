@@ -3,6 +3,7 @@
 
 import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
+import { officeIndex, officeOf } from './office';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
 import type { Candidate, Employee, EmployeeRole, GameContent, GameState, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
@@ -27,11 +28,11 @@ function makeCandidate(rng: RngState, id: number, cfg: TeamConfig): { candidate:
   };
 }
 
-function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number): TeamState {
+function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, count = cfg.candidatesShown): TeamState {
   let rng = team.rng;
   let nextId = team.nextId;
   const candidates: Candidate[] = [];
-  for (let i = 0; i < cfg.candidatesShown; i++) {
+  for (let i = 0; i < count; i++) {
     const made = makeCandidate(rng, nextId, cfg);
     candidates.push(made.candidate);
     rng = made.rng;
@@ -119,7 +120,8 @@ export function stepTeam(s: GameState, content: GameContent): TeamState {
   }
 
   team = { ...team, rng, employees, log };
-  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1);
+  // В офисе побольше кандидатов приходит больше: компанию лучше знают.
+  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1, cfg.candidatesShown + officeIndex(s, content.config));
   return team;
 }
 
@@ -131,7 +133,7 @@ export function hire(s: GameState, candidateId: number, content: GameContent): T
   const team = teamOf(s, content);
   const candidate = team.candidates.find((c) => c.id === candidateId);
   if (!candidate) return { ok: false, error: 'noSuchCandidate' };
-  if (team.employees.length >= cfg.maxSize) return { ok: false, error: 'teamFull' };
+  if (team.employees.length >= officeOf(s, content.config).seats) return { ok: false, error: 'teamFull' };
   const employee: Employee = { ...candidate, salary: candidate.salaryAsk, hiredDay: s.day, motivation: cfg.startMotivation };
   return {
     ok: true,
@@ -184,6 +186,7 @@ export function cashDaysAfterHire(s: GameState, salary: number, content: GameCon
     s.adSpendPerDay * 30 +
     s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30 +
     payrollPerMonth(teamOf(s, content)) +
+    officeOf(s, cfg).rentPerMonth +
     salary;
   const burn = expenses - income;
   if (burn <= 0) return null;
@@ -250,8 +253,8 @@ export function teamView(s: GameState, content: GameContent): TeamView {
     }),
     log: team.log,
     size: team.employees.length,
-    maxSize: cfg.team.maxSize,
-    canHire: team.employees.length < cfg.team.maxSize && s.status === 'running',
+    maxSize: officeOf(s, cfg).seats,
+    canHire: team.employees.length < officeOf(s, cfg).seats && s.status === 'running',
     payrollPerMonth: payrollPerMonth(team),
     workPerDay: founder + teamWorkPerDay(team, cfg.team) * rush,
     founderWorkPerDay: founder,

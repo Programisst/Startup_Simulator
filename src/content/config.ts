@@ -21,9 +21,9 @@ export const config: GameConfig = {
   eventMinGapDays: 10,
   eventDailyChance: 0.08,
   bankruptcyDays: 30,
-  goalProfitPerMonth: 3000,
+  goalProfitPerMonth: 30_000,
   goalProfitMonths: 3,
-  goalValuation: 10_000_000,
+  goalValuation: 30_000_000,
   marketVariation: 0.2,
   team: {
     maxSize: 3,
@@ -46,7 +46,7 @@ export const config: GameConfig = {
     quitDailyChance: 0.05,
     diligentBonus: 0.15,
     marketingPerPoint: 0.2,
-    marketingCap: 0.6,
+    marketingCap: 2,
   },
   founder: {
     drainPerDay: 1.8,
@@ -61,5 +61,17 @@ export const config: GameConfig = {
     coffeeCooldownDays: 10,
     coffeeCost: 5,
     dilemmaMinCost: 12,
+    focusChars: 240,
+    focusBonus: 0.5,
+    focusDecayPerDay: 0.34,
   },
+  // Партия про рост, а не про выживание впроголодь: рынок откликается быстрее, чем в «честной» модели.
+  pace: { acquisition: 1.3, revenue: 1.5, launchBoost: 3, launchDays: 30 },
+  offices: [
+    { id: 'home', seats: 3, moveCost: 0, rentPerMonth: 0 },
+    { id: 'coworking', seats: 6, moveCost: 2000, rentPerMonth: 600 },
+    { id: 'smallOffice', seats: 12, moveCost: 8000, rentPerMonth: 2500 },
+    { id: 'office', seats: 30, moveCost: 30_000, rentPerMonth: 9000 },
+    { id: 'floor', seats: 80, moveCost: 120_000, rentPerMonth: 30_000 },
+  ],
 };

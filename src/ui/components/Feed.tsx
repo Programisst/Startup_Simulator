@@ -22,6 +22,10 @@ export function useFeedText(): (item: NewsItem) => string {
       case 'monthProfit':
       case 'monthLoss':
         return t(`feed.items.${item.kind}`, { value: money(item.value ?? 0) });
+      case 'office':
+        return t('feed.items.office', { name: t(`office.tiers.${item.id}`) });
+      case 'invest':
+        return t('feed.items.invest', { value: money(item.value ?? 0) });
       case 'review': {
         const pool = t(`feed.reviews.${item.tone ?? 'mixed'}`, { returnObjects: true }) as string[];
         return t('feed.items.review', { text: pool[(item.variant ?? 0) % pool.length] });
@@ -33,7 +37,7 @@ export function useFeedText(): (item: NewsItem) => string {
 }
 
 /** Список последних новостей — панель на экране «Сводка». */
-export function FeedList() {
+export function FeedList({ limit = 10 }: { limit?: number } = {}) {
   const { t } = useTranslation();
   const news = useStore((s) => s.game?.news) ?? [];
   const text = useFeedText();
@@ -41,7 +45,7 @@ export function FeedList() {
     <ul className="log feed">
       {news.length === 0 && <li className="muted">{t('feed.empty')}</li>}
       {news
-        .slice(-10)
+        .slice(-limit)
         .reverse()
         .map((item, i) => (
           <li key={`${item.day}-${item.kind}-${i}`} className={`feed-${item.tone ?? item.kind}`}>

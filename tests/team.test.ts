@@ -145,7 +145,7 @@ describe('вклад команды в работу', () => {
   });
 
   it('прибавка от маркетологов ограничена потолком', () => {
-    const many = withTeam(newGame(), [1, 2, 3].map((i) => employee({ id: 900 + i, role: 'marketer', skill: 1.6 })));
+    const many = withTeam(newGame(), Array.from({ length: 12 }, (_, i) => employee({ id: 900 + i, role: 'marketer', skill: 1.6 })));
     expect(teamView(many, content).marketingBoost).toBeCloseTo(1 + cfg.marketingCap, 6);
   });
 

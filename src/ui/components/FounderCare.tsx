@@ -33,6 +33,9 @@ export function FounderCare() {
           {t('founderCare.coffee')}
         </button>
       </div>
+      <p className={f.focus > 0 ? 'positive' : 'muted'} title={t('founderCare.focusHint')}>
+        {f.focus > 0 ? t('founderCare.focusLine', { pct: num(f.focus * 100), boost: num(f.focusBoost * 100) }) : t('founderCare.focusHint')}
+      </p>
       {f.coffeeActive ? (
         <p className="muted">{t('founderCare.coffeeActive', { days: f.coffeeDaysLeft })}</p>
       ) : (

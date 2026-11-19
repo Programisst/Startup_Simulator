@@ -69,6 +69,8 @@ export interface EventCondition {
   cashNegative?: boolean;
   /** Силы основателя не выше этого числа */
   maxEnergy?: number;
+  /** Номер офиса не ниже этого: 0 — комната основателя, 1 — коворкинг и так далее */
+  minOffice?: number;
   /** Сколько функций готово, считая основу */
   minFeatures?: number;
   /** Доход продукта за последние 30 дней */
@@ -109,6 +111,8 @@ export type Effect =
   | { type: 'modifier'; target: ModifierTarget; factor: number; days: number }
   /** Заём: деньги сейчас, возврат amount × repayFactor равными долями за days дней */
   | { type: 'loan'; amount: number; repayFactor: number; days: number }
+  /** Инвестиция: деньги сейчас в обмен на долю компании (0.1 = 10%) */
+  | { type: 'invest'; amount: number; share: number }
   /** Силы основателя */
   | { type: 'energy'; amount: number }
   /** Работа над текущей функцией: плюс — продвинулись, минус — откатились */
@@ -139,6 +143,16 @@ export interface MilestoneDef {
 }
 export type MilestoneMetric = 'users' | 'revenue30' | 'features' | 'team';
 
+/** Офис: сколько человек вмещает и сколько стоит. Офисы идут по порядку, переезд — только в следующий. */
+export interface OfficeDef {
+  id: string;
+  /** Мест для сотрудников, не считая основателя */
+  seats: number;
+  /** Разовая плата за переезд */
+  moveCost: number;
+  rentPerMonth: number;
+}
+
 export interface EventChoiceDef {
   id: string;
   effects: Effect[];
@@ -153,6 +167,8 @@ export interface EventDef {
   once?: boolean;
   /** Срочное: случается сразу, как только выполнено условие */
   urgent?: boolean;
+  /** Радостное событие: показывается празднично */
+  mood?: 'good';
   /** Развилка во время разработки: возникает на середине работы над функцией, а не случайно */
   dev?: boolean;
   condition: EventCondition;
@@ -236,6 +252,12 @@ export interface FounderConfig {
   coffeeCost: number;
   /** Развилка возникает только у функций не короче этого числа дней работы */
   dilemmaMinCost: number;
+  /** Сколько знаков кода игрок должен набрать сам, чтобы сосредоточенность стала полной */
+  focusChars: number;
+  /** На сколько полная сосредоточенность ускоряет работу основателя (0.5 = +50%) */
+  focusBonus: number;
+  /** Какая часть сосредоточенности уходит за день */
+  focusDecayPerDay: number;
 }
 
 export interface GameConfig {
@@ -264,6 +286,9 @@ export interface GameConfig {
   marketVariation: number;
   team: TeamConfig;
   founder: FounderConfig;
+  /** Темп партии: во сколько раз быстрее приходят пользователи и деньги, чем в «честной» модели */
+  pace: { acquisition: number; revenue: number; /** Интерес к новинке: во сколько раз больше людей приходит первые дни после запуска */ launchBoost: number; launchDays: number };
+  offices: OfficeDef[];
 }
 
 export interface GameContent {
@@ -316,7 +341,7 @@ export interface Loan {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest';
   /** Число, о котором новость: пользователей, платящих, долларов */
   value?: number;
   /** Для готовой функции — её id */
@@ -335,6 +360,8 @@ export interface EventLogEntry {
   chanceResults: boolean[];
   /** Для событий о сотруднике: по этому числу интерфейс подбирает его имя */
   subjectNameSeed?: number;
+  /** Для развилок разработки: функция, над которой шла работа */
+  featureId?: string;
 }
 
 /** Кандидат на найм. Имя и внешность интерфейс подбирает сам по nameSeed. */
@@ -392,6 +419,8 @@ export interface DayBreakdown {
   feeCost: number;
   loanCost: number;
   livingCost: number;
+  /** Аренда офиса за день */
+  rentCost: number;
   /** Зарплаты команды за день */
   salaryCost: number;
   /** Доход от подработки основателя — не входит в доход продукта */
@@ -462,6 +491,10 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Офис компании (id из настроек); нет поля — комната основателя */
+  office?: string;
+  /** Доля основателя в компании, 1 = 100%; уменьшается с каждой инвестицией */
+  founderShare?: number;
   /** Силы основателя 0…100. Необязательные поля ниже: в старых сохранениях их нет. */
   energy?: number;
   /** До какого дня действует кофе и с какого дня можно снова */
@@ -469,6 +502,8 @@ export interface GameState {
   coffeeReadyDay?: number;
   /** Сегодня основатель отдыхает и не работает */
   resting?: boolean;
+  /** Сосредоточенность 0…1: растёт, когда игрок сам набирает код, и ускоряет работу основателя */
+  focus?: number;
   /** Лента: последние заметные события */
   news?: NewsItem[];
   /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
@@ -526,6 +561,10 @@ export type Command =
   /** День отдыха: основатель не работает и восстанавливает силы */
   | { type: 'rest' }
   | { type: 'coffee' }
+  /** Игрок сам набрал столько знаков кода в редакторе */
+  | { type: 'typeCode'; chars: number }
+  /** Переезд в следующий по порядку офис */
+  | { type: 'moveOffice' }
   | { type: 'hire'; candidateId: number }
   | { type: 'fire'; employeeId: number }
   | { type: 'setSalary'; employeeId: number; salary: number }
@@ -544,6 +583,8 @@ export type CommandError =
   | 'noSuchTask'
   | 'alreadyLaunched'
   | 'coffeeTooSoon'
+  | 'notEnoughCash'
+  | 'noBiggerOffice'
   | 'noSuchCandidate'
   | 'noSuchEmployee'
   | 'teamFull'

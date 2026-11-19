@@ -32,6 +32,12 @@ export interface RoomLink {
   coffee: () => boolean;
   /** Программа «Компания» — открывается на экране компьютера */
   companyApp: ReactNode;
+  /** Игрок сам набрал знак кода в редакторе компьютера */
+  onTyped: () => void;
+  /** Игрок нажал значок программы на нижней панели компьютера */
+  onDockApp: (item: string) => void;
+  /** Что даёт набор кода — строка для экрана редактора */
+  focusText: string;
   /** Игрок сел за компьютер или встал */
   onComputer: (open: boolean) => void;
 }

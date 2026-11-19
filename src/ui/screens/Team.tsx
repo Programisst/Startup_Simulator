@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { teamView, type Candidate, type TeamMemberView } from '../../core';
+import { officeView, teamView, type Candidate, type TeamMemberView } from '../../core';
 import { dec, gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
 import { useStore } from '../store';
@@ -34,6 +34,7 @@ export function Team() {
   const [confirming, setConfirming] = useState<number | null>(null);
   const view = teamView(game, content);
   const cfg = content.config.team;
+  const office = officeView(game, content.config);
 
   const nameOf = usePersonName();
 
@@ -78,7 +79,7 @@ export function Team() {
           <b>
             {view.size} / {view.maxSize}
           </b>
-          <small>{t('team.sizeHint')}</small>
+          <small>{t(`office.tiers.${office.current.id}`)}</small>
         </div>
         <div className="card">
           <span>{t('team.payroll')}</span>
@@ -98,6 +99,28 @@ export function Team() {
       </div>
 
       {view.size > 0 && monthsOfPayroll < 3 && <p className="notice">{t(game.cash < 0 ? 'team.warnBroke' : 'team.warnPayroll')}</p>}
+
+      <section className="panel office-panel">
+        <h3>{t('office.panel.title')}</h3>
+        <div className="row">
+          <div>
+            <b>{t('office.panel.now', { name: t(`office.tiers.${office.current.id}`), seats: office.current.seats })}</b>
+            <p className="muted">{office.current.rentPerMonth > 0 ? t('office.panel.rent', { rent: money(office.current.rentPerMonth) }) : t('office.panel.free')}</p>
+          </div>
+          {office.next ? (
+            <div className="office-next">
+              <span>{t('office.panel.next', { name: t(`office.tiers.${office.next.id}`), seats: office.next.seats })}</span>
+              <span className="muted">{t('office.panel.cost', { cost: money(office.next.moveCost), rent: money(office.next.rentPerMonth) })}</span>
+              <button className="primary" disabled={!office.canAfford} onClick={() => dispatch({ type: 'moveOffice' })}>
+                {t('office.panel.move')}
+              </button>
+              {!office.canAfford && <span className="negative">{t('office.panel.cantAfford', { gap: money(office.next.moveCost - game.cash) })}</span>}
+            </div>
+          ) : (
+            <span className="muted">{t('office.panel.last')}</span>
+          )}
+        </div>
+      </section>
 
       <div className="two">
         <section className="panel">

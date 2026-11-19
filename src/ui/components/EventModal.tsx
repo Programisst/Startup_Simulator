@@ -18,8 +18,9 @@ export function EventModal() {
   const feature = task?.kind === 'feature' ? (task.featureId === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${task.featureId}`)) : '';
 
   return (
-    <div className="overlay">
-      <div className="modal">
+    <div className={def.mood === 'good' ? 'overlay win' : 'overlay'}>
+      {def.mood === 'good' && <div className="confetti" aria-hidden="true">{Array.from({ length: 28 }, (_, i) => <i key={i} />)}</div>}
+      <div className={def.mood === 'good' ? 'modal win' : 'modal'}>
         <h2>{t(`events.${def.id}.title`, { name, feature })}</h2>
         <p>{t(`events.${def.id}.body`, { name, feature })}</p>
         <div className="choices">

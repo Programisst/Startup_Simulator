@@ -43,6 +43,8 @@ export function collectNews(before: GameState, after: GameState): NewsItem[] {
   }
 
   const tiredBelow = 50;
+  // После конца партии новости о текущих делах уже не нужны.
+  if (after.status !== 'running') return news.filter((n) => n.kind === 'featureDone' || n.kind === 'users' || n.kind === 'paying');
   if ((before.energy ?? 100) >= tiredBelow && (after.energy ?? 100) < tiredBelow) news.push({ day, kind: 'tired' });
 
   return news;

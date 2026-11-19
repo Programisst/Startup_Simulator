@@ -7,5 +7,5 @@ import type { DifficultyDef, DifficultyId } from '../core/types';
 export const difficulties: Record<DifficultyId, DifficultyDef> = {
   easy: { id: 'easy', startCash: 5000, livingCostPerMonth: 700, sideJobIncomePerMonth: 600, marketHarshness: 0.95 },
   normal: { id: 'normal', startCash: 3000, livingCostPerMonth: 800, sideJobIncomePerMonth: 700, marketHarshness: 1 },
-  hard: { id: 'hard', startCash: 2500, livingCostPerMonth: 850, sideJobIncomePerMonth: 740, marketHarshness: 1.05 },
+  hard: { id: 'hard', startCash: 2000, livingCostPerMonth: 900, sideJobIncomePerMonth: 740, marketHarshness: 1.3 },
 };

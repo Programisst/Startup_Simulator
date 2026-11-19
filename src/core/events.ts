@@ -32,7 +32,8 @@ export function eventSubject(subject: EventSubject, s: GameState): Employee | nu
   return [...fits].sort(better[subject.pick])[0] ?? null;
 }
 
-export function conditionHolds(c: EventCondition, s: GameState): boolean {
+export function conditionHolds(c: EventCondition, s: GameState, cfg?: { offices: { id: string }[] }): boolean {
+  if (c.minOffice !== undefined && Math.max(0, (cfg?.offices ?? []).findIndex((o) => o.id === s.office)) < c.minOffice) return false;
   if (c.launched !== undefined && c.launched !== s.launched) return false;
   if (c.minDay !== undefined && s.day < c.minDay) return false;
   if (c.minUsers !== undefined && s.users < c.minUsers) return false;
@@ -57,14 +58,14 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   return true;
 }
 
-function isAvailable(def: EventDef, s: GameState): boolean {
+function isAvailable(def: EventDef, s: GameState, content: GameContent): boolean {
   let lastDay = -Infinity;
   for (const entry of s.eventLog) {
     if (entry.eventId === def.id) lastDay = Math.max(lastDay, entry.day);
   }
   if (def.once && lastDay > -Infinity) return false;
   if (s.day - lastDay < def.cooldownDays) return false;
-  return conditionHolds(def.condition, s);
+  return conditionHolds(def.condition, s, content.config);
 }
 
 /**
@@ -78,7 +79,7 @@ export function rollEvent(
   rng: RngState,
 ): { eventId: string | null; rng: RngState } {
   // Развилки разработки возникают по ходу работы над функцией, а не случайно.
-  const available = content.events.filter((e) => !e.dev && isAvailable(e, s));
+  const available = content.events.filter((e) => !e.dev && isAvailable(e, s, content));
 
   const urgent = available.find((e) => e.urgent);
   if (urgent) return { eventId: urgent.id, rng };
@@ -123,6 +124,11 @@ export function applyEffects(
 
   for (const e of effects) {
     switch (e.type) {
+      case 'invest':
+        draft.cash = Math.round((draft.cash + e.amount) * 100) / 100;
+        draft.founderShare = Math.round((draft.founderShare ?? 1) * (1 - e.share) * 10_000) / 10_000;
+        draft.news = [...(draft.news ?? []), { day: draft.day, kind: 'invest' as const, value: e.amount }].slice(-40);
+        break;
       case 'energy':
         draft.energy = clamp(energyOf(draft) + e.amount, 0, 100);
         break;

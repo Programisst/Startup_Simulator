@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
-import { money } from '../format';
+import { valuation } from '../../core';
+import { money, num } from '../format';
 import { useStore } from '../store';
 
 export function Finance() {
@@ -16,6 +17,7 @@ export function Finance() {
           <table>
             <tbody>
               <tr><td>{t('finance.living')}</td><td>{perMonth(b.livingCost)}</td></tr>
+              <tr><td>{t('finance.rent')}</td><td>{perMonth(b.rentCost ?? 0)}</td></tr>
               <tr><td>{t('finance.salaries')}</td><td>{perMonth(b.salaryCost ?? 0)}</td></tr>
               <tr><td>{t('finance.servers')}</td><td>{perMonth(b.serverCost)}</td></tr>
               <tr><td>{t('finance.ads')}</td><td>{perMonth(b.adCost)}</td></tr>
@@ -28,6 +30,11 @@ export function Finance() {
             </tbody>
           </table>
           <p className="muted">{t('finance.costsHint')}</p>
+          <h3>{t('finance.share')}</h3>
+          <p>
+            <b>{num((game.founderShare ?? 1) * 100)}%</b>
+          </p>
+          <p className="muted">{t('finance.shareHint', { value: money(valuation(game.months, game.users, game.market) * (game.founderShare ?? 1)) })}</p>
         </section>
 
         <section className="panel">
