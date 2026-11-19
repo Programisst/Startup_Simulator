@@ -62,7 +62,12 @@ describe('содержимое событий', () => {
           expect(e.probability, def.id).toBeGreaterThan(0);
           expect(e.probability, def.id).toBeLessThan(1);
         }
-        if (e.type === 'cash') expect(Math.abs(e.amount), def.id).toBeLessThanOrEqual(2500);
+        // Большие удачи (контракты, призы) могут приносить больше; обычные события — нет.
+        if (e.type === 'cash' && def.mood !== 'good') expect(Math.abs(e.amount), def.id).toBeLessThanOrEqual(2500);
+        if (e.type === 'invest') {
+          expect(e.share, def.id).toBeGreaterThan(0);
+          expect(e.share, def.id).toBeLessThanOrEqual(0.25);
+        }
         if (e.type === 'subjectRaise') expect(e.pct, def.id).toBeLessThanOrEqual(0.3);
       }
     }
@@ -92,6 +97,7 @@ describe('содержимое событий', () => {
       { ...rich, quality: 30, cash: 900 },
       { ...rich, capacity: 100 },
       { ...rich, energy: 10 },
+      { ...rich, recentDays: Array.from({ length: 30 }, (_, day) => ({ day, cash: 0, users: 0, paying: 0, revenue: 2000, expenses: 0 })) },
     ];
     for (const def of content.events) expect(states.some((s) => conditionHolds(def.condition, s)), def.id).toBe(true);
   });

@@ -3,7 +3,7 @@
 // что у него в работе и какие есть тревожные сигналы. Состояние игры эти функции не меняют.
 
 import { overload } from './formulas';
-import { coffeeActive, coffeeReady, energyFactor, energyOf, founderWorkPerDay } from './founder';
+import { coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay } from './founder';
 import { teamOf, teamWorkPerDay } from './team';
 import type { GameContent, GameState, Task } from './types';
 
@@ -72,6 +72,9 @@ export interface RoomFounder {
   /** Можно ли выпить кофе сейчас и через сколько дней будет можно */
   coffeeReady: boolean;
   coffeeReadyInDays: number;
+  /** Сосредоточенность 0…1 от набора кода и прибавка к скорости, которую она сейчас даёт (0.3 = +30%) */
+  focus: number;
+  focusBoost: number;
 }
 
 export interface RoomView {
@@ -165,6 +168,8 @@ export function roomView(s: GameState, content: GameContent): RoomView {
       coffeeDaysLeft: Math.max(0, (s.coffeeUntilDay ?? 0) - s.day),
       coffeeReady: coffeeReady(s),
       coffeeReadyInDays: Math.max(0, (s.coffeeReadyDay ?? 0) - s.day),
+      focus: focusOf(s),
+      focusBoost: content.config.founder.focusBonus * focusOf(s),
     },
     alerts: {
       cashNegative,

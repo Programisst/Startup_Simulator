@@ -42,7 +42,7 @@ describe('экран «Офис»', () => {
   it('в меню есть и офис, и сводка', () => {
     show(newGame(), 'office');
     const nav = [...box.querySelectorAll('.sidebar button')].map((b) => b.textContent);
-    expect(nav).toEqual(['Офис', 'Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы']);
+    expect(nav).toEqual(['Офис', 'Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы', 'Сообщения', 'Почта', 'Цели', 'Настройки']);
   });
 
   it('без 3D показывает запасную комнату с занятием основателя, без пропущенных текстов', () => {
@@ -108,5 +108,53 @@ describe('цель компании на экране', () => {
     show({ ...newGame(), status: 'bankrupt' }, 'overview');
     expect(box.textContent).toContain('Что пошло не так.');
     expect(box.textContent).toContain('раньше, чем продукт вышел на рынок');
+  });
+});
+
+describe('разделы из нижней панели компьютера', () => {
+  const noMissing = () => expect(box.textContent?.match(/\b(apps|feed|goalsLadder|office|finance|founderCare|nav)\.[A-Za-z0-9_.]+/g) ?? []).toEqual([]);
+
+  it('сообщения, почта, цели и настройки открываются без пропущенных текстов', () => {
+    const s = advance(launchedGame(), 60);
+    for (const screen of ['feed', 'mail', 'goals', 'settings', 'finance', 'team', 'product'] as const) {
+      show(s, screen);
+      noMissing();
+    }
+    show(s, 'goals');
+    expect(box.textContent).toContain('Переехать в коворкинг');
+    show(s, 'mail');
+    expect(box.querySelectorAll('.mail li').length).toBeGreaterThan(0);
+  });
+
+  it('панель офиса: переезд по кнопке, когда хватает денег', () => {
+    show({ ...newGame(), cash: 500 }, 'team');
+    expect(box.textContent).toContain('Комната основателя');
+    expect(box.textContent).toContain('На переезд не хватает');
+    show({ ...newGame(), cash: 20_000 }, 'team');
+    const move = [...box.querySelectorAll('button')].find((b) => b.textContent === 'Переехать')!;
+    act(() => {
+      move.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(useStore.getState().game!.office).toBe('coworking');
+    expect(box.textContent).toContain('Коворкинг');
+    expect(box.textContent).toContain('0 / 6');
+  });
+
+  it('радостное событие показывается празднично', () => {
+    const s = launchedGame();
+    show({ ...s, pendingEvent: 'angelOffer', eventLog: [...s.eventLog, { day: s.day, eventId: 'angelOffer', choiceId: null, chanceResults: [] }] }, 'overview');
+    expect(box.querySelector('.modal.win')).not.toBeNull();
+    expect(box.querySelector('.confetti')).not.toBeNull();
+    expect(box.textContent).toContain('В вас поверили');
+  });
+
+  it('настройки: обучение можно включить заново', () => {
+    useStore.setState({ tutorial: false });
+    show(newGame(), 'settings');
+    const again = [...box.querySelectorAll('button')].find((b) => b.textContent === 'Показать обучение заново')!;
+    act(() => {
+      again.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    });
+    expect(useStore.getState().tutorial).toBe(true);
   });
 });

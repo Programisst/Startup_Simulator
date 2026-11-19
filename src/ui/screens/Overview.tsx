@@ -88,7 +88,7 @@ export function Overview() {
               .reverse()
               .map((e, i) => (
                 <li key={i}>
-                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed), feature: '…' })}
+                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed), feature: !e.featureId ? '…' : e.featureId === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${e.featureId}`) })}
                 </li>
               ))}
           </ul>

@@ -2,7 +2,7 @@
 // Формулы — в formulas.ts, их описание — в docs/02-economy.md.
 
 import { conditionHolds, eventSubject, rollEvent } from './events';
-import { energyAfterDay, energyOf, founderBusy, founderWorkPerDay } from './founder';
+import { energyAfterDay, energyOf, focusOf, founderBusy, founderWorkPerDay } from './founder';
 import {
   DAYS_IN_MONTH,
   churnMonthly,
@@ -21,6 +21,7 @@ import {
 } from './formulas';
 import { stepMilestones } from './milestones';
 import { collectNews, withNews } from './news';
+import { officeOf } from './office';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -86,13 +87,13 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
           task.asked = true;
           if (draft.pendingEvent === null) {
             draft.tasks = tasks;
-            const pool = content.events.filter((e) => e.dev && conditionHolds(e.condition, draft));
+            const pool = content.events.filter((e) => e.dev && conditionHolds(e.condition, draft, cfg));
             const dilemma = pool[Math.abs(draft.seed + draft.day + draft.doneFeatures.length * 7) % Math.max(1, pool.length)];
             if (dilemma) {
               draft.pendingEvent = dilemma.id;
               draft.pendingSubject = null;
               draft.lastEventDay = draft.day;
-              draft.eventLog = [...draft.eventLog, { day: draft.day, eventId: dilemma.id, choiceId: null, chanceResults: [] }];
+              draft.eventLog = [...draft.eventLog, { day: draft.day, eventId: dilemma.id, choiceId: null, chanceResults: [], featureId: task.featureId }];
             }
           }
         }
@@ -148,6 +149,8 @@ export function tick(state: GameState, content: GameContent): GameState {
   rng = develop(s, content, rng);
   s.energy = energyAfterDay(s, cfg.founder, busy);
   s.resting = false;
+  // Сосредоточенность выветривается: чтобы держать темп, код нужно набирать снова.
+  if (s.focus !== undefined) s.focus = Math.max(0, focusOf(s) - cfg.founder.focusDecayPerDay);
   s.quality = currentQuality(s, content);
 
   // 2. Пользователи
@@ -167,6 +170,7 @@ export function tick(state: GameState, content: GameContent): GameState {
     feeCost: 0,
     loanCost: 0,
     livingCost: 0,
+    rentCost: 0,
     salaryCost: 0,
     sideIncome: 0,
     expenses: 0,
@@ -183,7 +187,7 @@ export function tick(state: GameState, content: GameContent): GameState {
 
     const noise = nextRange(rng, 0.9, 1.1);
     rng = noise.next;
-    const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team);
+    const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team) * cfg.pace.acquisition;
     b.paid = paidPerDay(m, s.users, adSpend) * boost;
     b.organic = organicPerDay(m, s.users, s.reputation) * boost;
     b.viral = viralPerDay(m, s.users, s.quality) * boost;
@@ -219,6 +223,8 @@ export function tick(state: GameState, content: GameContent): GameState {
         break;
     }
   }
+  paymentRevenue *= cfg.pace.revenue;
+  adRevenue *= cfg.pace.revenue;
   b.revenue = paymentRevenue + adRevenue;
 
   // 4. Расходы
@@ -229,8 +235,9 @@ export function tick(state: GameState, content: GameContent): GameState {
   b.loanCost = s.loans.reduce((sum, l) => sum + l.dailyPayment, 0);
   b.livingCost = s.livingCostPerMonth / DAYS_IN_MONTH;
   b.salaryCost = payrollPerMonth(team) / DAYS_IN_MONTH;
+  b.rentCost = officeOf(s, cfg).rentPerMonth / DAYS_IN_MONTH;
   b.sideIncome = (s.sideJobIncomePerMonth * s.sideJobShare) / DAYS_IN_MONTH;
-  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost;
+  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost + b.rentCost;
 
   s.cash = cents(s.cash + b.revenue + b.sideIncome - b.expenses);
   s.lastDay = b;

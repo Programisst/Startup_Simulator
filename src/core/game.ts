@@ -19,6 +19,7 @@ export const EMPTY_DAY: DayBreakdown = {
   feeCost: 0,
   loanCost: 0,
   livingCost: 0,
+  rentCost: 0,
   salaryCost: 0,
   sideIncome: 0,
   expenses: 0,

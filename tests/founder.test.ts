@@ -212,3 +212,40 @@ describe('развилки во время разработки', () => {
     expect(run(s, { type: 'chooseEvent', choiceId: 'cutScope' }).polish).toBe(0);
   });
 });
+
+describe('набор кода самим игроком', () => {
+  it('набранные знаки дают сосредоточенность, полная — ускоряет основателя в полтора раза', () => {
+    const half = run(working(), { type: 'typeCode', chars: f.focusChars / 2 });
+    expect(half.focus).toBeCloseTo(0.5, 6);
+    expect(founderWorkPerDay(half, content.config)).toBeCloseTo(1 + f.focusBonus / 2, 6);
+    const full = run(half, { type: 'typeCode', chars: f.focusChars * 5 });
+    expect(full.focus).toBe(1);
+    expect(founderWorkPerDay(full, content.config)).toBeCloseTo(1 + f.focusBonus, 6);
+    expect(roomView(full, content).founder).toMatchObject({ focus: 1, focusBoost: f.focusBonus });
+  });
+
+  it('функция действительно делается быстрее', () => {
+    const plain = roomView(working(), content).task!.daysLeft!;
+    const focused = roomView(run(working(), { type: 'typeCode', chars: f.focusChars }), content).task!.daysLeft!;
+    expect(focused).toBeLessThan(plain);
+    expect(focused).toBe(Math.ceil(plain / (1 + f.focusBonus)));
+  });
+
+  it('сосредоточенность выветривается за несколько дней', () => {
+    let s = run(working(), { type: 'typeCode', chars: f.focusChars });
+    s = days(s, 1);
+    expect(s.focus).toBeCloseTo(1 - f.focusDecayPerDay, 6);
+    expect(days(s, 5).focus).toBe(0);
+  });
+
+  it('команде она не помогает: это личный вклад основателя', () => {
+    const s = run(working(), { type: 'typeCode', chars: f.focusChars });
+    expect(teamView(s, content).workPerDay).toBeCloseTo(1 + f.focusBonus, 6);
+    const resting = run(s, { type: 'rest' });
+    expect(founderWorkPerDay(resting, content.config)).toBe(0);
+  });
+
+  it('недопустимые значения отклоняются', () => {
+    for (const chars of [0, -5, Number.NaN, 1e9]) expect(applyCommand(working(), { type: 'typeCode', chars }, content)).toEqual({ ok: false, error: 'invalidValue' });
+  });
+});

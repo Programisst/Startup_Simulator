@@ -12,3 +12,4 @@ export { teamView, teamOf, createTeam, motivationFactor, motivationTarget, teamW
 export { milestoneView, nextMilestone, bankruptcyCause, type MilestoneView, type BankruptcyCause } from './milestones';
 export { energyOf, energyFactor, founderWorkPerDay, coffeeReady, coffeeActive } from './founder';
 export { REVIEW_VARIANTS } from './news';
+export { officeView, officeOf, nextOffice, officeIndex, type OfficeView } from './office';

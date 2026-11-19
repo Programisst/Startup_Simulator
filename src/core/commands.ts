@@ -1,7 +1,8 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { applyEffects } from './events';
-import { coffeeReady, energyOf } from './founder';
+import { coffeeReady, energyOf, focusOf } from './founder';
+import { nextOffice } from './office';
 import { fire, hire, setSalary, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
@@ -41,6 +42,26 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
           coffeeUntilDay: state.day + f.coffeeDays,
           coffeeReadyDay: state.day + f.coffeeCooldownDays,
           energy: Math.max(0, energyOf(state) - f.coffeeCost),
+        },
+      };
+    }
+
+    case 'typeCode': {
+      if (!Number.isFinite(cmd.chars) || cmd.chars <= 0 || cmd.chars > 10_000) return fail('invalidValue');
+      return { ok: true, state: { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / content.config.founder.focusChars) } };
+    }
+
+    case 'moveOffice': {
+      const next = nextOffice(state, content.config);
+      if (!next) return fail('noBiggerOffice');
+      if (state.cash < next.moveCost) return fail('notEnoughCash');
+      return {
+        ok: true,
+        state: {
+          ...state,
+          office: next.id,
+          cash: Math.round((state.cash - next.moveCost) * 100) / 100,
+          news: [...(state.news ?? []), { day: state.day, kind: 'office' as const, id: next.id }].slice(-40),
         },
       };
     }
@@ -122,7 +143,17 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       if (state.launched) return fail('alreadyLaunched');
       const core = features.find((f) => f.core);
       if (core && !state.doneFeatures.includes(core.id)) return fail('coreFeatureRequired');
-      return { ok: true, state: { ...state, launched: true, launchDay: state.day } };
+      // Первые недели после запуска к новинке приходит больше людей, чем потом.
+      const pace = content.config.pace;
+      return {
+        ok: true,
+        state: {
+          ...state,
+          launched: true,
+          launchDay: state.day,
+          modifiers: [...state.modifiers, { target: 'acquisition', factor: pace.launchBoost, untilDay: state.day + pace.launchDays }],
+        },
+      };
     }
 
     case 'chooseEvent': {

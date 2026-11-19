@@ -7,6 +7,7 @@ import { FeedToasts } from './components/Feed';
 import { GoalCard, GoalToast } from './components/GoalCard';
 import { TopBar } from './components/TopBar';
 import { GameRoom, has3D, SimpleRoom } from './office/GameRoom';
+import { FeedApp, GoalsApp, MailApp, SettingsApp } from './screens/Apps';
 import { Finance } from './screens/Finance';
 import { Marketing } from './screens/Marketing';
 import { NewGame } from './screens/NewGame';
@@ -15,7 +16,7 @@ import { Product } from './screens/Product';
 import { Team } from './screens/Team';
 import { DAY_MS, useStore, type ScreenId } from './store';
 
-const SCREENS: ScreenId[] = ['office', 'overview', 'product', 'team', 'marketing', 'finance'];
+const SCREENS: ScreenId[] = ['office', 'overview', 'product', 'team', 'marketing', 'finance', 'feed', 'mail', 'goals', 'settings'];
 
 export function App() {
   const { t } = useTranslation();
@@ -86,6 +87,10 @@ export function App() {
         {screen === 'team' && <Team />}
         {screen === 'marketing' && <Marketing />}
         {screen === 'finance' && <Finance />}
+        {screen === 'feed' && <FeedApp />}
+        {screen === 'mail' && <MailApp />}
+        {screen === 'goals' && <GoalsApp />}
+        {screen === 'settings' && <SettingsApp />}
       </main>
       {overlays}
     </div>

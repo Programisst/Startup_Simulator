@@ -500,7 +500,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       )}
 
       {computer !== 'closed' && (
-        <Laptop minutes={hud.minutes} weekday={weekday} origin={origin} closing={computer === 'closing'} onClosed={onComputerClosed} company={link?.companyApp} />
+        <Laptop minutes={hud.minutes} weekday={weekday} origin={origin} closing={computer === 'closing'} onClosed={onComputerClosed} company={link?.companyApp} onTyped={link?.onTyped} onDockApp={link?.onDockApp} focusText={link?.focusText} />
       )}
     </div>
   );

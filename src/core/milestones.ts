@@ -25,7 +25,7 @@ function metricValue(s: GameState, metric: MilestoneMetric): number {
  */
 export function stepMilestones(draft: GameState, content: GameContent): string | null {
   const next = nextMilestone(draft, content);
-  if (!next || !conditionHolds(next.condition, draft)) return null;
+  if (!next || !conditionHolds(next.condition, draft, content.config)) return null;
   // В наградах нет случайных исходов, поэтому генератор случайности не сдвигается.
   applyEffects(draft, next.effects, draft.rng, []);
   draft.milestones = [...(draft.milestones ?? []), { id: next.id, day: draft.day }];
@@ -59,7 +59,10 @@ export function milestoneView(s: GameState, content: GameContent): MilestoneView
   };
 }
 
-export type BankruptcyCause = 'noProduct' | 'salaries' | 'ads' | 'servers' | 'loans' | 'slowGrowth';
+export type BankruptcyCause = 'noProduct' | 'salaries' | 'ads' | 'servers' | 'loans' | 'rent' | 'slowGrowth';
+
+/** Аренда записана в последнем дне партии: настройки игры здесь недоступны. */
+const rentOf = (s: GameState): number => (s.lastDay.rentCost ?? 0) * 30;
 
 /**
  * Почему кончились деньги: самая тяжёлая статья расходов, которую доход не покрывал.
@@ -70,6 +73,7 @@ export function bankruptcyCause(s: GameState): BankruptcyCause {
     salaries: (s.team?.employees ?? []).reduce((sum, e) => sum + e.salary, 0),
     ads: s.adSpendPerDay * 30,
     servers: s.capacity * s.market.serverCostPerUser,
+    rent: rentOf(s),
     loans: s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30,
   };
   const heaviest = (Object.keys(monthly) as (keyof typeof monthly)[]).reduce((a, b) => (monthly[b] > monthly[a] ? b : a));
