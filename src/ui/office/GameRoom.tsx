@@ -16,7 +16,7 @@ import { RoomControls } from './RoomControls';
 const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
 
 /** Сколько набранных знаков кода уходит в расчёт одной пачкой. */
-const TYPED_BATCH = 12;
+const TYPED_BATCH = 3;
 
 /** Какой раздел «Компании» открывает значок нижней панели компьютера. */
 const DOCK_SCREENS: Record<string, ScreenId> = {
@@ -127,7 +127,10 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
       const target = DOCK_SCREENS[item];
       if (target) setScreen(target);
     },
-    focusText: t('founderCare.focus', { pct: num(view.founder.focus * 100), boost: num(view.founder.focusBoost * 100) }),
+    // Плашка в редакторе: игрок видит, как его набор двигает задачу прямо сейчас.
+    focusText: view.task
+      ? t(view.founder.typedBoost >= view.founder.typedCap ? 'founderCare.typingMax' : 'founderCare.typing', { pct: num(view.task.progress * 100), boost: num(view.founder.typedBoost * 100) })
+      : t('founderCare.typingIdle'),
     onComputer: setComputerOpen,
     pointAtDesk: step === 'goToComputer' || step === 'backToComputer' || step === 'openMarketing' || step === 'openFinance',
     // Команда для сцены: кто на каком месте, занят ли, в каком настроении. Как это нарисовать, решает напарник.

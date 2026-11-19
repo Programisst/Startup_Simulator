@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { marketingView } from '../../core';
+import { campaignsView, marketingView } from '../../core';
 import { content } from '../../content';
 import { dec, money, num } from '../format';
 import { useStore } from '../store';
@@ -13,6 +13,8 @@ export function Marketing() {
   const dispatch = useStore((s) => s.dispatch);
   const b = game.lastDay;
   const view = marketingView(game, content.config);
+  const campaigns = campaignsView(game, content.config);
+  const campaignName = (id: string) => t(`marketing.campaigns.items.${id}.name`);
 
   return (
     <div className="screen">
@@ -23,6 +25,47 @@ export function Marketing() {
         <p className="muted">{t('marketing.channelsLead')}</p>
         <p>{t('marketing.total', { day: money(view.totalPerDay), month: money(view.totalPerMonth) })}</p>
       </section>
+
+      {/* Акции: простой рабочий вид. Нужно оформление. */}
+      <section className="panel" data-campaigns>
+        <h3>{t('marketing.campaigns.title')}</h3>
+        <p className="muted">{t('marketing.campaigns.lead')}</p>
+        {campaigns.active && <p className="notice">{t('marketing.campaigns.active', { name: campaignName(campaigns.active.id), days: campaigns.active.daysLeft })}</p>}
+        {!campaigns.active && campaigns.last && (
+          <p className={campaigns.last.outcome === 'fail' ? 'negative' : ''}>{t(`marketing.campaigns.last.${campaigns.last.outcome}`, { name: campaignName(campaigns.last.id) })}</p>
+        )}
+      </section>
+
+      <div className="two">
+        {campaigns.list.map((c) => (
+          <section className="panel" key={c.id} data-campaign={c.id}>
+            <h3>{campaignName(c.id)}</h3>
+            <p className="muted">{t(`marketing.campaigns.items.${c.id}.hint`)}</p>
+            <p>
+              {c.cost > 0 ? t('marketing.campaigns.cost', { cost: money(c.cost) }) : t('marketing.campaigns.free', { energy: c.energyCost })} · {t('marketing.campaigns.days', { days: c.days })}
+            </p>
+            <p>
+              <b>{t('marketing.campaigns.odds', c.odds)}</b>
+            </p>
+            <p className="muted">
+              {t('marketing.campaigns.okLine', { pct: c.results.ok.boostPct, days: c.results.ok.days })}
+              <br />
+              {t('marketing.campaigns.hitLine', { pct: c.results.hit.boostPct, days: c.results.hit.days })}
+              {c.results.fail.reputation < 0 && (
+                <>
+                  <br />
+                  {t('marketing.campaigns.failLine', { rep: c.results.fail.reputation })}
+                </>
+              )}
+            </p>
+            {c.fit !== 'ok' && <p className={c.fit === 'poor' ? 'negative' : 'muted'}>{t(`marketing.campaigns.fit.${c.fit}`)}</p>}
+            <button disabled={c.blocked !== null} onClick={() => dispatch({ type: 'runCampaign', campaignId: c.id })}>
+              {t('marketing.campaigns.run')}
+            </button>
+            {c.blocked && <p className="muted">{t(`marketing.campaigns.blocked.${c.blocked}`, { days: c.cooldownDaysLeft, value: c.minQuality })}</p>}
+          </section>
+        ))}
+      </div>
 
       <div className="two">
         {view.channels.map((c) => (

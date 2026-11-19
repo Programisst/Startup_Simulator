@@ -16,6 +16,9 @@ export function energyFactor(energy: number, cfg: FounderConfig): number {
 /** Сосредоточенность 0…1: её даёт набор кода самим игроком. */
 export const focusOf = (s: GameState): number => clamp(s.focus ?? 0, 0, 1);
 
+/** Какую долю дневной работы игрок уже добавил набором кода сегодня (0 — ещё не печатал). */
+export const typedTodayOf = (s: GameState): number => (s.typedDay === s.day ? (s.typedToday ?? 0) : 0);
+
 export const coffeeActive = (s: GameState): boolean => (s.coffeeUntilDay ?? -1) > s.day;
 export const coffeeReady = (s: GameState): boolean => s.day >= (s.coffeeReadyDay ?? 0);
 
