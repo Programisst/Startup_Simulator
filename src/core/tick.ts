@@ -1,7 +1,7 @@
 // Шаг дня: берёт состояние и возвращает состояние на следующий день.
 // Формулы — в formulas.ts, их описание — в docs/02-economy.md.
 
-import { rollEvent } from './events';
+import { eventSubject, rollEvent } from './events';
 import {
   DAYS_IN_MONTH,
   churnMonthly,
@@ -271,7 +271,14 @@ export function tick(state: GameState, content: GameContent): GameState {
     if (rolled.eventId !== null) {
       s.pendingEvent = rolled.eventId;
       s.lastEventDay = s.day;
-      s.eventLog = [...s.eventLog, { day: s.day, eventId: rolled.eventId, choiceId: null, chanceResults: [] }];
+      // Событие о человеке запоминает, о ком оно: к моменту ответа состав команды может измениться.
+      const about = content.events.find((e) => e.id === rolled.eventId)?.condition.subject;
+      const person = about ? eventSubject(about, s) : null;
+      s.pendingSubject = person?.id ?? null;
+      s.eventLog = [
+        ...s.eventLog,
+        { day: s.day, eventId: rolled.eventId, choiceId: null, chanceResults: [], ...(person ? { subjectNameSeed: person.nameSeed } : {}) },
+      ];
     }
   }
 

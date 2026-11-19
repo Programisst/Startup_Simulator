@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { teamView, type Candidate, type TeamMemberView } from '../../core';
 import { dec, gameDate, money, num } from '../format';
+import { usePersonName } from '../names';
 import { useStore } from '../store';
 
 /** Словами о навыке: число игроку мало что говорит. */
@@ -33,9 +34,7 @@ export function Team() {
   const view = teamView(game, content);
   const cfg = content.config.team;
 
-  const firstNames = t('team.firstNames', { returnObjects: true }) as string[];
-  const lastNames = t('team.lastNames', { returnObjects: true }) as string[];
-  const nameOf = (seed: number) => `${firstNames[seed % firstNames.length]} ${lastNames[Math.floor(seed / firstNames.length) % lastNames.length]}`;
+  const nameOf = usePersonName();
 
   /** Что человек даёт компании при обычной мотивации. */
   function benefit(p: Candidate): string {

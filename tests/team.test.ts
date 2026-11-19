@@ -172,7 +172,14 @@ describe('вклад команды в работу', () => {
 });
 
 describe('мотивация', () => {
-  const settle = (s: GameState, days = 200) => teamView(advance(s, days), content).members[0];
+  // Мотивация проверяется без событий: событие о человеке само меняет её и мешает увидеть формулу.
+  const quiet = { ...content, events: [] };
+  const calm = (s: GameState, days: number) => {
+    let x = s;
+    for (let i = 0; i < days; i++) x = tick(x, quiet);
+    return x;
+  };
+  const settle = (s: GameState, days = 200) => teamView(calm(s, days), content).members[0];
 
   it('при честной зарплате держится на исходном уровне', () => {
     expect(settle(withTeam(rich(newGame()), [employee()]))!.motivation).toBeCloseTo(cfg.startMotivation, 0);
@@ -219,7 +226,7 @@ describe('мотивация', () => {
   });
 
   it('при нормальных условиях никто не уходит', () => {
-    const s = advance(withTeam(rich(newGame()), [employee(), employee({ id: 901, trait: 'sloppy' })]), 720);
+    const s = calm(withTeam(rich(newGame()), [employee(), employee({ id: 901, trait: 'sloppy' })]), 720);
     expect(teamView(s, content).members).toHaveLength(2);
   });
 });
