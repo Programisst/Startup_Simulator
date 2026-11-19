@@ -15,12 +15,12 @@ import {
   monthlyToDaily,
   organicPerDay,
   overload,
-  paidPerDay,
   quality,
   reputationTarget,
   valuation,
   viralPerDay,
 } from './formulas';
+import { channelSpend, channelUsersPerDay, contentBoost, contentStockAfterDay } from './marketing';
 import { stepMilestones } from './milestones';
 import { collectNews, withNews } from './news';
 import { officeOf } from './office';
@@ -184,14 +184,33 @@ export function tick(state: GameState, content: GameContent): GameState {
 
   if (s.launched) {
     // Реклама не идёт, если платить за неё нечем.
-    const adSpend = s.cash > 0 ? s.adSpendPerDay : 0;
-    b.adCost = adSpend;
+    // Реклама не идёт, если платить за неё нечем — ни по одному каналу.
+    const canPay = s.cash > 0;
+    const mk = cfg.marketing;
+    const spendOf = (id: (typeof mk.channels)[number]['id']) => (canPay ? channelSpend(s, id) : 0);
+    b.adCost = mk.channels.reduce((sum, c) => sum + spendOf(c.id), 0);
 
     const noise = nextRange(rng, 0.9, 1.1);
     rng = noise.next;
     const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team) * cfg.pace.acquisition;
-    b.paid = paidPerDay(m, s.users, adSpend) * boost;
-    b.organic = organicPerDay(m, s.users, s.reputation) * boost;
+    // Каждый канал приводит людей по своей цене; у непредсказуемых каналов результат гуляет изо дня в день.
+    let paid = 0;
+    for (const def of mk.channels) {
+      const spend = spendOf(def.id);
+      if (def.kind !== 'direct' || spend <= 0) continue;
+      let luck = 1;
+      if (def.noise > 0) {
+        // Случайность тратится, только когда в канал действительно вложены деньги: остальные партии идут как раньше.
+        const roll = nextRange(rng, 1 - def.noise, 1 + def.noise);
+        rng = roll.next;
+        luck = roll.value;
+      }
+      paid += channelUsersPerDay(s, def, mk, spend) * luck;
+    }
+    b.paid = paid * boost;
+    b.organic = organicPerDay(m, s.users, s.reputation) * boost * contentBoost(s, mk);
+    const contentDef = mk.channels.find((c) => c.kind === 'content');
+    s.contentStock = contentStockAfterDay(s, mk, contentDef ? spendOf(contentDef.id) : 0);
     b.viral = viralPerDay(m, s.users, s.quality) * boost;
     b.newUsers = Math.min(b.paid + b.organic + b.viral, Math.max(0, m.marketSize - s.users));
 

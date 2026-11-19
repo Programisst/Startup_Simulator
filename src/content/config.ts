@@ -72,6 +72,22 @@ export const config: GameConfig = {
     focusDecayPerDay: 0.34,
   },
   bank: { loanRateYear: 0.18, loanTermDays: 360, minLoan: 1000, baseLimit: 3000, revenueMultiple: 4, depositRateYear: 0.06 },
+  marketing: {
+    channels: [
+      // Поиск: надёжно и для всех, выдерживает большие бюджеты.
+      { id: 'search', kind: 'direct', costFactor: { consumer: 1, business: 1 }, halfAt: 400, noise: 0 },
+      // Лента: дёшево для массовых продуктов, дорого для деловых, быстро выгорает.
+      { id: 'feeds', kind: 'direct', costFactor: { consumer: 0.65, business: 1.5 }, halfAt: 120, noise: 0.15 },
+      // Блогеры: в среднем выгодно, но как повезёт — день густо, день пусто.
+      { id: 'bloggers', kind: 'direct', costFactor: { consumer: 0.75, business: 0.9 }, halfAt: 200, noise: 0.6 },
+      // Статьи и гайды: сегодня ничего, зато накопленное работает месяцами.
+      { id: 'content', kind: 'content', costFactor: { consumer: 1, business: 1 }, halfAt: 150, noise: 0 },
+    ],
+    businessTypes: ['saas', 'ai', 'devtools'],
+    contentPerDouble: 4000,
+    contentCap: 1.5,
+    contentDecayPerDay: 0.01,
+  },
   // Партия про рост, а не про выживание впроголодь: рынок откликается быстрее, чем в «честной» модели.
   pace: { acquisition: 1.3, revenue: 1.5, launchBoost: 3, launchDays: 30 },
   offices: [
