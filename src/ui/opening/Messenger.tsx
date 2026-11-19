@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { money } from '../format';
 import { FriendAvatar as Avatar } from './Avatar';
 import { quickReplies, type ChatState, type Line } from './chat';
-import { lastAnswers, rememberAnswer, sampleAnswers, type Typed } from './quick';
+import { lastAnswers, rememberAnswer, type Typed } from './quick';
 import './messenger.css';
 
 interface Props {
@@ -74,10 +74,10 @@ export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {
 
   useEffect(() => {
     if (!canType) return;
-    // Для разработчиков: в поле уже стоит прошлый ответ (или образец) — достаточно нажать Enter.
-    if (import.meta.env.DEV) {
-      const stage = chat.stage as Typed;
-      setDraft(lastAnswers()[stage] ?? sampleAnswers(t)[stage]);
+    // Для разработчиков: в поле уже стоит прошлый ответ — достаточно нажать Enter. В первый раз пишешь сам.
+    const previous = import.meta.env.DEV ? lastAnswers()[chat.stage as Typed] : undefined;
+    if (previous) {
+      setDraft(previous);
       window.setTimeout(() => inputRef.current?.select(), 0);
     }
     inputRef.current?.focus();

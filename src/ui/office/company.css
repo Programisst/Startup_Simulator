@@ -329,7 +329,11 @@
 [data-coach='openProductLaunch'] .company-app [data-nav='product'],
 [data-coach='queueCore'] .company-app [data-coach-target='queueCore'],
 [data-coach='launch'] .company-app [data-coach-target='launch'],
-[data-coach='startTime'] .company-app [data-coach-target='speed1'] {
+[data-coach='startTime'] .company-app [data-coach-target='speed1'],
+[data-coach='resumeTime'] .company-app [data-coach-target='speed1'],
+[data-coach='openMarketing'] .company-app [data-nav='marketing'],
+[data-coach='setAds'] .company-app [data-coach-target='ads10'],
+[data-coach='openFinance'] .company-app [data-nav='finance'] {
   border-color: transparent;
   animation: ca-ring 1.1s ease-in-out infinite;
 }

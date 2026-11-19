@@ -127,7 +127,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
           world.clockRate = LINKED_CLOCK_RATE;
         }
         // Только для проверок в режиме разработки.
-        if (import.meta.env.DEV) (window as unknown as { __lumio?: World }).__lumio = world;
+        if (import.meta.env.DEV) (window as unknown as { __room?: World }).__room = world;
         world.onArrive = (spot) => interactRef.current(spot);
         world.onCoffeeReady = () => {
           busy.current = false;

@@ -14,6 +14,7 @@ export function useTutorialStep(menuAlwaysOpen = false): TutorialStep | null {
   const computerOpen = useStore((s) => s.computerOpen);
   const screen = useStore((s) => s.screen);
   const speed = useStore((s) => s.speed);
+  const financeSeen = useStore((s) => s.financeSeen);
   if (!game) return null;
   const core = featuresOf(game, content).find((f) => f.core);
   return tutorialStep({
@@ -21,10 +22,15 @@ export function useTutorialStep(menuAlwaysOpen = false): TutorialStep | null {
     running: game.status === 'running',
     computerOpen: computerOpen || menuAlwaysOpen,
     onProduct: screen === 'product',
+    onMarketing: screen === 'marketing',
+    onFinance: screen === 'finance',
+    financeSeen,
     paused: speed === 0,
     coreQueued: game.tasks.some((task) => task.kind === 'feature' && task.featureId === core?.id),
     coreDone: !core || game.doneFeatures.includes(core.id),
     launched: game.launched,
+    adsOn: game.adSpendPerDay > 0,
+    earned: game.lastDay.revenue > 0 || game.paying > 0,
   });
 }
 

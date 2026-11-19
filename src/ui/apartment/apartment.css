@@ -52,7 +52,7 @@ html.lm-standalone body {
   background: radial-gradient(ellipse 75% 70% at 50% 48%, transparent 58%, rgba(8, 6, 12, 0.42) 100%);
 }
 
-/* ── HUD: тёмная плашка, моноширинные цифры, как строка состояния в Lumio */
+/* ── HUD: тёмная плашка, моноширинные цифры, как строка состояния */
 .lm-hud {
   position: absolute;
   left: 16px;
@@ -364,7 +364,8 @@ html.lm-standalone body {
   outline: 2px solid #f6c34a;
   outline-offset: 2px;
 }
-[data-coach='startTime'] .lm-speed [data-coach-target='speed1'] {
+[data-coach='startTime'] .lm-speed [data-coach-target='speed1'],
+[data-coach='resumeTime'] .lm-speed [data-coach-target='speed1'] {
   box-shadow: 0 0 0 2px #f6c34a;
   animation: lmNudge 1.1s ease-in-out infinite;
 }
@@ -387,7 +388,8 @@ html.lm-standalone body {
   transform: translateX(-50%);
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-coach='startTime'] .lm-speed [data-coach-target='speed1'] {
+  [data-coach='startTime'] .lm-speed [data-coach-target='speed1'],
+  [data-coach='resumeTime'] .lm-speed [data-coach-target='speed1'] {
     animation: none;
   }
 }

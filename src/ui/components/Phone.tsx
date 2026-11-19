@@ -1,4 +1,5 @@
-// Телефон основателя в квартире: друг пишет подсказки как сообщения — та же переписка, что была вечером на компьютере.
+// Телефон основателя: друг пишет подсказки как сообщения — та же переписка, что была вечером на компьютере.
+// В комнате он в углу, за компьютером лежит слева от монитора.
 // Первое сообщение выдвигает телефон само; «Понял» — и телефон уезжает в значок. Новое сообщение — значок жужжит с цифрой.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -19,7 +20,7 @@ const AWAY_MS = 700;
 /** Телефон выезжает ~0,6 с — жужжит уже после. */
 const BUZZ_DELAY_MS = 620;
 
-export function Phone({ step, hidden }: { step: TutorialStep | null; hidden: boolean }) {
+export function Phone({ step }: { step: TutorialStep | null }) {
   const { t } = useTranslation();
   const game = useStore((s) => s.game);
   const endTutorial = useStore((s) => s.endTutorial);
@@ -41,22 +42,16 @@ export function Phone({ step, hidden }: { step: TutorialStep | null; hidden: boo
   const days = game ? (roomView(game, content).task?.daysLeft ?? 0) : 0;
   useEffect(() => {
     if (!awake) return;
-    setPhone((s) => phoneReceive(s, step, { core, days }, !hidden));
+    setPhone((s) => phoneReceive(s, step, { core, days }, true));
     // Числа нужны только в момент, когда пришло новое сообщение.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, hidden, awake]);
-
-  // Сел за компьютер — телефон убирается (подсказки там на экране).
-  useEffect(() => {
-    if (hidden) setPhone(phoneClose);
-  }, [hidden]);
+  }, [step, awake]);
 
   // Новое сообщение друга: телефон жужжит, а если открыт — друг сначала «печатает».
   const friendCount = phone.msgs.filter((m) => m.from === 'friend').length;
   useEffect(() => {
     if (friendCount <= count.current) return;
     count.current = friendCount;
-    if (hidden) return;
     // Жужжит, когда телефон уже выехал: иначе дрожь перебьёт плавный выезд.
     const ids = [window.setTimeout(() => setBuzz((n) => Math.abs(n) + 1), BUZZ_DELAY_MS), window.setTimeout(() => setBuzz((n) => -Math.abs(n)), BUZZ_DELAY_MS + 550)];
     if (phone.open) {
@@ -70,7 +65,11 @@ export function Phone({ step, hidden }: { step: TutorialStep | null; hidden: boo
 
   useLayoutEffect(() => {
     const el = listRef.current;
-    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    // Кнопки-ответы выезжают 0,3 с и поджимают список — докручиваем, когда они встали.
+    const id = window.setTimeout(() => el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }), 340);
+    return () => window.clearTimeout(id);
   }, [phone.msgs.length, typing, phone.open]);
 
   if (!game) return null;
@@ -91,7 +90,7 @@ export function Phone({ step, hidden }: { step: TutorialStep | null; hidden: boo
   const textOf = (m: PhoneMsg) => (m.from === 'me' ? t(m.key) : t(`coach.${m.step}`, m.params));
 
   return (
-    <div className="ph-wrap" hidden={hidden || phone.msgs.length === 0}>
+    <div className="ph-wrap" hidden={phone.msgs.length === 0}>
       <section className={`ph${phone.open ? ' open' : ''}${buzz > 0 ? ` buzz${buzz % 2}` : ''}`} inert={!phone.open} aria-label={t('phone.title')}>
         <header className="ph-head">
           <FriendAvatar size={30} className="ph-avatar" />

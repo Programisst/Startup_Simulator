@@ -2,7 +2,6 @@
 // Выглядит как обычная программа той системы, что нарисована на экране компьютера.
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Coach } from '../components/Coach';
 import { GoalCard } from '../components/GoalCard';
 import { TopBar } from '../components/TopBar';
 import { FeedApp, GoalsApp, MailApp, SettingsApp } from '../screens/Apps';
@@ -13,7 +12,6 @@ import { Overview } from '../screens/Overview';
 import { Product } from '../screens/Product';
 import { Team } from '../screens/Team';
 import { useStore, type ScreenId } from '../store';
-import type { TutorialStep } from '../tutorial';
 import './company.css';
 
 export const COMPANY_TABS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
@@ -27,7 +25,7 @@ const ICONS: Partial<Record<ScreenId, ReactNode>> = {
   finance: <path d="M6.5 2v9M9 4.2c-.5-.8-1.4-1.2-2.500-1.200-1.400 0-2.500.700-2.500 1.800 0 2.400 5.200 1.100 5.200 3.600 0 1.100-1.100 1.800-2.700 1.800-1.200 0-2.200-.4-2.700-1.200" />,
 };
 
-export function CompanyApp({ step }: { step: TutorialStep | null }) {
+export function CompanyApp() {
   const { t } = useTranslation();
   const companyName = useStore((s) => s.game?.companyName ?? '');
   const screen = useStore((s) => s.screen);
@@ -61,7 +59,6 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
       </nav>
       <TopBar />
       <main className="content">
-        <Coach step={step} inline />
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
         {tab === 'overview' && <Overview />}
         {tab === 'product' && <Product />}

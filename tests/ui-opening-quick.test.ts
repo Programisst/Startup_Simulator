@@ -1,5 +1,5 @@
 // Быстрый вход для разработчиков: ссылка ?skip сразу ведёт в квартиру, а в переписке подставлены прошлые ответы.
-// Без своих ответов берётся образец — идея Lumio. Обычный игрок этого не видит (только при разработке).
+// Без своих ответов ?skip берёт простой образец. Обычный игрок этого не видит (только при разработке).
 import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
 import { createGame } from '../src/core';
@@ -50,17 +50,17 @@ describe('быстрый вход для тестов', () => {
     expect(() => rememberAnswer('idea', 'x', broken)).not.toThrow();
   });
 
-  it('образец — идея Lumio для программистов, тексты есть в переводе', () => {
+  it('образец — простая идея, тексты есть в переводе', () => {
     const sample = sampleAnswers(i18n.t.bind(i18n));
-    expect(sample.name).toBe('Lumio');
+    expect(sample.name).toBe('Соседская кухня');
     expect(sample.idea.length).toBeGreaterThan(12);
-    expect(sample.audience).toMatch(/программист/i);
+    expect(sample.audience.length).toBeGreaterThan(12);
   });
 
-  it('без своих ответов партия собирается из образца: инструмент для разработчиков, средний бюджет, цель — прибыль', () => {
+  it('без своих ответов партия собирается из образца: площадка, средний бюджет, цель — прибыль', () => {
     const setup = quickSetup({}, sampleAnswers(i18n.t.bind(i18n)), 7);
-    expect(setup.companyName).toBe('Lumio');
-    expect(setup.productType).toBe('devtools');
+    expect(setup.companyName).toBe('Соседская кухня');
+    expect(setup.productType).toBe('marketplace');
     expect(setup.difficulty).toBe('normal');
     expect(content.difficulties[setup.difficulty].startCash).toBe(3000);
     expect(setup.goal).toBe('profit');

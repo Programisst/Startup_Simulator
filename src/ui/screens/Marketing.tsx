@@ -28,7 +28,7 @@ export function Marketing() {
           />
           <div className="speeds">
             {PRESETS.map((p) => (
-              <button key={p} className={p === game.adSpendPerDay ? 'active' : ''} onClick={() => dispatch({ type: 'setAdSpend', perDay: p })}>
+              <button key={p} className={p === game.adSpendPerDay ? 'active' : ''} data-coach-target={p === 10 ? 'ads10' : undefined} onClick={() => dispatch({ type: 'setAdSpend', perDay: p })}>
                 {money(p)}
               </button>
             ))}

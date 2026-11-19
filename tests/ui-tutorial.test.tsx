@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Обучение первой партии: шаги выводятся из состояния игры и ведут к запуску продукта.
+// Обучение первой партии: шаги выводятся из состояния игры и ведут от запуска продукта до первых денег.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -13,7 +13,21 @@ import { baseSetup } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
-const start: TutorialInput = { active: true, running: true, computerOpen: false, onProduct: false, paused: true, coreQueued: false, coreDone: false, launched: false };
+const start: TutorialInput = {
+  active: true,
+  running: true,
+  computerOpen: false,
+  onProduct: false,
+  onMarketing: false,
+  onFinance: false,
+  financeSeen: false,
+  paused: true,
+  coreQueued: false,
+  coreDone: false,
+  launched: false,
+  adsOn: false,
+  earned: false,
+};
 const step = (over: Partial<TutorialInput>) => tutorialStep({ ...start, ...over });
 
 describe('шаги обучения', () => {
@@ -26,7 +40,21 @@ describe('шаги обучения', () => {
     expect(step({ coreDone: true })).toBe('backToComputer');
     expect(step({ coreDone: true, computerOpen: true })).toBe('openProductLaunch');
     expect(step({ coreDone: true, computerOpen: true, onProduct: true })).toBe('launch');
-    expect(step({ coreDone: true, launched: true })).toBe('done');
+    expect(step({ coreDone: true, launched: true, computerOpen: true })).toBe('openMarketing');
+  });
+
+  it('после запуска ведут до первых денег: реклама, ожидание, «Финансы»', () => {
+    const live = { coreDone: true, launched: true, computerOpen: true };
+    expect(step({ ...live })).toBe('openMarketing');
+    expect(step({ ...live, onMarketing: true })).toBe('setAds');
+    expect(step({ ...live, adsOn: true })).toBe('resumeTime');
+    expect(step({ ...live, adsOn: true, paused: false })).toBe('waitMoney');
+    expect(step({ ...live, adsOn: true, paused: false, earned: true })).toBe('openFinance');
+    expect(step({ ...live, earned: true, onFinance: true })).toBe('done');
+    // Уже заглядывал в «Финансы» — после первых денег сразу финал.
+    expect(step({ ...live, earned: true, financeSeen: true })).toBe('done');
+    // Деньги пошли и без рекламы — сразу к «Финансам».
+    expect(step({ ...live, earned: true })).toBe('openFinance');
   });
 
   it('подстраиваются, если игрок сделал шаг раньше подсказки', () => {
@@ -42,7 +70,22 @@ describe('шаги обучения', () => {
   });
 
   it('у каждого шага есть текст', () => {
-    const steps: TutorialStep[] = ['goToComputer', 'openProduct', 'queueCore', 'startTime', 'waitCore', 'backToComputer', 'openProductLaunch', 'launch', 'done'];
+    const steps: TutorialStep[] = [
+      'goToComputer',
+      'openProduct',
+      'queueCore',
+      'startTime',
+      'waitCore',
+      'backToComputer',
+      'openProductLaunch',
+      'launch',
+      'openMarketing',
+      'setAds',
+      'resumeTime',
+      'waitMoney',
+      'openFinance',
+      'done',
+    ];
     for (const s of steps) expect((ru.coach as Record<string, string>)[s]?.length ?? 0, s).toBeGreaterThan(10);
   });
 
@@ -78,7 +121,7 @@ describe('обучение на экране (без 3D меню всегда п
   const coach = () => box.querySelector('.coach')?.textContent ?? '';
   const stepNow = () => box.querySelector('[data-coach]')?.getAttribute('data-coach');
 
-  it('новая партия начинается с обучения и проходит все шаги до запуска', () => {
+  it('новая партия начинается с обучения и проходит все шаги до первых денег', () => {
     expect(useStore.getState().tutorial).toBe(true);
     expect(stepNow()).toBe('openProduct');
     expect(coach()).toContain('открой «Продукт»');
@@ -107,8 +150,27 @@ describe('обучение на экране (без 3D меню всегда п
 
     click(box.querySelector('[data-coach-target="launch"]')!);
     expect(useStore.getState().game!.launched).toBe(true);
+    expect(stepNow()).toBe('openMarketing');
+    expect(coach()).toContain('«Маркетинг»');
+
+    click(box.querySelector('[data-nav="marketing"]')!);
+    expect(stepNow()).toBe('setAds');
+    click(box.querySelector('[data-coach-target="ads10"]')!);
+    expect(useStore.getState().game!.adSpendPerDay).toBe(10);
+    expect(stepNow()).toBe('waitMoney');
+
+    for (let i = 0; i < 90 && stepNow() === 'waitMoney'; i++) {
+      act(() => {
+        if (useStore.getState().game!.pendingEvent) useStore.setState({ game: { ...useStore.getState().game!, pendingEvent: null } });
+        useStore.getState().step();
+      });
+    }
+    expect(stepNow()).toBe('openFinance');
+    expect(coach()).toContain('«Финансы»');
+
+    click(box.querySelector('[data-nav="finance"]')!);
     expect(stepNow()).toBe('done');
-    expect(coach()).toContain('ты на рынке');
+    expect(coach()).toContain('Дальше сам');
     expect(box.textContent?.match(/\bcoach\.[A-Za-z0-9_.]+/g) ?? []).toEqual([]);
 
     click(button('Понял 👍'));

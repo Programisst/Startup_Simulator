@@ -115,7 +115,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
       dispatch({ type: 'coffee' });
       return true;
     },
-    companyApp: <CompanyApp step={step} />,
+    companyApp: <CompanyApp />,
     onTyped: () => {
       typed.current += 1;
       if (typed.current >= TYPED_BATCH) {
@@ -129,7 +129,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     },
     focusText: t('founderCare.focus', { pct: num(view.founder.focus * 100), boost: num(view.founder.focusBoost * 100) }),
     onComputer: setComputerOpen,
-    pointAtDesk: step === 'goToComputer' || step === 'backToComputer',
+    pointAtDesk: step === 'goToComputer' || step === 'backToComputer' || step === 'openMarketing' || step === 'openFinance',
     // Команда для сцены: кто на каком месте, занят ли, в каком настроении. Как это нарисовать, решает напарник.
     team: {
       office: { ...view.team.office, title: t(`office.tiers.${view.team.office.id}`) },

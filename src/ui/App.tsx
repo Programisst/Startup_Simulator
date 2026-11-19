@@ -59,8 +59,8 @@ export function App() {
         <main className="content full">
           <GameRoom step={tutorial} />
         </main>
-        {/* В комнате друг пишет на телефон; за компьютером подсказка показывается внутри его экрана. */}
-        <Phone step={tutorial} hidden={computerOpen} />
+        {/* Друг пишет на телефон: в комнате и за компьютером (телефон лежит слева от монитора). */}
+        <Phone step={tutorial} />
         <GoalToast />
         <FeedToasts />
         {overlays}

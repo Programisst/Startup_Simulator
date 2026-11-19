@@ -1,5 +1,6 @@
 /* Телефон основателя — «дневной город»: тёмно-синий корпус со ступенькой, экран-небо, жёлтые кнопки.
-   Выезжает снизу с лёгким наклоном, жужжит на новое сообщение, прячется в значок. */
+   Стоит ровно; выезжает снизу с наклоном, жужжит на новое сообщение, прячется в значок.
+   За компьютером лежит слева от монитора — поверх его экрана. */
 
 .ph-wrap {
   --ink: #26324a;
@@ -15,6 +16,9 @@
   bottom: 22px;
   width: 0;
   height: 0;
+}
+.layout.at-computer .ph-wrap {
+  z-index: 60;
 }
 .ph-wrap[hidden] {
   display: none;
@@ -48,7 +52,7 @@
     opacity 0.25s ease;
 }
 .ph.open {
-  transform: translateY(0) rotate(-1.5deg);
+  transform: translateY(0) rotate(0);
   opacity: 1;
   pointer-events: auto;
 }
@@ -369,33 +373,33 @@
 @keyframes phBuzz0 {
   0%,
   100% {
-    transform: translateY(0) rotate(-1.5deg);
+    transform: translateY(0) rotate(0);
   }
   15%,
   45%,
   75% {
-    transform: translate(-3px, 0) rotate(-3.5deg);
+    transform: translate(-3px, 0) rotate(-2deg);
   }
   30%,
   60%,
   90% {
-    transform: translate(3px, 0) rotate(0.5deg);
+    transform: translate(3px, 0) rotate(2deg);
   }
 }
 @keyframes phBuzz1 {
   0%,
   100% {
-    transform: translateY(0) rotate(-1.5deg);
+    transform: translateY(0) rotate(0);
   }
   15%,
   45%,
   75% {
-    transform: translate(-3px, 0) rotate(-3.5deg);
+    transform: translate(-3px, 0) rotate(-2deg);
   }
   30%,
   60%,
   90% {
-    transform: translate(3px, 0) rotate(0.5deg);
+    transform: translate(3px, 0) rotate(2deg);
   }
 }
 @keyframes phIconIn {

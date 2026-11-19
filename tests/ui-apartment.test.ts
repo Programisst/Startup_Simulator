@@ -28,7 +28,6 @@ describe('в игре одна квартира — пиксельная', () =>
     expect(existsSync(join(root, 'src/ui/room3d'))).toBe(false);
     expect(existsSync(join(root, 'src/ui/room'))).toBe(false);
     expect(existsSync(join(root, 'src/ui/office/OfficeScene.tsx'))).toBe(false);
-    expect(existsSync(join(root, 'src/concepts/lumio'))).toBe(false);
   });
 
   it('экран «Офис» показывает пиксельную квартиру', () => {

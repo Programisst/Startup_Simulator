@@ -1,6 +1,6 @@
 // Быстрый вход для разработчиков — только при `npm run dev`, в собранной игре его нет.
-// Ссылка с ?skip сразу ведёт в квартиру с готовой компанией; в переписке подставлены прошлые ответы — жми Enter.
-// Своих ответов нет — берётся образец (идея Lumio).
+// Ссылка с ?skip сразу ведёт в квартиру с готовой компанией (свои прошлые ответы или простой образец).
+// В переписке подставлены прошлые ответы — жми Enter; в первый раз пишешь сам.
 import type { NewGameSetup, ProductTypeId } from '../../core';
 import { chatSetup, choose, reply, resolveIdea, startChat } from './chat';
 
@@ -42,7 +42,7 @@ export function rememberAnswer(stage: Typed, text: string, storage: Storage | nu
 }
 
 export function sampleAnswers(t: (key: string) => string): Sample {
-  return { idea: t('opening.dev.idea'), audience: t('opening.dev.audience'), name: t('opening.dev.name'), productType: 'devtools' };
+  return { idea: t('opening.dev.idea'), audience: t('opening.dev.audience'), name: t('opening.dev.name'), productType: 'marketplace' };
 }
 
 /** Партия как после переписки: свои ответы или образец, средний бюджет, цель — выйти в прибыль. */
@@ -53,7 +53,7 @@ export function quickSetup(answers: Answers, sample: Sample, seed: number): NewG
   s = reply(s, answers.name ?? sample.name);
   s = resolveIdea(s, null);
   if (s.stage === 'pickType') s = choose(s, 'saas');
-  // Образец — точно инструмент для разработчиков, не гадаем по словам.
+  // Тип продукта у образца известен заранее — не гадаем по словам.
   if (answers.idea === undefined) s = { ...s, productType: sample.productType, audienceId: undefined, businessModel: undefined };
   s = choose(choose(s, 'normal'), 'profit');
   return chatSetup(s, seed, sample.name);
