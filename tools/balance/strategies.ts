@@ -37,48 +37,85 @@ function scaleServers(s: GameState, content: GameContent): Command[] {
   return wanted !== s.capacity ? [{ type: 'setCapacity', capacity: wanted }] : [];
 }
 
-/** Разумный игрок: три функции до запуска, потом развитие продукта и умеренная реклама. */
-export const sensible: Strategy = (s, content) => {
+/**
+ * Игрок, который развивает продукт и следит за деньгами.
+ * launchAfter — сколько функций он делает до выхода на рынок.
+ */
+function builder(launchAfter: number): Strategy {
+  return (s, content) => {
+    const cmds = answerEvent(s, content);
+    const defs = content.features[s.productType];
+    const core = coreId(s, content);
+
+    if (s.tasks.length === 0) {
+      if (s.bugs >= 5) cmds.push({ type: 'startBugfix' });
+      else if (s.debt >= 30) cmds.push({ type: 'startRefactor' });
+      else {
+        // Сначала основа, затем функции с лучшим отношением ценности к стоимости.
+        const next = defs
+          .filter((f) => !s.doneFeatures.includes(f.id))
+          .sort((a, b) => Number(b.core ?? false) - Number(a.core ?? false) || b.value / b.cost - a.value / a.cost)[0];
+        if (next) cmds.push({ type: 'queueFeature', featureId: next.id });
+        else if (s.bugs > 0) cmds.push({ type: 'startBugfix' });
+        else if (s.debt > 0) cmds.push({ type: 'startRefactor' });
+        else cmds.push({ type: 'startPolish' });
+      }
+    }
+
+    // Подработка: чем меньше запас денег в месяцах, тем больше времени на заказы.
+    const recent = s.recentDays.slice(-30);
+    const burn = recent.reduce((sum, d) => sum + d.expenses - d.revenue, 0) * (30 / Math.max(1, recent.length));
+    const runway = burn > 0 ? s.cash / burn : Infinity;
+    const share = runway > 12 ? 0 : runway > 6 ? 0.25 : runway > 3 ? 0.5 : 0.75;
+    if (share !== s.sideJobShare) cmds.push({ type: 'setSideJob', share });
+
+    if (!s.launched && s.doneFeatures.includes(core) && s.doneFeatures.length >= launchAfter) cmds.push({ type: 'launch' });
+
+    if (s.launched) {
+      const monthRevenue = recent.reduce((sum, d) => sum + d.revenue, 0);
+      // Реклама окупается, если пользователь за полгода приносит больше, чем стоит его привлечение.
+      const revenuePerUser = s.users > 50 ? monthRevenue / s.users : Infinity;
+      const paysOff = revenuePerUser * 6 > cac(s.market, s.users);
+      let spend = 0;
+      if (s.quality >= 40 && s.cash > 500 && paysOff) spend = Math.round((monthRevenue * 0.3) / 30 + s.cash * 0.004);
+      if (spend !== s.adSpendPerDay) cmds.push({ type: 'setAdSpend', perDay: spend });
+      cmds.push(...scaleServers(s, content));
+    }
+    return cmds;
+  };
+}
+
+/** Разумный игрок: делает три функции и только потом выходит на рынок. */
+export const sensible: Strategy = builder(3);
+
+/** Опытный игрок: выходит на рынок сразу после основы — раньше появляются пользователи и доход. */
+export const expert: Strategy = builder(1);
+
+/** Только подработка на полный день, продукт не делается вообще. */
+export const sideJobOnly: Strategy = (s, content) => {
+  const cmds = answerEvent(s, content);
+  if (s.sideJobShare !== 1) cmds.push({ type: 'setSideJob', share: 1 });
+  return cmds;
+};
+
+/**
+ * Новичок: без подработки, сразу делает основу, запускается и включает рекламу,
+ * продукт дальше почти не развивает. Так обычно играют первую партию.
+ */
+export const novice: Strategy = (s, content) => {
   const cmds = answerEvent(s, content);
   const defs = content.features[s.productType];
   const core = coreId(s, content);
-
   if (s.tasks.length === 0) {
-    if (s.bugs >= 5) cmds.push({ type: 'startBugfix' });
-    else if (s.debt >= 30) cmds.push({ type: 'startRefactor' });
-    else {
-      // Сначала основа, затем функции с лучшим отношением ценности к стоимости.
-      const next = defs
-        .filter((f) => !s.doneFeatures.includes(f.id))
-        .sort((a, b) => Number(b.core ?? false) - Number(a.core ?? false) || b.value / b.cost - a.value / a.cost)[0];
-      if (next) cmds.push({ type: 'queueFeature', featureId: next.id });
-      else if (s.bugs > 0) cmds.push({ type: 'startBugfix' });
-      else if (s.debt > 0) cmds.push({ type: 'startRefactor' });
-      else cmds.push({ type: 'startPolish' });
-    }
+    const next = defs.find((f) => !s.doneFeatures.includes(f.id));
+    if (next) cmds.push({ type: 'queueFeature', featureId: next.id });
   }
-
-  // Подработка: чем меньше запас денег в месяцах, тем больше времени на заказы.
-  const recent = s.recentDays.slice(-30);
-  const burn = recent.reduce((sum, d) => sum + d.expenses - d.revenue, 0) * (30 / Math.max(1, recent.length));
-  const runway = burn > 0 ? s.cash / burn : Infinity;
-  const share = runway > 12 ? 0 : runway > 6 ? 0.25 : runway > 3 ? 0.5 : 0.75;
-  if (share !== s.sideJobShare) cmds.push({ type: 'setSideJob', share });
-
-  if (!s.launched && s.doneFeatures.includes(core) && s.doneFeatures.length >= 3) cmds.push({ type: 'launch' });
-
+  if (!s.launched && s.doneFeatures.includes(core)) cmds.push({ type: 'launch' });
   if (s.launched) {
-    // Реклама: доля дохода плюс небольшая часть запаса, но только при приличном качестве.
-    const monthRevenue = s.recentDays.slice(-30).reduce((sum, d) => sum + d.revenue, 0);
-    // Реклама окупается, если пользователь за полгода приносит больше, чем стоит его привлечение.
-    const revenuePerUser = s.users > 50 ? monthRevenue / s.users : Infinity;
-    const paysOff = revenuePerUser * 6 > cac(s.market, s.users);
-    let spend = 0;
-    if (s.quality >= 40 && s.cash > 500 && paysOff) spend = Math.round((monthRevenue * 0.3) / 30 + s.cash * 0.004);
-    if (spend !== s.adSpendPerDay) cmds.push({ type: 'setAdSpend', perDay: spend });
+    if (s.adSpendPerDay !== 10) cmds.push({ type: 'setAdSpend', perDay: 10 });
     cmds.push(...scaleServers(s, content));
   }
   return cmds;
 };
 
-export const strategies: Record<string, Strategy> = { idle, adsOnly, sensible };
+export const strategies: Record<string, Strategy> = { idle, sideJobOnly, adsOnly, novice, sensible, expert };
