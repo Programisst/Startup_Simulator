@@ -1,15 +1,14 @@
 // @vitest-environment jsdom
-// Экран «Офис» и сводка. В тестах 3D нет, поэтому показывается запасная рисованная комната.
+// Экран «Офис» и сводка. В тестах нет рисования на холсте, поэтому игра показывает обычное меню сбоку без квартиры.
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import type { GameState } from '../src/core';
 import '../src/ui/i18n';
 import { App } from '../src/ui/App';
-import { has3D } from '../src/ui/office/GameRoom';
-import { worksAtDesk } from '../src/ui/room3d/link';
+import { canDraw } from '../src/ui/office/GameRoom';
 import { useStore, type ScreenId } from '../src/ui/store';
-import { advance, baseSetup, launchedGame, newGame, run } from './helpers';
+import { advance, baseSetup, launchedGame, newGame } from './helpers';
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
 
@@ -39,19 +38,13 @@ describe('экран «Офис»', () => {
     expect(useStore.getState().screen).toBe('office');
   });
 
-  it('в меню есть и офис, и сводка', () => {
+  it('без квартиры в меню нет пункта «Офис», а вместо него открывается сводка', () => {
+    expect(canDraw()).toBe(false);
     show(newGame(), 'office');
     const nav = [...box.querySelectorAll('.sidebar button')].map((b) => b.textContent);
-    expect(nav).toEqual(['Офис', 'Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы', 'Банк', 'Сообщения', 'Почта', 'Цели', 'Настройки']);
-  });
-
-  it('без 3D показывает запасную комнату с занятием основателя, без пропущенных текстов', () => {
-    expect(has3D()).toBe(false);
-    show(newGame(), 'office');
-    expect(box.querySelector('.office-scene')).not.toBeNull();
-    expect(box.textContent).toContain('Основателю нечем заняться');
-    show(run(newGame(), { type: 'queueFeature', featureId: 'core' }), 'office');
-    expect(box.textContent).toContain('Основатель работает над продуктом');
+    expect(nav).toEqual(['Сводка', 'Продукт', 'Команда', 'Маркетинг', 'Финансы', 'Банк', 'Сообщения', 'Почта', 'Цели', 'Настройки']);
+    expect(box.querySelector('.sidebar button.active')?.textContent).toBe('Сводка');
+    expect(box.textContent).toContain('Продукт ещё не запущен');
     expect(box.textContent?.match(/\b(office|room|nav|overview)\.[A-Za-z0-9_.]+/g) ?? []).toEqual([]);
   });
 
@@ -75,14 +68,6 @@ describe('подпись под деньгами в сводке', () => {
   });
 });
 
-describe('когда герой сам садится работать', () => {
-  it('за продуктом и за подработкой — да; без дела и в кассовом разрыве — нет', () => {
-    expect(worksAtDesk('building')).toBe(true);
-    expect(worksAtDesk('sideJob')).toBe(true);
-    expect(worksAtDesk('idle')).toBe(false);
-    expect(worksAtDesk('broke')).toBe(false);
-  });
-});
 
 describe('цель компании на экране', () => {
   it('ближайшая цель видна с подсказкой и наградой', () => {

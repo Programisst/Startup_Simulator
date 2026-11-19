@@ -7,7 +7,7 @@ import { content } from '../../content';
 import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, themeLexicon, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
 import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, themeForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
 import { hasSave } from '../../save/storage';
-import { Landscape } from '../room/laptop/Landscape';
+import { Landscape } from '../apartment/laptop/Landscape';
 import { money } from '../format';
 import { useStore } from '../store';
 import './newgame.css';

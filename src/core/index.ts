@@ -14,5 +14,7 @@ export { energyOf, energyFactor, founderWorkPerDay, coffeeReady, coffeeActive } 
 export { REVIEW_VARIANTS } from './news';
 export { officeView, officeOf, nextOffice, officeIndex, type OfficeView } from './office';
 export { bankView, loanLimit, loanTerms, debtLeft, type BankView } from './bank';
-export { driverOf } from './team';
+export { driverOf, cleanChat, CHAT_LINE_MAX, CHAT_KEPT_LINES } from './team';
 export { featuresOf, pickFeatures, themeOf } from './features';
+export { revenue30 as revenue30Of } from './events';
+export type { ChatLine, TalkOutcome } from './types';

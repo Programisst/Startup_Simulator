@@ -20,6 +20,8 @@ html = html.replace(/<script type="module"[^>]*src="\.\/([^"]+)"[^>]*><\/script>
 html = html.replace('</body>', () => `${scripts}</body>`);
 
 if (/(src|href)="\.\/assets\//.test(html)) throw new Error('Остались ссылки на отдельные файлы — сборка не цельная');
+// Квартира и другие части, подгружаемые на ходу, тоже должны быть внутри файла.
+if (/import\(\s*["'`]\.\.?\/[^"'`]+\.js/.test(html)) throw new Error('Часть игры подгружается отдельным файлом — запустите сборку через npm run share');
 
 mkdirSync(new URL('../share/', import.meta.url), { recursive: true });
 writeFileSync(new URL('../share/StartupSimulator.html', import.meta.url), html);

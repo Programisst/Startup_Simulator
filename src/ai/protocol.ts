@@ -5,6 +5,7 @@ export const AI_ROUTES = {
   status: '/api/ai/status',
   analyze: '/api/ai/analyze',
   ideas: '/api/ai/ideas',
+  talk: '/api/ai/talk',
 } as const;
 
 export type AiLang = 'ru' | 'en';
@@ -43,4 +44,24 @@ export interface AiIdea {
 
 export interface AiIdeasResponse {
   ideas: AiIdea[];
+}
+
+/** Разговор основателя с сотрудником. Всё о человеке и компании передаётся готовыми словами: посредник ничего не знает об игре. */
+export interface AiTalkRequest {
+  lang: AiLang;
+  /** Кто собеседник: имя, должность, что им движет, настроение, биография, привычка */
+  person: { name: string; role: string; driver: string; trait: string; mood: 'high' | 'mid' | 'low'; bio: string; quirk: string };
+  /** Что происходит в компании — короткими фактами */
+  company: { name: string; idea: string; facts: string[] };
+  /** О чём уже говорили (включая прошлые разговоры), по порядку */
+  history: { from: 'founder' | 'employee'; text: string }[];
+  /** Новая реплика основателя */
+  message: string;
+}
+
+/** Сырой ответ: игра сама проверяет его, прежде чем использовать. */
+export interface AiTalkResponse {
+  reply: string;
+  /** Как реплика основателя подействовала на человека */
+  outcome: string;
 }
