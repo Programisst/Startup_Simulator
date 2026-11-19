@@ -174,3 +174,11 @@ export function explorerRows(fileName: string, maxRows: number): ExplorerRow[] {
   return all.slice(start, start + maxRows);
 }
 
+/** Текст, обрезанный многоточием под ширину maxW (шрифт уже выставлен в ctx). */
+export function fitText(ctx: { measureText(t: string): { width: number } }, text: string, maxW: number): string {
+  if (ctx.measureText(text).width <= maxW) return text;
+  let n = text.length;
+  while (n > 1 && ctx.measureText(text.slice(0, n - 1) + '…').width > maxW) n--;
+  return n > 1 ? text.slice(0, n - 1) + '…' : '';
+}
+
