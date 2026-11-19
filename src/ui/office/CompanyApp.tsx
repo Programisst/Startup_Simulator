@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Coach } from '../components/Coach';
+import { GoalCard } from '../components/GoalCard';
 import { TopBar } from '../components/TopBar';
 import { Finance } from '../screens/Finance';
 import { Marketing } from '../screens/Marketing';
@@ -53,6 +54,8 @@ export function CompanyApp({ step }: { step: TutorialStep | null }) {
             {t(`nav.${id}`)}
           </button>
         ))}
+        <span className="ca-fill" />
+        <GoalCard variant="app" />
       </nav>
       <TopBar />
       <main className="content">

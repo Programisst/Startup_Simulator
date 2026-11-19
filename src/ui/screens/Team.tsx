@@ -31,13 +31,14 @@ export function Team() {
   const game = useStore((s) => s.game)!;
   const dispatch = useStore((s) => s.dispatch);
   const [firing, setFiring] = useState<number | null>(null);
+  const [confirming, setConfirming] = useState<number | null>(null);
   const view = teamView(game, content);
   const cfg = content.config.team;
 
   const nameOf = usePersonName();
 
   /** Что человек даёт компании при обычной мотивации. */
-  function benefit(p: Candidate): string {
+  function benefit(p: Pick<Candidate, 'role' | 'skill' | 'trait'>): string {
     const out = p.skill * (p.trait === 'diligent' ? 1 + cfg.diligentBonus : 1);
     return p.role === 'developer'
       ? t('team.benefitDeveloper', { work: dec(out) })
@@ -158,13 +159,28 @@ export function Team() {
             <article key={c.id} className="person">
               {person(c)}
               <p>{benefit(c)}</p>
+              {c.risky && <p className="negative">{t('team.riskyHire', { days: c.cashDaysIfHired })}</p>}
               <div className="row">
                 <span>
                   <b>{money(c.salaryAsk)}</b> {t('team.perMonth')}
                 </span>
-                <button className="primary" disabled={!view.canHire} onClick={() => dispatch({ type: 'hire', candidateId: c.id })}>
-                  {t('team.hire')}
-                </button>
+                {c.risky && confirming !== c.id ? (
+                  // Опасный найм — в два нажатия: сначала игрок видит, чем рискует.
+                  <button disabled={!view.canHire} onClick={() => setConfirming(c.id)}>
+                    {t('team.hire')}
+                  </button>
+                ) : (
+                  <button
+                    className="primary"
+                    disabled={!view.canHire}
+                    onClick={() => {
+                      dispatch({ type: 'hire', candidateId: c.id });
+                      setConfirming(null);
+                    }}
+                  >
+                    {c.risky ? t('team.hireAnyway') : t('team.hire')}
+                  </button>
+                )}
               </div>
             </article>
           ))}

@@ -166,6 +166,29 @@ export function setSalary(s: GameState, employeeId: number, salary: number, cont
   return { ok: true, cashDelta: 0, team: { ...team, employees: team.employees.map((e) => (e.id === employeeId ? { ...e, salary } : e)) } };
 }
 
+/** Найм считается опасным, если после него денег хватит меньше чем на столько дней. */
+export const RISKY_HIRE_DAYS = 90;
+
+/**
+ * На сколько дней хватит денег, если добавить к расходам ещё одну зарплату.
+ * Считается по нынешним месячным расходам и доходу за последние 30 дней; null — денег будет хватать.
+ */
+export function cashDaysAfterHire(s: GameState, salary: number, content: GameContent): number | null {
+  const cfg = content.config;
+  const income = s.recentDays.slice(-30).reduce((sum, d) => sum + d.revenue, 0) + s.sideJobIncomePerMonth * s.sideJobShare;
+  const expenses =
+    s.livingCostPerMonth +
+    cfg.toolsCostPerMonth +
+    s.capacity * s.market.serverCostPerUser +
+    s.adSpendPerDay * 30 +
+    s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30 +
+    payrollPerMonth(teamOf(s, content)) +
+    salary;
+  const burn = expenses - income;
+  if (burn <= 0) return null;
+  return Math.max(0, Math.floor((s.cash / burn) * 30));
+}
+
 // ---------- Сводка для интерфейса ----------
 
 export interface TeamMemberView extends Employee {
@@ -178,9 +201,17 @@ export interface TeamMemberView extends Employee {
   severance: number;
 }
 
+/** Кандидат с прогнозом: на сколько хватит денег, если нанять его сейчас. */
+export interface CandidateView extends Candidate {
+  /** Дней до нуля на счёте после найма; null — денег будет хватать */
+  cashDaysIfHired: number | null;
+  /** Найм опасен: деньги кончатся раньше, чем через три месяца */
+  risky: boolean;
+}
+
 export interface TeamView {
   members: TeamMemberView[];
-  candidates: Candidate[];
+  candidates: CandidateView[];
   log: TeamLogEntry[];
   size: number;
   maxSize: number;
@@ -212,7 +243,10 @@ export function teamView(s: GameState, content: GameContent): TeamView {
         severance: e.salary * cfg.team.severanceMonths,
       };
     }),
-    candidates: team.candidates,
+    candidates: team.candidates.map((c) => {
+      const cashDaysIfHired = cashDaysAfterHire(s, c.salaryAsk, content);
+      return { ...c, cashDaysIfHired, risky: cashDaysIfHired !== null && cashDaysIfHired < RISKY_HIRE_DAYS };
+    }),
     log: team.log,
     size: team.employees.length,
     maxSize: cfg.team.maxSize,

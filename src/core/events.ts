@@ -6,6 +6,11 @@ import type { Effect, Employee, EventCondition, EventDef, EventSubject, GameCont
 
 const employeesOf = (s: GameState): Employee[] => s.team?.employees ?? [];
 
+/** Доход продукта за последние 30 дней. */
+export function revenue30(s: GameState): number {
+  return s.recentDays.slice(-30).reduce((sum, d) => sum + d.revenue, 0);
+}
+
 /** Сотрудник, о котором будет событие, или null, если подходящего нет. */
 export function eventSubject(subject: EventSubject, s: GameState): Employee | null {
   const fits = employeesOf(s).filter(
@@ -39,6 +44,9 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   if (c.minDebt !== undefined && s.debt < c.minDebt) return false;
   if (c.overloaded !== undefined && c.overloaded !== overload(s.users, s.capacity) > 0) return false;
   if (c.cashNegative !== undefined && c.cashNegative !== s.cash < 0) return false;
+  if (c.minFeatures !== undefined && s.doneFeatures.length < c.minFeatures) return false;
+  if (c.minRevenue30 !== undefined && revenue30(s) < c.minRevenue30) return false;
+  if (c.minMonthProfit !== undefined && (s.months[s.months.length - 1]?.profit ?? -Infinity) < c.minMonthProfit) return false;
   const teamSize = employeesOf(s).length;
   if (c.minTeam !== undefined && teamSize < c.minTeam) return false;
   if (c.maxTeam !== undefined && teamSize > c.maxTeam) return false;

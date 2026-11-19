@@ -67,6 +67,12 @@ export interface EventCondition {
   minDebt?: number;
   overloaded?: boolean;
   cashNegative?: boolean;
+  /** Сколько функций готово, считая основу */
+  minFeatures?: number;
+  /** Доход продукта за последние 30 дней */
+  minRevenue30?: number;
+  /** Прибыль последнего закрытого месяца (доход продукта минус все расходы) */
+  minMonthProfit?: number;
   /** Сколько человек в команде, не считая основателя */
   minTeam?: number;
   maxTeam?: number;
@@ -110,6 +116,20 @@ export type Effect =
   | { type: 'subjectSkill'; amount: number }
   | { type: 'subjectLeaves' }
   | { type: 'chance'; probability: number; then: Effect[]; otherwise?: Effect[] };
+
+/**
+ * Цель на пути компании. Цели идут по порядку: игрок всегда видит одну ближайшую.
+ * Достиг — получает награду, открывается следующая.
+ */
+export interface MilestoneDef {
+  id: string;
+  condition: EventCondition;
+  /** Награда. Случайных исходов здесь быть не должно. */
+  effects: Effect[];
+  /** По какому числу показывать прогресс и сколько нужно набрать */
+  progress?: { metric: MilestoneMetric; target: number };
+}
+export type MilestoneMetric = 'users' | 'revenue30' | 'features' | 'team';
 
 export interface EventChoiceDef {
   id: string;
@@ -214,6 +234,7 @@ export interface GameContent {
   productTypes: Record<ProductTypeId, ProductTypeDef>;
   features: Record<ProductTypeId, FeatureDef[]>;
   events: EventDef[];
+  milestones: MilestoneDef[];
 }
 
 // ---------- Состояние партии ----------
@@ -390,6 +411,8 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
+  milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
   team?: TeamState;
 

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { valuation } from '../../core';
+import { bankruptcyCause, valuation } from '../../core';
 import { gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
 import { useStore } from '../store';
@@ -17,6 +17,11 @@ export function EndScreen() {
       <div className="modal wide">
         <h2>{won ? t('end.wonTitle') : t('end.bankruptTitle')}</h2>
         <p>{t(won ? 'end.wonBody' : 'end.bankruptBody', { company: game.companyName, ...gameDate(game.day) })}</p>
+        {!won && (
+          <p className="end-cause">
+            <b>{t('end.causeTitle')}</b> {t(`end.cause.${bankruptcyCause(game)}`)}
+          </p>
+        )}
         <div className="cards">
           <div className="card">
             <span>{t('metrics.users')}</span>
