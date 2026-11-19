@@ -7,3 +7,4 @@ dist/
 *.zip
 .claude/settings.local.json
 share/
+dist-server/
