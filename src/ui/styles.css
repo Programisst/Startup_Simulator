@@ -543,3 +543,13 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
 .confetti i:nth-child(28) { left: 99%; animation-delay: 2.53s; animation-duration: 2.90s; }
 @keyframes confetti-fall { from { transform: translateY(0) rotate(0deg); } to { transform: translateY(110vh) rotate(540deg); } }
 @media (prefers-reduced-motion: reduce) { .confetti { display: none; } .layout .modal.win { animation: none; } }
+
+/* ---------- Характер сотрудника и банк ---------- */
+.profile summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.profile p { margin: 4px 0 0; font-size: 13px; }
+.quote { margin: 0; font-style: italic; }
+.quote .muted { font-style: normal; }
+.quote-low { color: var(--red); }
+.quote-high { color: var(--green); }
+.bank .salary input { width: 130px; }
+.bank .panel p { margin: 6px 0; }

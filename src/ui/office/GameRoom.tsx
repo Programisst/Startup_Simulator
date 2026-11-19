@@ -24,7 +24,7 @@ const DOCK_SCREENS: Record<string, ScreenId> = {
   messenger: 'feed',
   mail: 'mail',
   notes: 'goals',
-  bank: 'finance',
+  bank: 'bank',
   settings: 'settings',
 };
 
