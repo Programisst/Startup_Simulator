@@ -5,8 +5,9 @@
 import { featuresOf } from './features';
 import { overload } from './formulas';
 import { coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay } from './founder';
-import { teamOf, teamWorkPerDay } from './team';
-import type { GameContent, GameState, Task } from './types';
+import { officeIndex, officeOf } from './office';
+import { driverOf, motivationTarget, seatsOf, teamOf, teamWorkPerDay } from './team';
+import type { DriverId, EmployeeRole, GameContent, GameState, Task, TraitId } from './types';
 
 /** Чем сейчас занят основатель. */
 export type FounderActivity = 'building' | 'sideJob' | 'idle' | 'broke';
@@ -78,6 +79,34 @@ export interface RoomFounder {
   focusBoost: number;
 }
 
+/** Сотрудник глазами сцены: кто он, где сидит, чем занят и в каком настроении. */
+export interface ScenePerson {
+  id: number;
+  /** По этому числу интерфейс подбирает имя и внешность — у человека они всегда одни и те же */
+  nameSeed: number;
+  role: EmployeeRole;
+  trait: TraitId;
+  driver: DriverId;
+  /** Номер места в офисе с нуля. Выдаётся при найме и не меняется: уволили соседа — остальные не пересаживаются. */
+  seat: number;
+  /** Занят делом: разработчик — когда есть задачи, маркетолог — когда продукт на рынке */
+  busy: boolean;
+  /** Настроение: доволен, спокоен, недоволен */
+  mood: 'high' | 'mid' | 'low';
+  /** Собирается уйти, если ничего не менять */
+  leaving: boolean;
+  /** Сколько дней в компании */
+  daysHired: number;
+}
+
+export interface SceneTeam {
+  /** Офис: id из настроек, номер с нуля (0 — комната основателя) и число мест для сотрудников */
+  office: { id: string; index: number; seats: number };
+  people: ScenePerson[];
+  /** Свободные места, по возрастанию */
+  freeSeats: number[];
+}
+
 export interface RoomView {
   calendar: RoomCalendar;
   activity: FounderActivity;
@@ -96,6 +125,8 @@ export interface RoomView {
   founder: RoomFounder;
   alerts: RoomAlerts;
   product: RoomProduct;
+  /** Команда и офис — чтобы сцена могла показать людей на местах */
+  team: SceneTeam;
 }
 
 const DAYS_IN_MONTH = 30;
@@ -139,6 +170,35 @@ function currentTask(s: GameState, content: GameContent): RoomTask | null {
   };
 }
 
+/**
+ * Команда для сцены. Место выдаётся при найме и закреплено за человеком:
+ * уволили соседа — остальные не пересаживаются, новичок садится на наименьшее свободное.
+ */
+export function sceneTeam(s: GameState, content: GameContent): SceneTeam {
+  const cfg = content.config;
+  const team = teamOf(s, content);
+  const office = officeOf(s, cfg);
+  const seats = seatsOf(team.employees);
+  const people: ScenePerson[] = team.employees
+    .map((e) => ({
+      id: e.id,
+      nameSeed: e.nameSeed,
+      role: e.role,
+      trait: e.trait,
+      driver: driverOf(e),
+      seat: seats.get(e.id) ?? 0,
+      busy: e.role === 'developer' ? s.tasks.length > 0 : s.launched,
+      mood: e.motivation >= 75 ? ('high' as const) : e.motivation >= 45 ? ('mid' as const) : ('low' as const),
+      leaving: motivationTarget(e, { ...s, teamSize: team.employees.length }, cfg.team) < cfg.team.quitBelow,
+      daysHired: s.day - e.hiredDay,
+    }))
+    .sort((a, b) => a.seat - b.seat);
+  const taken = new Set(people.map((p) => p.seat));
+  const freeSeats: number[] = [];
+  for (let seat = 0; seat < office.seats; seat++) if (!taken.has(seat)) freeSeats.push(seat);
+  return { office: { id: office.id, index: officeIndex(s, cfg), seats: office.seats }, people, freeSeats };
+}
+
 /** Всё, что квартире нужно знать о партии. */
 export function roomView(s: GameState, content: GameContent): RoomView {
   const core = featuresOf(s, content).find((f) => f.core);
@@ -180,6 +240,7 @@ export function roomView(s: GameState, content: GameContent): RoomView {
       debt: s.debt,
       pendingEvent: s.pendingEvent,
     },
+    team: sceneTeam(s, content),
     product: {
       users: s.users,
       paying: s.paying,
