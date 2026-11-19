@@ -248,6 +248,9 @@ export interface TeamConfig {
   diligentBonus: number;
   /** Разговор один на один: прибавка к мотивации, цена в силах основателя и перерыв между разговорами */
   talkBoost: number;
+  /** Как меняется мотивация, если разговор прошёл ни так ни сяк и если он прошёл плохо */
+  talkSame: number;
+  talkWorse: number;
   talkEnergy: number;
   talkCooldownDays: number;
   /** Прибавка к притоку пользователей за единицу навыка маркетолога и её потолок */
@@ -431,6 +434,17 @@ export interface Employee extends Candidate {
   motivation: number;
   /** День последнего разговора один на один */
   lastTalkDay?: number;
+  /** Последние реплики разговоров — чтобы человек «помнил», о чём говорили */
+  chat?: ChatLine[];
+}
+
+/** Чем кончился разговор: стало лучше, без изменений, стало хуже. */
+export type TalkOutcome = 'better' | 'same' | 'worse';
+
+/** Реплика разговора основателя с сотрудником. */
+export interface ChatLine {
+  from: 'founder' | 'employee';
+  text: string;
 }
 
 export interface TeamLogEntry {
@@ -626,7 +640,8 @@ export type Command =
   | { type: 'fire'; employeeId: number }
   | { type: 'setSalary'; employeeId: number; salary: number }
   /** Разговор с сотрудником один на один */
-  | { type: 'talk'; employeeId: number }
+  /** outcome и lines приходят, когда разговор вела нейросеть; без них разговор считается удачным, как раньше */
+  | { type: 'talk'; employeeId: number; outcome?: TalkOutcome; lines?: ChatLine[] }
   | { type: 'takeLoan'; amount: number }
   | { type: 'deposit'; amount: number }
   | { type: 'withdraw'; amount: number }

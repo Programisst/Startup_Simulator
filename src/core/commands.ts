@@ -75,7 +75,8 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       return applyTeam(state, fire(state, cmd.employeeId, content));
 
     case 'talk': {
-      const result = talk(state, cmd.employeeId, content);
+      const outcome = cmd.outcome === 'same' || cmd.outcome === 'worse' ? cmd.outcome : 'better';
+      const result = talk(state, cmd.employeeId, content, outcome, cmd.lines);
       if (!result.ok) return fail(result.error);
       // Разговор по душам требует сил.
       return { ok: true, state: { ...state, team: result.team, energy: Math.max(0, energyOf(state) - content.config.team.talkEnergy) } };

@@ -507,3 +507,16 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
 .quote-high { color: var(--green); }
 .bank .salary input { width: 130px; }
 .bank .panel p { margin: 6px 0; }
+
+/* ---------- Разговор с сотрудником ---------- */
+.talk { display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 10px; background: var(--panel-2); }
+.talk p { margin: 0; }
+.talk-lines { display: flex; flex-direction: column; gap: 6px; }
+.talk-line span { font-weight: 600; }
+.talk-founder { color: var(--muted); }
+.talk-earlier summary { cursor: pointer; font-size: 12px; color: var(--muted); }
+.talk-earlier p { margin-top: 4px; font-size: 13px; }
+.talk-input { width: 100%; resize: vertical; font: inherit; color: var(--text); background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 6px 10px; }
+.talk-result { font-weight: 600; }
+.talk-result.talk-better { color: var(--green); }
+.talk-result.talk-worse { color: var(--red); }

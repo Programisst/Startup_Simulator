@@ -1,6 +1,6 @@
 // Характеры сотрудников и банк.
 import { describe, expect, it } from 'vitest';
-import { applyCommand, bankView, debtLeft, loanLimit, loanTerms, motivationTarget, teamOf, teamView, tick, type DriverId, type Employee, type GameContent, type GameState } from '../src/core';
+import { applyCommand, bankView, cleanChat, CHAT_KEPT_LINES, CHAT_LINE_MAX, debtLeft, loanLimit, loanTerms, motivationTarget, teamOf, teamView, tick, type DriverId, type Employee, type GameContent, type GameState } from '../src/core';
 import { content } from '../src/content';
 import ru from '../src/content/ru/ui.json';
 import { deepFreeze, launchedGame, newGame, run } from './helpers';
@@ -179,5 +179,59 @@ describe('банк: вклад', () => {
   it('у банка есть все тексты', () => {
     const texts = (ru as unknown as { bank: Record<string, unknown> }).bank;
     for (const key of ['title', 'account', 'deposit', 'debt', 'limit', 'loanTitle', 'take', 'depositTitle', 'put', 'withdrawAll']) expect(texts[key], key).toBeDefined();
+  });
+});
+
+describe('разговор, который ведёт нейросеть', () => {
+  const base = withTeam(newGame(), [person({ motivation: 50 })]);
+  const after = (cmd: Parameters<typeof run>[1]) => teamOf(run(base, cmd), content).employees[0]!;
+
+  it('исход решает, как изменится мотивация: лучше, без изменений, хуже', () => {
+    expect(after({ type: 'talk', employeeId: 900, outcome: 'better' }).motivation).toBe(50 + cfg.team.talkBoost);
+    expect(after({ type: 'talk', employeeId: 900, outcome: 'same' }).motivation).toBe(50 + cfg.team.talkSame);
+    expect(after({ type: 'talk', employeeId: 900, outcome: 'worse' }).motivation).toBe(50 + cfg.team.talkWorse);
+    expect(cfg.team.talkWorse).toBeLessThan(0);
+    expect(cfg.team.talkSame).toBeLessThan(cfg.team.talkBoost);
+  });
+
+  it('разговор без исхода считается удачным, как раньше; неизвестный исход — тоже', () => {
+    expect(after({ type: 'talk', employeeId: 900 }).motivation).toBe(50 + cfg.team.talkBoost);
+    expect(after({ type: 'talk', employeeId: 900, outcome: 'amazing' as never }).motivation).toBe(50 + cfg.team.talkBoost);
+  });
+
+  it('какой бы исход ни назвала нейросеть, прибавка не больше обычной и перерыв тот же', () => {
+    const s = run(base, { type: 'talk', employeeId: 900, outcome: 'better', lines: [{ from: 'founder', text: 'Привет' }] });
+    expect(teamOf(s, content).employees[0]!.motivation - 50).toBeLessThanOrEqual(cfg.team.talkBoost);
+    expect(applyCommand(s, { type: 'talk', employeeId: 900, outcome: 'better' }, content)).toEqual({ ok: false, error: 'talkTooSoon' });
+  });
+
+  it('реплики запоминаются у сотрудника, но не больше нескольких последних', () => {
+    const lines = [
+      { from: 'founder' as const, text: 'Как дела?' },
+      { from: 'employee' as const, text: 'Устал, если честно.' },
+    ];
+    // Денег с запасом: проверяем память о разговорах, а не выживание компании.
+    let s = run({ ...base, cash: 1e6 }, { type: 'talk', employeeId: 900, outcome: 'same', lines });
+    expect(teamOf(s, content).employees[0]!.chat).toEqual(lines);
+    for (let round = 0; round < 6; round++) {
+      for (let i = 0; i < cfg.team.talkCooldownDays; i++) s = tick(s, quiet);
+      s = run(s, { type: 'talk', employeeId: 900, outcome: 'same', lines: [{ from: 'founder', text: `Разговор ${round}` }, { from: 'employee', text: `Ответ ${round}` }] });
+    }
+    const chat = teamOf(s, content).employees[0]!.chat!;
+    expect(chat).toHaveLength(CHAT_KEPT_LINES);
+    expect(chat.at(-1)).toEqual({ from: 'employee', text: 'Ответ 5' });
+  });
+
+  it('в память попадают только настоящие реплики: мусор, пустое и слишком длинное отсеивается или обрезается', () => {
+    const dirty = [{ from: 'founder', text: '  много   пробелов  ' }, { from: 'boss', text: 'чужая роль' }, { from: 'employee', text: '' }, { from: 'employee', text: 'я'.repeat(1000) }, null, 'строка', { from: 'founder', text: 42 }];
+    const clean = cleanChat(dirty);
+    expect(clean).toEqual([{ from: 'founder', text: 'много пробелов' }, { from: 'employee', text: 'я'.repeat(CHAT_LINE_MAX) }]);
+    expect(cleanChat('не список')).toEqual([]);
+    expect(after({ type: 'talk', employeeId: 900, lines: dirty as never }).chat).toEqual(clean);
+  });
+
+  it('разговор без реплик памяти не оставляет; команда не меняет исходное состояние', () => {
+    expect(after({ type: 'talk', employeeId: 900, outcome: 'worse' }).chat).toBeUndefined();
+    run(deepFreeze(base), { type: 'talk', employeeId: 900, outcome: 'worse', lines: [{ from: 'founder', text: 'Привет' }] });
   });
 });
