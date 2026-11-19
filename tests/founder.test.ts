@@ -228,7 +228,8 @@ describe('набор кода самим игроком', () => {
     const plain = roomView(working(), content).task!.daysLeft!;
     const focused = roomView(run(working(), { type: 'typeCode', chars: f.focusChars }), content).task!.daysLeft!;
     expect(focused).toBeLessThan(plain);
-    expect(focused).toBe(Math.ceil(plain / (1 + f.focusBonus)));
+    // Набор ещё и сразу двигает задачу (tests/typing.test.ts), поэтому дней может остаться даже меньше.
+    expect(focused).toBeLessThanOrEqual(Math.ceil(plain / (1 + f.focusBonus)));
   });
 
   it('сосредоточенность выветривается за несколько дней', () => {

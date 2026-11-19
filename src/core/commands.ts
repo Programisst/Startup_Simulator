@@ -2,10 +2,10 @@
 
 import { applyEffects } from './events';
 import { featuresOf } from './features';
-import { coffeeReady, energyOf, focusOf } from './founder';
+import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
 import { nextOffice } from './office';
 import { loanLimit, loanTerms } from './bank';
-import { fire, hire, setSalary, talk, type TeamChange } from './team';
+import { fire, hire, setSalary, talk, teamOf, teamWorkPerDay, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
 function fail(error: CommandError): CommandResult {
@@ -50,7 +50,25 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
 
     case 'typeCode': {
       if (!Number.isFinite(cmd.chars) || cmd.chars <= 0 || cmd.chars > 10_000) return fail('invalidValue');
-      return { ok: true, state: { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / content.config.founder.focusChars) } };
+      const cfg = content.config;
+      const f = cfg.founder;
+      const next: GameState = { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / f.focusChars) };
+      // Набор кода сразу двигает текущую задачу: игрок ведёт команду своим примером.
+      // За игровой день так можно добавить не больше typeBonusCap дневных норм — иначе работу можно было бы «напечатать» на паузе.
+      const task = state.tasks[0];
+      const share = Math.min(f.typeBonusCap - typedTodayOf(state), cmd.chars / f.typeCharsPerDay);
+      if (!task || share <= 0 || state.resting || state.status !== 'running') return { ok: true, state: next };
+      const work = share * (founderWorkPerDay(state, cfg) + teamWorkPerDay(teamOf(state, content), cfg.team)) * (state.rush ? cfg.rushSpeed : 1);
+      let progress = task.progress + work;
+      if (task.kind === 'feature') {
+        // Функцию завершает шаг дня (там появляются ошибки и долг), поэтому набор доводит её почти до конца, но не закрывает.
+        const cost = featuresOf(state, content).find((d) => d.id === task.featureId)?.cost ?? 0;
+        progress = Math.max(task.progress, Math.min(progress, cost - 1e-6));
+      }
+      next.tasks = [{ ...task, progress }, ...state.tasks.slice(1)];
+      next.typedDay = state.day;
+      next.typedToday = typedTodayOf(state) + share;
+      return { ok: true, state: next };
     }
 
     case 'moveOffice': {
