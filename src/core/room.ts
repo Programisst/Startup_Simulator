@@ -2,6 +2,7 @@
 // Квартира (интерфейс) ничего не считает сама: она спрашивает здесь, чем занят основатель,
 // что у него в работе и какие есть тревожные сигналы. Состояние игры эти функции не меняют.
 
+import { featuresOf } from './features';
 import { overload } from './formulas';
 import { coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay } from './founder';
 import { teamOf, teamWorkPerDay } from './team';
@@ -114,7 +115,7 @@ function activityOf(s: GameState): FounderActivity {
 function taskCost(task: Task, s: GameState, content: GameContent): number {
   const cfg = content.config;
   if (task.kind === 'feature') {
-    return content.features[s.productType].find((f) => f.id === task.featureId)?.cost ?? 0;
+    return featuresOf(s, content).find((f) => f.id === task.featureId)?.cost ?? 0;
   }
   if (task.kind === 'bugfix') return cfg.bugfixCost;
   if (task.kind === 'polish') return cfg.polishCost;
@@ -140,7 +141,7 @@ function currentTask(s: GameState, content: GameContent): RoomTask | null {
 
 /** Всё, что квартире нужно знать о партии. */
 export function roomView(s: GameState, content: GameContent): RoomView {
-  const core = content.features[s.productType].find((f) => f.core);
+  const core = featuresOf(s, content).find((f) => f.core);
   const coreReady = core ? s.doneFeatures.includes(core.id) : true;
   const cashNegative = s.cash < 0;
   return {
