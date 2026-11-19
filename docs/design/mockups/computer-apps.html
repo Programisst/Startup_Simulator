@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Окна компьютера — варианты</title>
+<style>
+  /* Пробная страница: три варианта программы «Компания» на экране компьютера в квартире. */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #0f0e14; color: #f4efe6; font: 14px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  .pick { position: sticky; top: 0; z-index: 9; display: flex; gap: 8px; justify-content: center; padding: 14px; background: #0f0e14ee; }
+  .pick button { font: 600 14px/1 inherit; padding: 11px 18px; border-radius: 9px; border: 1px solid #ffffff22; background: #1e1d27; color: #f4efe6; cursor: pointer; }
+  .pick button.on { background: #f6c34a; color: #1a1712; border-color: #f6c34a; }
+  .stage { display: flex; justify-content: center; padding: 8px 16px 40px; }
+  .screen { width: 1440px; height: 860px; transform-origin: top center; border-radius: 14px; overflow: hidden; box-shadow: 0 30px 80px #000a; position: relative; }
+  .v { display: none; height: 100%; }
+  .v.on { display: grid; grid-template-columns: 230px 1fr; }
+  .mono { font-family: 'SF Mono', ui-monospace, Menlo, Consolas, monospace; }
+
+  /* Общая разметка */
+  .side { padding: 22px 14px; display: flex; flex-direction: column; gap: 4px; }
+  .side .co { padding: 0 10px 16px; }
+  .side .co b { display: block; font-size: 17px; }
+  .side .co span { font-size: 12px; opacity: .6; }
+  .nav { display: flex; align-items: center; gap: 11px; padding: 10px 12px; border-radius: 9px; font-weight: 500; }
+  .nav i { width: 22px; height: 22px; border-radius: 6px; display: inline-block; flex: none; }
+  .main { padding: 24px 28px; display: grid; gap: 16px; grid-template-columns: repeat(12, 1fr); grid-auto-rows: min-content; overflow: hidden; }
+  .card { padding: 18px 20px; position: relative; overflow: hidden; }
+  .span3 { grid-column: span 3; } .span4 { grid-column: span 4; } .span5 { grid-column: span 5; } .span7 { grid-column: span 7; } .span8 { grid-column: span 8; } .span12 { grid-column: span 12; }
+  .lab { font-size: 12px; letter-spacing: .04em; }
+  .big { font-size: 34px; font-weight: 700; margin: 6px 0 4px; }
+  .sub { font-size: 13px; }
+  .feed { display: grid; gap: 10px; margin-top: 10px; }
+  .item { display: grid; grid-template-columns: 34px 1fr; gap: 12px; align-items: start; padding: 11px 12px; opacity: 0; transform: translateY(10px); animation: in .55s cubic-bezier(.2,.9,.2,1) forwards; }
+  .item:nth-child(2) { animation-delay: .15s; } .item:nth-child(3) { animation-delay: .3s; }
+  .item p { margin: 2px 0 0; font-size: 13px; }
+  .ico { width: 34px; height: 34px; display: grid; place-items: center; font-size: 16px; }
+  .bar { height: 10px; margin-top: 12px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; animation: fill 1.4s .3s cubic-bezier(.2,.9,.2,1) forwards; }
+  svg.chart { width: 100%; height: 190px; display: block; margin-top: 8px; overflow: visible; }
+  svg.chart .line { stroke-dasharray: 2000; stroke-dashoffset: 2000; animation: draw 1.8s .2s cubic-bezier(.3,.8,.2,1) forwards; }
+  svg.chart .area { opacity: 0; animation: fade 1s 1s forwards; }
+  svg.chart .dot { opacity: 0; animation: fade .4s 1.9s forwards, pulse 1.8s 2.2s infinite; transform-box: fill-box; transform-origin: center; }
+  .head { grid-column: span 12; display: flex; align-items: end; justify-content: space-between; }
+  .head h1 { margin: 0; font-size: 26px; }
+  .head .when { font-size: 13px; }
+  @keyframes in { to { opacity: 1; transform: none; } }
+  @keyframes fill { to { width: var(--w); } }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fade { to { opacity: 1; } }
+  @keyframes pulse { 50% { transform: scale(1.6); } }
+  @media (prefers-reduced-motion: reduce) { *, *::before { animation-duration: 0s !important; animation-delay: 0s !important; } }
+
+  /* ── A. Ночная студия: как плашки в квартире. Тёмный графит, жёлтый акцент, деньги зелёные. ── */
+  #a { background: #15141b; color: #f4efe6; }
+  #a .side { background: #111017; border-right: 1px solid #ffffff0d; }
+  #a .nav { color: #c9c3d3; } #a .nav.on { background: #f6c34a14; color: #f6c34a; }
+  #a .nav i { background: #26252f; } #a .nav.on i { background: #f6c34a; }
+  #a .card { background: #1d1c25; border: 1px solid #ffffff0f; border-radius: 14px; }
+  #a .card.glow::after { content: ''; position: absolute; inset: -40% -10% auto auto; width: 260px; height: 260px; background: radial-gradient(#a7e08f22, transparent 70%); }
+  #a .lab { color: #a39daf; text-transform: uppercase; }
+  #a .big { font-family: 'SF Mono', ui-monospace, Menlo, monospace; }
+  #a .money { color: #a7e08f; } #a .sub { color: #a39daf; } #a .up { color: #a7e08f; } #a .down { color: #ff8f8f; }
+  #a .bar { background: #ffffff10; border-radius: 6px; } #a .bar i { background: linear-gradient(90deg, #f6c34a, #ffd97a); border-radius: 6px; }
+  #a .item { background: #ffffff06; border-radius: 10px; } #a .ico { background: #26252f; border-radius: 9px; }
+  #a .head .when { color: #a39daf; }
+  #a .goal b { color: #f6c34a; }
+
+  /* ── B. Дневной город: как заставка. Светлое небо, тёмно-синие рамки-ступеньки, терракота. ── */
+  #b { background: #eef3f7; color: #26324a; }
+  #b .side { background: #e3ebf2; border-right: 3px solid #26324a; }
+  #b .nav { color: #26324a; text-transform: uppercase; font: 700 12.5px/1 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: .08em; }
+  #b .nav.on { background: #f6c34a; box-shadow: inset 0 0 0 3px #26324a, 0 4px 0 #26324a; }
+  #b .nav i { background: #26324a; border-radius: 0; width: 14px; height: 14px; }
+  #b .nav.on i { background: #c4553b; }
+  #b .side .co b { font: 800 18px/1.1 'SF Mono', ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .06em; }
+  #b .card { background: #fffaf2; border: 3px solid #26324a; border-radius: 4px; box-shadow: 0 6px 0 #26324a; }
+  #b .lab { text-transform: uppercase; font: 700 11.5px/1 'SF Mono', ui-monospace, Menlo, monospace; letter-spacing: .12em; color: #5c6a85; }
+  #b .big { font-family: 'SF Mono', ui-monospace, Menlo, monospace; font-weight: 800; }
+  #b .money { color: #2f8f52; } #b .sub { color: #5c6a85; } #b .up { color: #2f8f52; } #b .down { color: #c4553b; }
+  #b .bar { background: #dfe6ee; border: 2px solid #26324a; height: 16px; } #b .bar i { background: repeating-linear-gradient(90deg, #f6c34a 0 14px, #e9b23a 14px 16px); }
+  #b .item { background: #eef3f7; border: 2px solid #26324a; } #b .ico { background: #26324a; color: #fffaf2; }
+  #b .head h1 { font: 800 26px/1 'SF Mono', ui-monospace, Menlo, monospace; text-transform: uppercase; letter-spacing: .05em; }
+  #b .head .when { font: 600 13px 'SF Mono', ui-monospace, monospace; color: #5c6a85; }
+  #b svg.chart { shape-rendering: crispEdges; }
+  #b .goal b { color: #c4553b; }
+
+  /* ── C. Игровой планшет: тёмно-синий, сегменты-пиксели, цели как уровни. ── */
+  #c { background: radial-gradient(1200px 600px at 70% -10%, #2a3a5e, #161d2e 60%); color: #e9eef8; }
+  #c .side { background: #121828cc; border-right: 1px solid #ffffff12; }
+  #c .nav { color: #b3bdd3; } #c .nav.on { background: linear-gradient(90deg, #4fc3a133, transparent); color: #fff; box-shadow: inset 3px 0 0 #4fc3a1; border-radius: 4px; }
+  #c .nav i { background: #2a3550; clip-path: polygon(0 3px,3px 3px,3px 0,calc(100% - 3px) 0,calc(100% - 3px) 3px,100% 3px,100% calc(100% - 3px),calc(100% - 3px) calc(100% - 3px),calc(100% - 3px) 100%,3px 100%,3px calc(100% - 3px),0 calc(100% - 3px)); }
+  #c .nav.on i { background: #4fc3a1; }
+  #c .card { background: #1c253bdd; border: 1px solid #ffffff14; clip-path: polygon(0 6px,6px 6px,6px 0,calc(100% - 6px) 0,calc(100% - 6px) 6px,100% 6px,100% calc(100% - 6px),calc(100% - 6px) calc(100% - 6px),calc(100% - 6px) 100%,6px 100%,6px calc(100% - 6px),0 calc(100% - 6px)); }
+  #c .lab { color: #8d9ab8; text-transform: uppercase; font: 700 11.5px/1 'SF Mono', ui-monospace, monospace; letter-spacing: .14em; }
+  #c .big { font-family: 'SF Mono', ui-monospace, Menlo, monospace; text-shadow: 0 0 18px #4fc3a155; }
+  #c .money { color: #7ef0c6; } #c .sub { color: #8d9ab8; } #c .up { color: #7ef0c6; } #c .down { color: #ff8f9f; }
+  #c .bar { height: 14px; background: repeating-linear-gradient(90deg, #ffffff10 0 12px, transparent 12px 15px); }
+  #c .bar i { background: repeating-linear-gradient(90deg, #f6c34a 0 12px, transparent 12px 15px); filter: drop-shadow(0 0 6px #f6c34a88); }
+  #c .item { background: #ffffff08; border-left: 3px solid #4fc3a1; } #c .ico { background: #2a3550; }
+  #c .head .when { color: #8d9ab8; font-family: 'SF Mono', monospace; }
+  #c .goal b { color: #f6c34a; }
+  #c .lvl { position: absolute; right: 18px; top: 16px; font: 800 12px 'SF Mono', monospace; color: #161d2e; background: #f6c34a; padding: 5px 8px; }
+</style>
+</head>
+<body>
+<div class="pick">
+  <button data-v="a" class="on">A · Ночная студия</button>
+  <button data-v="b">B · Дневной город</button>
+  <button data-v="c">C · Игровой планшет</button>
+</div>
+<div class="stage"><div class="screen" id="screen"></div></div>
+
+<template id="tpl">
+  <aside class="side">
+    <div class="co"><b>Мой стартап</b><span>сервис счетов для малого бизнеса</span></div>
+    <div class="nav on"><i></i>Сводка</div>
+    <div class="nav"><i></i>Продукт</div>
+    <div class="nav"><i></i>Команда</div>
+    <div class="nav"><i></i>Маркетинг</div>
+    <div class="nav"><i></i>Финансы</div>
+    <div class="nav"><i></i>Банк</div>
+    <div class="nav"><i></i>Лента</div>
+    <div class="nav"><i></i>Цели</div>
+  </aside>
+  <main class="main">
+    <div class="head"><h1>Сводка</h1><span class="when">Год 1 · месяц 2 · день 14 · Пн 10:40</span></div>
+
+    <div class="card span4 glow"><div class="lab">На счету</div>
+      <div class="big money mono" data-count="2340" data-pre="$">$0</div>
+      <div class="sub"><span class="down">−$48</span> в день · хватит на 49 дн.</div></div>
+    <div class="card span4"><div class="lab">Пользователи</div>
+      <div class="big mono" data-count="1240">0</div>
+      <div class="sub"><span class="up">+86</span> за вчера · платящих 37</div></div>
+    <div class="card span4"><div class="lab">Силы основателя</div>
+      <div class="big mono" data-count="72" data-post="%">0%</div>
+      <div class="bar"><i style="--w:72%"></i></div></div>
+
+    <div class="card span8"><div class="lab">Пользователи, последние 90 дней</div>
+      <svg class="chart" viewBox="0 0 800 190" preserveAspectRatio="none"></svg></div>
+    <div class="card span4 goal"><span class="lvl">LVL 3</span><div class="lab">Ближайшая цель</div>
+      <div style="margin-top:10px;font-size:19px;font-weight:700">Первые 100 платящих</div>
+      <div class="bar"><i style="--w:37%"></i></div>
+      <div class="sub" style="margin-top:10px">37 из 100 · Награда: <b>инвестор заметит</b></div>
+      <div class="sub" style="margin-top:14px">Продукт: основа сервиса готова на 64%</div>
+      <div class="bar"><i style="--w:64%"></i></div></div>
+
+    <div class="card span12"><div class="lab">Лента</div>
+      <div class="feed">
+        <div class="item"><span class="ico">★</span><div><b>Отзыв · 4 из 5</b><p>«Удобно выставлять счета, но очень не хватает выгрузки в таблицу».</p></div></div>
+        <div class="item"><span class="ico">↗</span><div><b>Новость рынка</b><p>Крупный конкурент поднял цены на 20%. Малый бизнес ищет замену.</p></div></div>
+        <div class="item"><span class="ico">?</span><div><b>Развилка</b><p>Выпустить обновление сейчас или неделю доделывать выгрузку?</p></div></div>
+      </div></div>
+  </main>
+</template>
+
+<script>
+  // Данные графика: рост с провалом посередине. Одинаковые при каждом показе.
+  const pts = Array.from({ length: 40 }, (_, i) => 170 - (i * 3.4 + Math.sin(i / 2.3) * 9 - (i > 18 && i < 25 ? 22 : 0)) );
+  function chart(svg, variant) {
+    const step = 800 / (pts.length - 1);
+    const xy = pts.map((y, i) => [i * step, Math.max(14, y)]);
+    // Вариант B — ступеньки, как пиксельный график на заставке.
+    const d = variant === 'b'
+      ? xy.map(([x, y], i) => (i ? `H${x}V${y}` : `M${x},${y}`)).join('')
+      : xy.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)},${y.toFixed(1)}`).join('');
+    const color = { a: '#f6c34a', b: '#3fae62', c: '#4fc3a1' }[variant];
+    const last = xy[xy.length - 1];
+    svg.innerHTML = `<defs><linearGradient id="g${variant}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/></linearGradient></defs>
+      <path class="area" d="${d}L800,190L0,190Z" fill="url(#g${variant})"/>
+      <path class="line" d="${d}" fill="none" stroke="${color}" stroke-width="${variant === 'b' ? 4 : 3}" stroke-linejoin="round"/>
+      <circle class="dot" cx="${last[0]}" cy="${last[1]}" r="6" fill="${color}"/>`;
+  }
+  function countUp(el) {
+    const to = Number(el.dataset.count), pre = el.dataset.pre || '', post = el.dataset.post || '';
+    const t0 = performance.now(), dur = 1300;
+    const tick = (now) => {
+      const k = Math.min(1, (now - t0) / dur), e = 1 - (1 - k) ** 4;
+      el.textContent = pre + Math.round(to * e).toLocaleString('ru-RU') + post;
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+  const screen = document.getElementById('screen');
+  function show(v) {
+    screen.innerHTML = '';
+    const box = document.createElement('div');
+    box.className = 'v on'; box.id = v;
+    box.append(document.getElementById('tpl').content.cloneNode(true));
+    if (v !== 'c') box.querySelector('.lvl').remove();
+    screen.append(box);
+    chart(box.querySelector('svg.chart'), v);
+    box.querySelectorAll('[data-count]').forEach(countUp);
+    document.querySelectorAll('.pick button').forEach((b) => b.classList.toggle('on', b.dataset.v === v));
+  }
+  document.querySelectorAll('.pick button').forEach((b) => b.addEventListener('click', () => show(b.dataset.v)));
+  const fit = () => { const k = Math.min(1, (innerWidth - 32) / 1440); screen.style.transform = `scale(${k})`; screen.parentElement.style.height = 860 * k + 48 + 'px'; };
+  addEventListener('resize', fit); fit(); show('a');
+</script>
+</body>
+</html>
