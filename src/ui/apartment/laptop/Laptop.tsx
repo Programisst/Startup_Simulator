@@ -6,6 +6,7 @@ import { Actions } from './actions';
 import { BrowserWindow } from './BrowserWindow';
 import { Director } from './director';
 import { EditorWindow } from './EditorWindow';
+import { DeskView } from './DeskView';
 import { DockGlyph, Icon } from './icons';
 import { Landscape } from './Landscape';
 import { dockIconCenter, DOCK_H, DOCK_ITEMS, DOCK_W, DOCK_X, DOCK_Y, MENU_H, SCREEN_H, SCREEN_W, WINDOW, type DockItem } from './layout';
@@ -119,6 +120,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
   const actions = useMemo(() => new Actions(store), [store]);
   const s = useSyncExternalStore(store.subscribe, store.get);
   const screenRef = useRef<HTMLDivElement>(null);
+  const deviceRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
   const [entered, setEntered] = useState(false);
 
@@ -218,8 +220,9 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
   const browserWin = windowStyle(s, 'browser');
 
   return (
-    <div className={`lp-overlay${open ? ' open' : ''}`}>
-      <div className="lp-device mono" style={{ transform: open ? 'translate(0, 0) scale(1)' : `translate(${fromX}px, ${fromY}px) scale(0.08)` }}>
+    <div className={`lp-overlay desk${open ? ' open' : ''}`}>
+      <DeskView minutes={minutes} device={deviceRef} />
+      <div ref={deviceRef} className="lp-device mono" style={{ transform: open ? 'translate(0, 0) scale(1)' : `translate(${fromX}px, ${fromY}px) scale(0.08)` }}>
         <div className="lp-bezel">
           <i className="lp-camera" />
           <div ref={screenRef} className={`lp-screen${open ? ' on' : ''}${s.manual ? ' manual' : ''}`} onPointerDown={takeOver}>

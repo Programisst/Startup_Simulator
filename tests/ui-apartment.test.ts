@@ -100,3 +100,18 @@ describe('плашки квартиры', () => {
     expect(controls).not.toContain('GoalCard');
   });
 });
+
+describe('время суток — как у игрока на часах', () => {
+  it('настоящее время переводится в минуты суток', async () => {
+    const { realMinutes } = await import('../src/ui/apartment/engine/daylight');
+    expect(realMinutes(new Date(2026, 10, 19, 18, 45, 30))).toBe(18 * 60 + 45.5);
+    expect(realMinutes(new Date(2026, 10, 19, 0, 0, 0))).toBe(0);
+  });
+
+  it('без ?time квартира (и вид из-за стола) берёт настоящее время', () => {
+    const src = readFileSync(join(root, 'src/ui/apartment/Apartment.tsx'), 'utf-8');
+    expect(src).toContain('world.realClock = true');
+    const world = readFileSync(join(root, 'src/ui/apartment/engine/world.ts'), 'utf-8');
+    expect(world).toContain('realMinutes(new Date())');
+  });
+});

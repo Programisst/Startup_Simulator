@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useTranslation } from 'react-i18next';
 import { money } from '../format';
 import { loadArt } from './engine/art';
-import { daylightAt } from './engine/daylight';
+import { daylightAt, realMinutes } from './engine/daylight';
 import { SPOTS, type LampId, type Spot } from './engine/scene';
 import { World } from './engine/world';
 import { Laptop } from './laptop/Laptop';
@@ -77,7 +77,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
   const [near, setNear] = useState<Spot | null>(null);
   const [computer, setComputer] = useState<ComputerPhase>('closed');
   const [bubble, setBubble] = useState<{ text: string; id: number } | null>(null);
-  const [hud, setHud] = useState({ minutes: 21 * 60 + 30, day: 1 });
+  const [hud, setHud] = useState(() => ({ minutes: realMinutes(new Date()), day: 1 }));
   const [fade, setFade] = useState<null | 'out' | 'in'>(null);
   const [wakeDay, setWakeDay] = useState(1);
   const [origin, setOrigin] = useState({ x: 0, y: 0 });
@@ -97,8 +97,8 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
   const startMinutes = useMemo(() => {
     const m = /^(\d{1,2}):(\d{2})$/.exec(new URLSearchParams(window.location.search).get('time') ?? '');
     if (m) return Number(m[1]) * 60 + Number(m[2]);
-    // В игре партия начинается утром, на пробной странице — вечером, когда видно свет ламп.
-    return linkRef.current ? 9 * 60 : 21 * 60 + 30;
+    // Без ?time — настоящее время игрока: у него утро — и в игре утро, ночь — ночь.
+    return null;
   }, []);
 
   const say = useCallback((text: string, ms = 3800) => {
@@ -119,7 +119,10 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
         if (disposed) return;
         const world = new World(canvas, art);
         worldRef.current = world;
-        world.minutes = startMinutes;
+        if (startMinutes === null) {
+          world.realClock = true;
+          world.minutes = realMinutes(new Date());
+        } else world.minutes = startMinutes;
         // На мониторе настоящий код и издалека; ?monitor=pixel — издалека пиксели, текст только вблизи.
         world.monitorText = new URLSearchParams(window.location.search).get('monitor') !== 'pixel';
         if (linkRef.current) {

@@ -17,6 +17,28 @@
   background: rgba(10, 7, 16, 0.74);
   backdrop-filter: blur(5px);
 }
+/* Вид из-за стола — пиксельная сцена (DeskView) под монитором. Старый фон-заглушка под ней не нужен. */
+.lp-deskview {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.lp-overlay.open .lp-deskview {
+  opacity: 1;
+}
+.lp-overlay.desk::before {
+  display: none;
+}
+/* Монитор стоит у стены, а перед ним на столе — клавиатура: поднимаем его, чтобы стол был глубже. */
+.lp-overlay.desk .lp-device.mono {
+  width: min(84vw, calc((100vh - 200px) * 1.3));
+  margin-bottom: 13vh;
+}
 /* За компьютером не чернота, а его место: стена, тёплый свет лампы слева, отсвет окна справа и деревянный стол. */
 .lp-overlay::before {
   content: '';
@@ -144,9 +166,15 @@
   background: linear-gradient(#9fa2a9, #c6c9cf);
 }
 
+/* Подсказка «Esc» — в правом верхнем углу: внизу теперь стол с клавиатурой. */
 .lp-hint {
-  margin-top: 20px;
-  color: rgba(255, 255, 255, 0.62);
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  padding: 6px 10px 6px 7px;
+  border-radius: 8px;
+  background: rgba(20, 16, 24, 0.62);
+  color: rgba(255, 255, 255, 0.85);
   font: 13px/1 system-ui, sans-serif;
   opacity: 0;
   transition: opacity 0.4s ease 0.5s;
