@@ -102,8 +102,8 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         const world = new World(canvas, art);
         worldRef.current = world;
         world.minutes = startMinutes;
-        // ?monitor=text — настоящий текст на мониторе и издалека (для сравнения вариантов).
-        world.monitorText = new URLSearchParams(window.location.search).get('monitor') === 'text';
+        // На мониторе настоящий код и издалека; ?monitor=pixel — издалека пиксели, текст только вблизи.
+        world.monitorText = new URLSearchParams(window.location.search).get('monitor') !== 'pixel';
         if (linkRef.current) {
           world.externalDay = true;
           world.clockRate = LINKED_CLOCK_RATE;

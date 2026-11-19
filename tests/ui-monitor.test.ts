@@ -1,6 +1,6 @@
 // Монитор в квартире: тот же код, что в компьютере, печатается вживую; длинные строки переносятся, а не обрезаются.
 import { describe, expect, it } from 'vitest';
-import { MonitorTyping, textAmount, wrapLine } from '../src/ui/apartment/engine/monitor';
+import { explorerRows, MonitorTyping, textAmount, wrapLine } from '../src/ui/apartment/engine/monitor';
 import { zoomLimits } from '../src/ui/apartment/engine/zoom';
 import { WRITTEN_FILES } from '../src/ui/apartment/laptop/project';
 
@@ -112,3 +112,20 @@ describe('печать кода на мониторе', () => {
     expect(rows[4]!.caret).not.toBeNull();
   });
 });
+
+describe('панель файлов слева, как в редакторе', () => {
+  it('открытый файл виден и подсвечен, строк не больше, чем влезает', () => {
+    for (const { f } of WRITTEN_FILES) {
+      const rows = explorerRows(f.name, 8);
+      expect(rows.length).toBeLessThanOrEqual(8);
+      const active = rows.filter((r) => r.active);
+      expect(active.map((r) => r.node.name)).toEqual([f.name]);
+    }
+  });
+
+  it('если места много — показывает всё дерево с начала', () => {
+    const rows = explorerRows('session.ts', 100);
+    expect(rows[0]!.node.name).toBe('.github');
+  });
+});
+

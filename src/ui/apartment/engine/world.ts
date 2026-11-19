@@ -1,7 +1,7 @@
 // Мир квартиры: герой, предметы, свет, камера. Рисуем сцену в маленьком холсте 384×240,
 // затем увеличиваем в целое число раз (пиксели чёткие), а свет кладём поверх плавными пятнами.
 import { advanceClock } from '../link';
-import { MonitorTyping, textAmount } from './monitor';
+import { explorerRows, MonitorTyping, textAmount } from './monitor';
 import { findPath } from './nav';
 import { COFFEE_LED, FLOOR_LAMP_SHADE, MONITOR_SCREEN, hash, make, type Art, type Spr } from './art';
 import { City } from './city';
@@ -50,6 +50,8 @@ const NAV_UNIT = 40;
 const SPEED = 56;
 
 const LAMP_COLOR: RGB = [255, 194, 116];
+/** Цвет значка файла в панели файлов на мониторе. */
+const FILE_ICON: Record<string, string> = { ts: '#3178c6', tsx: '#4fc1ff', json: '#cbcb41', md: '#519aba', example: '#e5c07b', gitignore: '#f05133' };
 /** Цвета кода — как в редакторе компьютера (laptop.css, .tk-*). */
 const TOKEN_COLORS: Record<string, string> = {
   keyword: '#569cd6',
@@ -80,8 +82,8 @@ export class World {
   externalDay = false;
   /** Код на мониторе: печатается, пока герой сидит за компьютером. */
   readonly monitor = new MonitorTyping();
-  /** Показывать на мониторе настоящий текст и издалека (?monitor=text), а не только вблизи. */
-  monitorText = false;
+  /** Настоящий текст на мониторе и издалека. false (?monitor=pixel) — издалека пиксели, текст только вблизи. */
+  monitorText = true;
   readonly hero = { x: HERO_START.x, y: HERO_START.y, dir: 3 as Dir, moving: false, anim: 0, mode: 'free' as Mode };
   onArrive: ((spot: Spot) => void) | null = null;
   onCoffeeReady: (() => void) | null = null;
@@ -592,44 +594,76 @@ export class World {
 
     // Размер букв — от высоты экрана: восемь строк кода.
     const tab = H * 0.13;
-    const status = H * 0.08;
-    const font = (H - tab - status) / (8.6 * 1.3);
-    c.font = `${font}px Menlo, ui-monospace, Consolas, monospace`;
-    c.textBaseline = 'middle';
-    const charW = c.measureText('M').width;
+    const font = (H - tab) / (8.6 * 1.3);
     const line = font * 1.3;
+    const mono = `${font}px Menlo, ui-monospace, Consolas, monospace`;
+    const sans = (k: number) => `${font * k}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`;
 
-    // Вкладка с именем файла.
+    // Слева — панель файлов проекта, как в редакторе.
+    const ew = Math.round(W * 0.3);
     c.fillStyle = '#181818';
-    c.fillRect(X, Y, W, tab);
+    c.fillRect(X, Y, ew, H);
+    c.fillStyle = '#2b2b2b';
+    c.fillRect(X + ew - Math.max(1, s * 0.08), Y, Math.max(1, s * 0.08), H);
+    const eLine = font * 1.22;
+    c.font = sans(0.86);
+    c.textBaseline = 'middle';
+    const tree = explorerRows(this.monitor.fileName, Math.floor((H - font * 0.4) / eLine));
+    // Длинные имена обрезаются краем панели, как в редакторе, и не залезают на код.
+    c.save();
+    c.beginPath();
+    c.rect(X, Y, ew - Math.max(1, s * 0.08), H);
+    c.clip();
+    tree.forEach((r, i) => {
+      const ry = Y + font * 0.2 + eLine * (i + 0.5);
+      if (r.active) {
+        c.fillStyle = '#37373d';
+        c.fillRect(X, ry - eLine / 2, ew - Math.max(1, s * 0.08), eLine);
+      }
+      const ix = X + font * (0.5 + r.node.depth * 0.75);
+      if (r.node.folder) {
+        c.fillStyle = '#c5c5c5';
+        c.fillText(r.node.open ? '⌄' : '›', ix, r.node.open ? ry - font * 0.2 : ry);
+      } else {
+        // Цветной значок по типу файла.
+        const ext = r.node.name.split('.').pop() ?? '';
+        c.fillStyle = FILE_ICON[ext] ?? '#8a8a8a';
+        c.fillRect(ix, ry - font * 0.22, font * 0.44, font * 0.44);
+      }
+      c.fillStyle = r.node.dim ? '#6e7681' : r.node.git === 'M' ? '#e2c08d' : r.node.git === 'U' ? '#73c991' : '#cccccc';
+      c.fillText(r.node.name, ix + font * 0.8, ry);
+    });
+    c.restore();
+
+    // Справа — редактор: вкладка с именем файла и код.
+    const CX = X + ew;
+    const CW = W - ew;
+    c.fillStyle = '#181818';
+    c.fillRect(CX, Y, CW, tab);
     const name = this.monitor.fileName;
-    c.font = `${font * 0.9}px -apple-system, BlinkMacSystemFont, system-ui, sans-serif`;
+    c.font = sans(0.9);
     const nameW = c.measureText(name).width;
     c.fillStyle = '#1f1f1f';
-    c.fillRect(X + font * 0.4, Y, nameW + font * 1.6, tab);
+    c.fillRect(CX, Y, nameW + font * 1.6, tab);
     c.fillStyle = '#3c8ce6';
-    c.fillRect(X + font * 0.4, Y, nameW + font * 1.6, Math.max(1, s * 0.12));
+    c.fillRect(CX, Y, nameW + font * 1.6, Math.max(1, s * 0.12));
     c.fillStyle = '#e8e8e8';
-    c.fillText(name, X + font * 1.2, Y + tab / 2);
+    c.fillText(name, CX + font * 0.8, Y + tab / 2);
 
-    // Строка состояния снизу.
-    c.fillStyle = '#007acc';
-    c.fillRect(X, Y + H - status, W, status);
-
-    // Код.
-    c.font = `${font}px Menlo, ui-monospace, Consolas, monospace`;
+    c.font = mono;
+    const charW = c.measureText('M').width;
     const gutter = charW * 3.4;
     const top = Y + tab + line * 0.6;
-    const cols = Math.max(8, Math.floor((W - gutter - charW) / charW));
-    const rows = this.monitor.rows(cols, Math.floor((H - tab - status - line * 0.2) / line));
+    const cols = Math.max(8, Math.floor((CW - gutter - charW) / charW));
+    const rows = this.monitor.rows(cols, Math.floor((H - tab - line * 0.2) / line));
     rows.forEach((row, r) => {
       const ry = top + r * line;
       if (row.number !== null) {
         c.fillStyle = row.caret !== null ? '#cccccc' : '#6e7681';
         const num = String(row.number);
-        c.fillText(num, X + gutter - charW * (num.length + 0.9), ry);
+        c.fillText(num, CX + gutter - charW * (num.length + 0.9), ry);
       }
-      let cx = X + gutter + row.indent * charW;
+      let cx = CX + gutter + row.indent * charW;
       for (const t of row.tokens) {
         c.fillStyle = TOKEN_COLORS[t.kind] ?? '#cccccc';
         c.fillText(t.text, cx, ry);
@@ -637,7 +671,7 @@ export class World {
       }
       if (row.caret !== null && Math.floor(this.time * 2) % 2 === 0) {
         c.fillStyle = '#aeafad';
-        c.fillRect(X + gutter + (row.indent + row.caret) * charW, ry - font * 0.55, Math.max(1, s * 0.12), font * 1.1);
+        c.fillRect(CX + gutter + (row.indent + row.caret) * charW, ry - font * 0.55, Math.max(1, s * 0.12), font * 1.1);
       }
     });
     c.restore();

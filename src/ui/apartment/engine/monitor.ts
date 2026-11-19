@@ -1,7 +1,7 @@
 // Экран монитора в квартире: тот же проект, что открыт в компьютере, печатается вживую — с паузами и опечатками.
 // Издалека код нарисован пикселями, при приближении колёсиком плавно становится настоящим текстом.
 import { highlightLine, type Token } from '../laptop/highlight';
-import { WRITTEN_FILES } from '../laptop/project';
+import { TREE, WRITTEN_FILES, type TreeNode } from '../laptop/project';
 import { buildTypingScript, type TypingStep } from '../laptop/typing';
 import { zoomLimits } from './zoom';
 
@@ -156,3 +156,21 @@ export class MonitorTyping {
     return all.slice(start, start + maxRows);
   }
 }
+
+/** Строка панели файлов на мониторе. */
+export interface ExplorerRow {
+  node: TreeNode;
+  /** Этот файл сейчас открыт. */
+  active: boolean;
+}
+
+/** Панель файлов слева, как в редакторе: дерево проекта, открытый файл подсвечен и всегда виден. */
+export function explorerRows(fileName: string, maxRows: number): ExplorerRow[] {
+  const all = TREE.map((node) => ({ node, active: !node.folder && node.name === fileName }));
+  if (all.length <= maxRows) return all;
+  const at = Math.max(0, all.findIndex((r) => r.active));
+  // Открытый файл — примерно на трети высоты панели, как будто её чуть прокрутили.
+  const start = Math.min(all.length - maxRows, Math.max(0, at - Math.floor(maxRows / 3)));
+  return all.slice(start, start + maxRows);
+}
+
