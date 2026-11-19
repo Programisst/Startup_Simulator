@@ -7,11 +7,13 @@ import enEvents from '../content/en/events.json';
 import enUi from '../content/en/ui.json';
 import ruEvents from '../content/ru/events.json';
 import ruFeatures from '../content/ru/features.json';
+import ruLaptop from '../content/ru/laptop.json';
+import ruRoom from '../content/ru/room.json';
 import ruUi from '../content/ru/ui.json';
 
 void i18n.use(initReactI18next).init({
   resources: {
-    ru: { translation: { ...ruUi, events: ruEvents, features: ruFeatures } },
+    ru: { translation: { ...ruUi, events: ruEvents, features: ruFeatures, room: ruRoom, laptop: ruLaptop } },
     en: { translation: { ...enUi, events: enEvents } },
   },
   lng: 'ru',
