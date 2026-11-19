@@ -2,8 +2,8 @@
 // возвращает null — экран молча берёт запасной путь: разбор по словам и готовые идеи.
 import { content } from '../content';
 import { ideaLexicon } from '../content/ideas';
-import { checkIdeaAnswer, cleanIdea, type IdeaVerdict } from '../core';
-import { AI_ROUTES, type AiAnalyzeRequest, type AiAnalyzeResponse, type AiIdeasRequest, type AiIdeasResponse, type AiLang, type AiStatus } from './protocol';
+import { checkIdeaAnswer, cleanIdea, type IdeaVerdict, type TalkOutcome } from '../core';
+import { AI_ROUTES, type AiAnalyzeRequest, type AiAnalyzeResponse, type AiIdeasRequest, type AiIdeasResponse, type AiLang, type AiStatus, type AiTalkRequest, type AiTalkResponse } from './protocol';
 
 const TIMEOUT_MS = 45_000;
 
@@ -64,4 +64,16 @@ export async function aiSuggestIdeas(theme: string | null, lang: AiLang): Promis
     if (ideaText && verdict) out.push({ ...verdict, text: ideaText });
   }
   return out.length > 0 ? out : null;
+}
+
+/**
+ * Реплика сотрудника в разговоре один на один. Исход принимается только из трёх известных значений;
+ * что угодно другое считается «без изменений». Пустой ответ — как будто ответа не было.
+ */
+export async function aiTalk(request: AiTalkRequest): Promise<{ reply: string; outcome: TalkOutcome } | null> {
+  const raw = await call<AiTalkResponse>(AI_ROUTES.talk, request);
+  const reply = text(raw?.reply, 500);
+  if (!raw || !reply) return null;
+  const outcome: TalkOutcome = raw.outcome === 'better' || raw.outcome === 'worse' ? raw.outcome : 'same';
+  return { reply, outcome };
 }

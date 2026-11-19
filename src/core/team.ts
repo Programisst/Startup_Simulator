@@ -5,7 +5,7 @@ import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
 import { officeIndex, officeOf } from './office';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
-import type { Candidate, DriverId, Employee, EmployeeRole, GameContent, GameState, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
+import type { Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
 const TRAITS: TraitId[] = ['diligent', 'calm', 'loyal', 'sloppy'];
 const DRIVERS: DriverId[] = ['money', 'growth', 'peace', 'mission', 'people'];
@@ -184,18 +184,56 @@ function talkInDays(e: Employee, day: number, cfg: TeamConfig): number {
 }
 
 /** Разговор один на один: поднимает мотивацию, но не чаще раза в несколько недель. */
-export function talk(s: GameState, employeeId: number, content: GameContent): TeamChange | { ok: false; error: 'talkTooSoon' } {
+/** Сколько реплик разговоров хранится у сотрудника и какой длины может быть одна. */
+export const CHAT_KEPT_LINES = 8;
+export const CHAT_LINE_MAX = 300;
+
+/** Приводит реплики к виду, в котором они хранятся: только строки от двух сторон, без лишней длины. */
+export function cleanChat(lines: unknown): ChatLine[] {
+  if (!Array.isArray(lines)) return [];
+  const out: ChatLine[] = [];
+  for (const line of lines as { from?: unknown; text?: unknown }[]) {
+    if ((line?.from !== 'founder' && line?.from !== 'employee') || typeof line.text !== 'string') continue;
+    const text = line.text.replace(/\s+/g, ' ').trim().slice(0, CHAT_LINE_MAX);
+    if (text) out.push({ from: line.from, text });
+  }
+  return out;
+}
+
+/**
+ * Разговор один на один, не чаще раза в несколько недель.
+ * Исход задаёт, как изменится мотивация: игра сама решает, сколько это в числах, — собеседник (в том числе нейросеть)
+ * может только назвать один из трёх исходов.
+ */
+export function talk(
+  s: GameState,
+  employeeId: number,
+  content: GameContent,
+  outcome: TalkOutcome = 'better',
+  lines: ChatLine[] = [],
+): TeamChange | { ok: false; error: 'talkTooSoon' } {
   const cfg = content.config.team;
   const team = teamOf(s, content);
   const employee = team.employees.find((e) => e.id === employeeId);
   if (!employee) return { ok: false, error: 'noSuchEmployee' };
   if (talkInDays(employee, s.day, cfg) > 0) return { ok: false, error: 'talkTooSoon' };
+  const delta = outcome === 'better' ? cfg.talkBoost : outcome === 'worse' ? cfg.talkWorse : cfg.talkSame;
+  const said = cleanChat(lines);
   return {
     ok: true,
     cashDelta: 0,
     team: {
       ...team,
-      employees: team.employees.map((e) => (e.id === employeeId ? { ...e, motivation: clamp(e.motivation + cfg.talkBoost, 0, 100), lastTalkDay: s.day } : e)),
+      employees: team.employees.map((e) =>
+        e.id === employeeId
+          ? {
+              ...e,
+              motivation: clamp(e.motivation + delta, 0, 100),
+              lastTalkDay: s.day,
+              ...(said.length > 0 ? { chat: [...(e.chat ?? []), ...said].slice(-CHAT_KEPT_LINES) } : {}),
+            }
+          : e,
+      ),
     },
   };
 }

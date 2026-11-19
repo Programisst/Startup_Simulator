@@ -1,9 +1,11 @@
 // Экран команды: кого можно нанять, кто уже работает, сколько это стоит.
 // Все числа берутся из ядра (teamView); экран только показывает их и отправляет команды.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { aiAvailable } from '../../ai/client';
 import { content } from '../../content';
 import { officeView, teamView, type Candidate, type TeamMemberView } from '../../core';
+import { TalkChat } from '../components/TalkChat';
 import { dec, gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
 import { useStore } from '../store';
@@ -32,6 +34,18 @@ export function Team() {
   const dispatch = useStore((s) => s.dispatch);
   const [firing, setFiring] = useState<number | null>(null);
   const [confirming, setConfirming] = useState<number | null>(null);
+  // С кем сейчас идёт разговор. Настоящий разговор возможен, только когда доступна нейросеть.
+  const [talkingTo, setTalkingTo] = useState<number | null>(null);
+  const [ai, setAi] = useState(false);
+  useEffect(() => {
+    let alive = true;
+    void aiAvailable().then((ok) => {
+      if (alive) setAi(ok);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
   const view = teamView(game, content);
   const cfg = content.config.team;
   const office = officeView(game, content.config);
@@ -155,11 +169,20 @@ export function Team() {
                 <span className="muted">{t('team.says')}</span> «{t(`team.quotes.${m.driver}.${m.mood}`)}»
               </p>
               <div className="row">
-                <button data-talk={m.id} disabled={!m.canTalk} title={t('team.talkHint')} onClick={() => dispatch({ type: 'talk', employeeId: m.id })}>
+                <button
+                  data-talk={m.id}
+                  disabled={!m.canTalk || talkingTo === m.id}
+                  title={t('team.talkHint')}
+                  // С нейросетью открывается настоящий разговор; без неё — прежний разговор «одной кнопкой».
+                  onClick={() => (ai ? setTalkingTo(m.id) : dispatch({ type: 'talk', employeeId: m.id }))}
+                >
                   {t('team.talk')}
                 </button>
-                {!m.canTalk && <small className="muted">{t('team.talkWait', { days: m.talkInDays })}</small>}
+                {!m.canTalk && talkingTo !== m.id && <small className="muted">{t('team.talkWait', { days: m.talkInDays })}</small>}
               </div>
+              {talkingTo === m.id && (
+                <TalkChat member={m} name={nameOf(m.nameSeed)} bio={bioOf(m.nameSeed) ?? ''} quirk={quirkOf(m.nameSeed) ?? ''} onClose={() => setTalkingTo(null)} />
+              )}
               <div className="row">
                 <label className="salary">
                   {t('team.salary')}

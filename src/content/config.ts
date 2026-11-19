@@ -46,6 +46,8 @@ export const config: GameConfig = {
     quitDailyChance: 0.05,
     diligentBonus: 0.15,
     talkBoost: 8,
+    talkSame: 2,
+    talkWorse: -5,
     talkEnergy: 3,
     talkCooldownDays: 20,
     marketingPerPoint: 0.2,

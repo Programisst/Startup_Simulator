@@ -139,4 +139,61 @@ describe('AI-посредник', () => {
     const { call } = setup({ ask: async () => null });
     expect((await call(AI_ROUTES.analyze, idea)).status).toBe(502);
   });
+
+  const talk = {
+    lang: 'ru',
+    person: { name: 'Яна Ли', role: 'Разработчик', driver: 'Ценит спокойный ритм', trait: 'Старательность', mood: 'low', bio: 'Из корпорации', quirk: 'Кактус Геннадий' },
+    company: { name: 'Lumaflow', idea: 'Приложение для родителей', facts: ['В компании объявлена спешка.', 'Прошлый месяц закрыт с убытком.'] },
+    history: [{ from: 'founder', text: 'Как ты?' }, { from: 'employee', text: 'Устала.' }],
+    message: 'С понедельника отменяю спешку.',
+  };
+
+  it('разговор с сотрудником: в запросе есть человек, компания, прошлые реплики и слова основателя', async () => {
+    const systems: (string | undefined)[] = [];
+    const { call, prompts } = setup({
+      ask: async (user, _schema, system) => {
+        prompts.push(user);
+        systems.push(system);
+        return { reply: 'Спасибо.', outcome: 'better' };
+      },
+    });
+    expect(await call(AI_ROUTES.talk, talk)).toMatchObject({ mine: true, status: 200, body: { reply: 'Спасибо.', outcome: 'better' } });
+    expect(systems[0]).toContain('Яна Ли');
+    expect(systems[0]).toContain('Ценит спокойный ритм');
+    expect(systems[0]).toContain('unhappy');
+    expect(systems[0]).toContain('В компании объявлена спешка.');
+    expect(systems[0]).toContain('in Russian');
+    expect(prompts[0]).toContain('Founder: Как ты?');
+    expect(prompts[0]).toContain('You: Устала.');
+    expect(prompts[0]).toContain('<founder>\nС понедельника отменяю спешку.\n</founder>');
+  });
+
+  it('разговор: пустая реплика отклоняется, длинное обрезается, лишняя история отбрасывается', async () => {
+    const systems: (string | undefined)[] = [];
+    const { call, prompts } = setup({
+      ask: async (user, _schema, system) => {
+        prompts.push(user);
+        systems.push(system);
+        return { reply: 'Ок.', outcome: 'same' };
+      },
+    });
+    expect((await call(AI_ROUTES.talk, { ...talk, message: '   ' })).status).toBe(400);
+    expect(prompts).toHaveLength(0);
+    const history = Array.from({ length: 30 }, (_, i) => ({ from: 'founder', text: `реплика ${i}` }));
+    await call(AI_ROUTES.talk, { ...talk, message: 'я'.repeat(600), history, person: { ...talk.person, bio: 'б'.repeat(1500) }, company: { ...talk.company, facts: Array.from({ length: 50 }, (_, i) => `факт ${i}`) } });
+    expect(prompts[0]).toContain(`<founder>\n${'я'.repeat(300)}\n</founder>`);
+    expect(prompts[0]).not.toContain('реплика 0');
+    expect(prompts[0]).toContain('реплика 29');
+    expect(systems[0]).not.toContain('б'.repeat(201));
+    expect(systems[0]).toContain('факт 9');
+    expect(systems[0]).not.toContain('факт 10');
+  });
+
+  it('разговоры считаются в общих пределах расхода', async () => {
+    const { call } = setup();
+    expect((await call(AI_ROUTES.talk, talk)).status).toBe(200);
+    expect((await call(AI_ROUTES.talk, talk)).status).toBe(200);
+    expect((await call(AI_ROUTES.talk, talk)).status).toBe(429);
+  });
 });
+
