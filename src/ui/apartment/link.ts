@@ -28,6 +28,17 @@ export interface RoomLink {
   /** Силы основателя 0…100 и признак усталости */
   energy: number;
   tired: boolean;
+  /**
+   * Усталость одним словом — для сцены: 'fresh' — бодр; 'tired' — устал (зевает, ходит медленнее);
+   * 'exhausted' — вымотан (еле ходит, ошибается).
+   */
+  fatigue: 'fresh' | 'tired' | 'exhausted';
+  /** Во сколько раз медленнее обычного он сейчас работает: 1 — в полную силу, 0,5 — вполсилы. Годится и как скорость ходьбы. */
+  pace: number;
+  /** Текущая глава пути компании: номер с нуля, сколько глав всего, готовое название, сколько целей главы пройдено */
+  chapter: { id: string; index: number; total: number; title: string; goalsDone: number; goalsTotal: number };
+  /** Текущая цель готовыми словами; null — все цели пройдены */
+  goal: { id: string; title: string; hint: string; /** Готовность 0…1 */ share: number; progress: string; reward: string } | null;
   /** Сварить кофе. Возвращает false, если сейчас он не поможет. */
   coffee: () => boolean;
   /** Программа «Компания» — открывается на экране компьютера */

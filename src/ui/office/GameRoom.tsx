@@ -3,9 +3,9 @@
 import { Component, lazy, Suspense, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
-import { roomView } from '../../core';
+import { milestoneView, roomView } from '../../core';
 import type { RoomLink } from '../apartment/link';
-import { num } from '../format';
+import { money, num } from '../format';
 import { useStore, type ScreenId } from '../store';
 import type { TutorialStep } from '../tutorial';
 import { CompanyApp } from './CompanyApp';
@@ -71,6 +71,22 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
         : t(`office.bubble.${view.task.kind}`)
       : t(`office.bubble.${view.activity === 'building' ? 'idle' : view.activity}`);
 
+  // Глава и цель для сцены: напарник решает, как их показать (стикер на доске, смена обстановки).
+  const goals = milestoneView(game, content);
+  const goalDef = goals.current ? content.milestones.find((m) => m.id === goals.current!.id) : undefined;
+  const asMoney = goalDef?.progress?.metric === 'revenue30';
+  const showValue = (x: number) => (asMoney ? money(x) : num(x));
+  const goalForScene = goals.current
+    ? {
+        id: goals.current.id,
+        title: t(`goalsLadder.items.${goals.current.id}.title`),
+        hint: t(`goalsLadder.items.${goals.current.id}.hint`),
+        share: goalDef?.progress ? goals.current.share : 0,
+        progress: goalDef?.progress ? t('goalsLadder.progress', { value: showValue(Math.min(goals.current.value, goals.current.target)), target: showValue(goals.current.target) }) : '',
+        reward: t('goalsLadder.reward', { value: goals.current.cashReward > 0 ? money(goals.current.cashReward) : t('goalsLadder.rewardFame') }),
+      }
+    : null;
+
   const link: RoomLink = {
     date: { year: view.calendar.year, month: view.calendar.month, day: view.calendar.dayOfMonth },
     weekday: view.calendar.weekday,
@@ -88,6 +104,10 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     },
     energy: view.founder.energy,
     tired: view.founder.tired,
+    fatigue: view.founder.fatigue,
+    pace: view.founder.pace,
+    chapter: { ...goals.chapter, title: t(`goalsLadder.chapters.${goals.chapter.id}`) },
+    goal: goalForScene,
     coffee: () => {
       if (!view.founder.coffeeReady) return false;
       dispatch({ type: 'coffee' });
