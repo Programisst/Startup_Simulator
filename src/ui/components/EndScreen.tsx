@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
 import { gameDate, money, num } from '../format';
+import { usePersonName } from '../names';
 import { useStore } from '../store';
 
 export function EndScreen() {
@@ -9,6 +10,7 @@ export function EndScreen() {
   const dispatch = useStore((s) => s.dispatch);
   const quit = useStore((s) => s.quit);
   const won = game.status === 'won';
+  const nameOf = usePersonName();
 
   return (
     <div className="overlay">
@@ -34,7 +36,7 @@ export function EndScreen() {
           {game.eventLog.length === 0 && <li>{t('overview.noEvents')}</li>}
           {game.eventLog.map((e, i) => (
             <li key={i}>
-              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`)}
+              <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed) })}
               {e.choiceId && <> — {t(`events.${e.eventId}.choices.${e.choiceId}`)}</>}
             </li>
           ))}

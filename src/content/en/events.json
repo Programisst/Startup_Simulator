@@ -43,5 +43,221 @@
       "sellEquipment": "Sell equipment for $1,500",
       "holdOn": "Hold on and do nothing"
     }
+  },
+  "criticalBug": {
+    "title": "A bug that drives people away",
+    "body": "So many bugs have piled up that one of them started eating user data. Support gets a new message every hour.",
+    "choices": {
+      "hotfix": "Patch it tonight, quick and dirty",
+      "properFix": "Hire a specialist you know for a day, $300",
+      "ignore": "They can wait, new features matter more"
+    }
+  },
+  "competitorClone": {
+    "title": "You have been copied",
+    "body": "A competitor released an almost exact copy of your product and priced it lower.",
+    "choices": {
+      "focusProduct": "Stay calm and make the product better",
+      "adWar": "Flood the market with $500 of ads",
+      "rushFeatures": "Rush out what they do not have"
+    }
+  },
+  "bigClient": {
+    "title": "A big customer",
+    "body": "A company is ready to pay but wants a custom feature just for itself. Other users do not need it.",
+    "choices": {
+      "politeNo": "Politely decline: one product for everyone",
+      "customWork": "Build it for $1,500",
+      "bargain": "Ask for $2,500 and see if they agree"
+    }
+  },
+  "pressMention": {
+    "title": "You are in the news",
+    "body": "A trade publication mentioned your product in a roundup. The journalist offers to talk in more detail.",
+    "choices": {
+      "interview": "Give an interview",
+      "promote": "Spend $250 promoting the article",
+      "skip": "No time, back to work"
+    }
+  },
+  "hostingBill": {
+    "title": "Hosting raised its prices",
+    "body": "An email arrived: servers cost more starting this month. There is a surcharge for this month.",
+    "choices": {
+      "pay": "Pay $250 and move on",
+      "migrate": "Move to another host yourself",
+      "negotiate": "Write to support and ask for a discount"
+    }
+  },
+  "angelOffer": {
+    "title": "Coffee with an investor",
+    "body": "A private investor noticed your growth and invites you for coffee. He is ready to lend money, with no stake in the company.",
+    "choices": {
+      "askAdvice": "Take no money, but ask about his experience",
+      "takeMoney": "Take $8,000 and repay $10,000 within a year",
+      "decline": "Politely decline the meeting"
+    }
+  },
+  "paymentFreeze": {
+    "title": "Payments are frozen",
+    "body": "The payment service is holding your incoming money \"for review\". They give no deadline.",
+    "choices": {
+      "wait": "Wait: maybe they release it themselves",
+      "switchProvider": "Spend $250 and switch to another service",
+      "tellUsers": "Warn users honestly and refund $150 to those affected"
+    }
+  },
+  "founderBurnout": {
+    "title": "Out of strength",
+    "body": "You have worked three weeks without a day off. Today you stared at the screen for half an hour and wrote nothing.",
+    "choices": {
+      "restWeekend": "Get away for the weekend, $150",
+      "pushThrough": "Grit your teeth and keep going",
+      "moreCoffee": "More coffee and it will work out"
+    }
+  },
+  "sideGig": {
+    "title": "A gig came up",
+    "body": "A former colleague offers a one-week job. The money would help right now, but the product will have to wait.",
+    "choices": {
+      "refuse": "Decline: the product matters more",
+      "take": "Take the job for $900",
+      "bargain": "Name double the price and see"
+    }
+  },
+  "userFeedback": {
+    "title": "Users are complaining",
+    "body": "Dozens of emails have piled up: things are awkward, unclear, or broken. Many say the same thing.",
+    "choices": {
+      "listen": "Sit down and fix the most common issue",
+      "survey": "Run a $150 survey to see the whole picture",
+      "ignore": "They just did not figure it out"
+    }
+  },
+  "licenseClaim": {
+    "title": "A licence claim",
+    "body": "The author of a library you grabbed in a hurry noticed you broke its licence and demands payment.",
+    "choices": {
+      "pay": "Pay $300",
+      "rewrite": "Drop the library and write your own",
+      "ignore": "Do not reply: maybe he forgets"
+    }
+  },
+  "conference": {
+    "title": "Invited to a conference",
+    "body": "Organisers of an industry conference offer you a speaking slot. Tickets, travel and lodging are on you.",
+    "choices": {
+      "skip": "Decline: too expensive, no time",
+      "go": "Go for $600",
+      "online": "Speak over video for $100"
+    }
+  },
+  "dataScare": {
+    "title": "Data was exposed",
+    "body": "You found a hole in the code: for three days anyone could read other people's data. Nobody knows whether someone noticed.",
+    "choices": {
+      "disclose": "Tell users yourself",
+      "audit": "Hire an audit for $800 and close the matter",
+      "hush": "Quietly close the hole and say nothing"
+    }
+  },
+  "featureWave": {
+    "title": "Everyone asks for the same thing",
+    "body": "Hundreds of users are voting for one feature. It was not in your plans.",
+    "choices": {
+      "promise": "Promise it and put it on the roadmap",
+      "quickHack": "Hack it together in a couple of evenings",
+      "sayNo": "Explain why it will not happen"
+    }
+  },
+  "raiseRequest": {
+    "title": "{{name}}: a talk about pay",
+    "body": "{{name}} asks for a meeting and says it plainly: the salary does not match the workload.",
+    "choices": {
+      "give": "Raise the salary by 15%",
+      "promise": "Promise to come back to it in a couple of months",
+      "refuse": "Refuse: there is no money"
+    }
+  },
+  "poaching": {
+    "title": "{{name}}: an offer from another company",
+    "body": "A large company offered your employee a job with a noticeably higher salary. {{name}} is still thinking and tells you honestly.",
+    "choices": {
+      "talk": "Have a heart-to-heart about what you are building",
+      "counter": "Raise the salary by 25%",
+      "letGo": "Wish them luck and let go"
+    }
+  },
+  "teamConflict": {
+    "title": "A quarrel in the team",
+    "body": "Two people cannot agree on how to do a task and have stopped talking. {{name}} writes to you that this cannot go on.",
+    "choices": {
+      "mediate": "Bring both together and sort it out",
+      "takeSide": "Side with the one who wrote",
+      "ignore": "They are adults, they will work it out"
+    }
+  },
+  "employeeBurnout": {
+    "title": "{{name}}: at the limit",
+    "body": "After weeks of crunch, {{name}} misses deadlines and barely speaks in calls. It looks like burnout.",
+    "choices": {
+      "dayOff": "Give a few days off",
+      "bonus": "Pay a $400 bonus",
+      "ignore": "Not now, deadlines are burning"
+    }
+  },
+  "teamParty": {
+    "title": "A reason to get together",
+    "body": "The team has worked together for a while but never met just for fun. Someone suggested celebrating the last release.",
+    "choices": {
+      "pizza": "Order pizza to the office, $50",
+      "party": "Have a proper evening out, $250",
+      "skip": "This is no time to celebrate"
+    }
+  },
+  "brilliantIdea": {
+    "title": "{{name}}: an idea",
+    "body": "{{name}} figured out how to rewrite the most tangled part of the code and asks for time to do it.",
+    "choices": {
+      "letBuild": "Give the time and stay out of the way",
+      "later": "Good idea, but not now",
+      "weekend": "Let them try on the weekend if they want"
+    }
+  },
+  "prodMistake": {
+    "title": "{{name}}: a mistake in production",
+    "body": "An update broke the product for some users. {{name}} shipped the change and reported it right away.",
+    "choices": {
+      "helpFix": "Sit down together and fix it",
+      "scold": "Reprimand in front of everyone",
+      "addReview": "Introduce code review before release ($100 for tools)"
+    }
+  },
+  "courseRequest": {
+    "title": "{{name}}: wants to learn",
+    "body": "{{name}} found a course in their field and asks whether the company will pay for it.",
+    "choices": {
+      "half": "Pay half, $175",
+      "pay": "Pay in full, $350",
+      "refuse": "Refuse: learn at your own expense"
+    }
+  },
+  "remoteRequest": {
+    "title": "{{name}}: working from home",
+    "body": "{{name}} asks to work from home: the commute eats two hours a day.",
+    "choices": {
+      "trial": "Try it for a month and see",
+      "allow": "Allow it, no conditions",
+      "refuse": "Refuse: everyone should be together"
+    }
+  },
+  "salaryDelay": {
+    "title": "Nothing to pay salaries with",
+    "body": "The account is negative and payday is tomorrow. The team does not know yet.",
+    "choices": {
+      "honest": "Tell the team honestly about the delay",
+      "hide": "Blame problems at the bank",
+      "ownMoney": "Borrow $2,000 from friends and pay on time"
+    }
   }
 }

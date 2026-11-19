@@ -113,9 +113,9 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       const choice = def?.choices.find((c) => c.id === cmd.choiceId);
       if (!choice) return fail('unknownChoice');
 
-      const draft: GameState = { ...state, pendingEvent: null };
+      const draft: GameState = { ...state, pendingEvent: null, pendingSubject: null };
       const chanceResults: boolean[] = [];
-      draft.rng = applyEffects(draft, choice.effects, draft.rng, chanceResults);
+      draft.rng = applyEffects(draft, choice.effects, draft.rng, chanceResults, state.pendingSubject ?? null);
       draft.eventLog = draft.eventLog.map((entry, i) =>
         i === draft.eventLog.length - 1 ? { ...entry, choiceId: choice.id, chanceResults } : entry,
       );

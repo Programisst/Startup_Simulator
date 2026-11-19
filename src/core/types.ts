@@ -67,6 +67,25 @@ export interface EventCondition {
   minDebt?: number;
   overloaded?: boolean;
   cashNegative?: boolean;
+  /** Сколько человек в команде, не считая основателя */
+  minTeam?: number;
+  maxTeam?: number;
+  /** Включена ли спешка */
+  rush?: boolean;
+  /** Событие про конкретного сотрудника: без подходящего человека оно не случается */
+  subject?: EventSubject;
+}
+
+/** Кого из команды касается событие. */
+export interface EventSubject {
+  /** Кого выбрать, если подходят несколько */
+  pick: 'lowestMotivation' | 'highestSkill' | 'newest';
+  role?: EmployeeRole;
+  minSkill?: number;
+  minMotivation?: number;
+  maxMotivation?: number;
+  /** Сколько дней он уже работает в компании */
+  minDaysHired?: number;
 }
 
 export type ModifierTarget = 'acquisition' | 'churn';
@@ -82,6 +101,14 @@ export type Effect =
   | { type: 'modifier'; target: ModifierTarget; factor: number; days: number }
   /** Заём: деньги сейчас, возврат amount × repayFactor равными долями за days дней */
   | { type: 'loan'; amount: number; repayFactor: number; days: number }
+  /** Мотивация всей команды */
+  | { type: 'teamMotivation'; amount: number }
+  /** Последствия для сотрудника, о котором событие */
+  | { type: 'subjectMotivation'; amount: number }
+  /** Прибавка к зарплате и к ожиданиям, доля (0.15 = +15%) */
+  | { type: 'subjectRaise'; pct: number }
+  | { type: 'subjectSkill'; amount: number }
+  | { type: 'subjectLeaves' }
   | { type: 'chance'; probability: number; then: Effect[]; otherwise?: Effect[] };
 
 export interface EventChoiceDef {
@@ -234,6 +261,8 @@ export interface EventLogEntry {
   choiceId: string | null;
   /** Как выпали случайные исходы внутри выбранного варианта */
   chanceResults: boolean[];
+  /** Для событий о сотруднике: по этому числу интерфейс подбирает его имя */
+  subjectNameSeed?: number;
 }
 
 /** Кандидат на найм. Имя и внешность интерфейс подбирает сам по nameSeed. */
@@ -371,6 +400,8 @@ export interface GameState {
   profitableMonthsInRow: number;
 
   pendingEvent: string | null;
+  /** Номер сотрудника, о котором ждущее событие (если оно о человеке) */
+  pendingSubject?: number | null;
   lastEventDay: number;
   eventLog: EventLogEntry[];
 

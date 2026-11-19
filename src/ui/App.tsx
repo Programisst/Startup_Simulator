@@ -11,7 +11,7 @@ import { NewGame } from './screens/NewGame';
 import { Overview } from './screens/Overview';
 import { Product } from './screens/Product';
 import { Team } from './screens/Team';
-import { useStore, type ScreenId } from './store';
+import { DAY_MS, useStore, type ScreenId } from './store';
 
 const SCREENS: ScreenId[] = ['office', 'overview', 'product', 'team', 'marketing', 'finance'];
 
@@ -31,10 +31,10 @@ export function App() {
 
   const running = game !== null && game.status === 'running' && game.pendingEvent === null && speed > 0;
 
-  // Время идёт по таймеру: один игровой день за секунду на скорости ×1.
+  // Время идёт по таймеру: на скорости ×1 игровой день длится DAY_MS.
   useEffect(() => {
     if (!running) return;
-    const timer = setInterval(step, 1000 / speed);
+    const timer = setInterval(step, DAY_MS / speed);
     return () => clearInterval(timer);
   }, [running, speed, step]);
 

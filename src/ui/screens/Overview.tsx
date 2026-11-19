@@ -2,10 +2,12 @@ import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
 import { LineChart } from '../components/LineChart';
 import { dec, gameDate, money, num } from '../format';
+import { usePersonName } from '../names';
 import { useStore } from '../store';
 
 export function Overview() {
   const { t } = useTranslation();
+  const nameOf = usePersonName();
   const game = useStore((s) => s.game)!;
   const b = game.lastDay;
 
@@ -83,7 +85,7 @@ export function Overview() {
               .reverse()
               .map((e, i) => (
                 <li key={i}>
-                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`)}
+                  <span className="muted">{t('top.date', gameDate(e.day))}</span> {t(`events.${e.eventId}.title`, { name: e.subjectNameSeed === undefined ? '' : nameOf(e.subjectNameSeed) })}
                 </li>
               ))}
           </ul>

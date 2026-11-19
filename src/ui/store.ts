@@ -7,6 +7,8 @@ import { markTutorialSeen, tutorialSeen } from './tutorial';
 
 export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance';
 export type Speed = 0 | 1 | 2 | 5;
+/** Сколько настоящих миллисекунд длится игровой день на скорости ×1. */
+export const DAY_MS = 4000;
 
 interface Store {
   game: GameState | null;

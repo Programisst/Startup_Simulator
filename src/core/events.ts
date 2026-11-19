@@ -2,7 +2,29 @@
 
 import { clamp, overload } from './formulas';
 import { nextFloat, type RngState } from './rng';
-import type { Effect, EventCondition, EventDef, GameContent, GameState } from './types';
+import type { Effect, Employee, EventCondition, EventDef, EventSubject, GameContent, GameState, TeamState } from './types';
+
+const employeesOf = (s: GameState): Employee[] => s.team?.employees ?? [];
+
+/** Сотрудник, о котором будет событие, или null, если подходящего нет. */
+export function eventSubject(subject: EventSubject, s: GameState): Employee | null {
+  const fits = employeesOf(s).filter(
+    (e) =>
+      (subject.role === undefined || e.role === subject.role) &&
+      (subject.minSkill === undefined || e.skill >= subject.minSkill) &&
+      (subject.minMotivation === undefined || e.motivation >= subject.minMotivation) &&
+      (subject.maxMotivation === undefined || e.motivation <= subject.maxMotivation) &&
+      (subject.minDaysHired === undefined || s.day - e.hiredDay >= subject.minDaysHired),
+  );
+  if (fits.length === 0) return null;
+  // При равенстве берётся нанятый раньше (меньший номер) — выбор всегда один и тот же.
+  const better: Record<EventSubject['pick'], (a: Employee, b: Employee) => number> = {
+    lowestMotivation: (a, b) => a.motivation - b.motivation || a.id - b.id,
+    highestSkill: (a, b) => b.skill - a.skill || a.id - b.id,
+    newest: (a, b) => b.hiredDay - a.hiredDay || b.id - a.id,
+  };
+  return [...fits].sort(better[subject.pick])[0] ?? null;
+}
 
 export function conditionHolds(c: EventCondition, s: GameState): boolean {
   if (c.launched !== undefined && c.launched !== s.launched) return false;
@@ -17,6 +39,11 @@ export function conditionHolds(c: EventCondition, s: GameState): boolean {
   if (c.minDebt !== undefined && s.debt < c.minDebt) return false;
   if (c.overloaded !== undefined && c.overloaded !== overload(s.users, s.capacity) > 0) return false;
   if (c.cashNegative !== undefined && c.cashNegative !== s.cash < 0) return false;
+  const teamSize = employeesOf(s).length;
+  if (c.minTeam !== undefined && teamSize < c.minTeam) return false;
+  if (c.maxTeam !== undefined && teamSize > c.maxTeam) return false;
+  if (c.rush !== undefined && c.rush !== s.rush) return false;
+  if (c.subject !== undefined && eventSubject(c.subject, s) === null) return false;
   return true;
 }
 
@@ -72,10 +99,43 @@ export function applyEffects(
   effects: Effect[],
   rng: RngState,
   chanceResults: boolean[],
+  /** Номер сотрудника, о котором событие */
+  subjectId: number | null = null,
 ): RngState {
   let r = rng;
+  /** Меняет сотрудников команды; если команды нет, ничего не делает. */
+  const changeTeam = (change: (team: TeamState) => TeamState) => {
+    if (draft.team) draft.team = change(draft.team);
+  };
+  const changeSubject = (change: (e: Employee) => Employee) =>
+    changeTeam((team) => ({ ...team, employees: team.employees.map((e) => (e.id === subjectId ? change(e) : e)) }));
+
   for (const e of effects) {
     switch (e.type) {
+      case 'teamMotivation':
+        changeTeam((team) => ({ ...team, employees: team.employees.map((m) => ({ ...m, motivation: clamp(m.motivation + e.amount, 0, 100) })) }));
+        break;
+      case 'subjectMotivation':
+        changeSubject((m) => ({ ...m, motivation: clamp(m.motivation + e.amount, 0, 100) }));
+        break;
+      case 'subjectRaise':
+        // Растёт и зарплата, и ожидания: к новой сумме человек привыкает.
+        changeSubject((m) => ({ ...m, salary: Math.round((m.salary * (1 + e.pct)) / 50) * 50, salaryAsk: Math.round((m.salaryAsk * (1 + e.pct)) / 50) * 50 }));
+        break;
+      case 'subjectSkill':
+        changeSubject((m) => ({ ...m, skill: Math.round(clamp(m.skill + e.amount, 0.1, 2.5) * 100) / 100 }));
+        break;
+      case 'subjectLeaves':
+        changeTeam((team) => {
+          const gone = team.employees.find((m) => m.id === subjectId);
+          if (!gone) return team;
+          return {
+            ...team,
+            employees: team.employees.filter((m) => m.id !== subjectId),
+            log: [...team.log, { day: draft.day, kind: 'quit' as const, employeeId: gone.id, nameSeed: gone.nameSeed, role: gone.role }].slice(-50),
+          };
+        });
+        break;
       case 'cash':
         draft.cash = Math.round((draft.cash + e.amount) * 100) / 100;
         break;
@@ -115,7 +175,7 @@ export function applyEffects(
         r = roll.next;
         const hit = roll.value < e.probability;
         chanceResults.push(hit);
-        r = applyEffects(draft, hit ? e.then : (e.otherwise ?? []), r, chanceResults);
+        r = applyEffects(draft, hit ? e.then : (e.otherwise ?? []), r, chanceResults, subjectId);
         break;
       }
     }
