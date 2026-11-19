@@ -202,3 +202,29 @@ td:not(:first-child), th:not(:first-child) { text-align: right; }
 @keyframes sway { from { transform: rotate(-1.5deg); } to { transform: rotate(1.5deg); } }
 @keyframes snow { from { transform: translateY(0); opacity: 1; } to { transform: translateY(14px); opacity: 0; } }
 @keyframes float { from { transform: translateY(-66px); } to { transform: translateY(-69px); } }
+
+/* ---------- Команда ---------- */
+.person { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.person:last-of-type { border-bottom: 0; }
+.person p { margin: 0; }
+.person-head { display: flex; gap: 12px; align-items: flex-start; }
+.person-head > div { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.person-head div span { color: var(--muted); font-size: 13px; }
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 14px;
+}
+.meter { display: grid; grid-template-columns: auto 1fr auto; gap: 10px; align-items: center; font-size: 13px; color: var(--muted); }
+.meter-bar { height: 8px; border-radius: 4px; background: var(--panel-2); overflow: hidden; }
+.meter-bar i { display: block; height: 100%; background: var(--green); transition: width 0.4s ease; }
+.meter-bar i.low { background: var(--red); }
+.salary { display: flex; align-items: center; gap: 8px; }
+.salary input { width: 110px; }
+.person .choices { margin-top: 0; }

@@ -8,9 +8,10 @@ import { Marketing } from './screens/Marketing';
 import { NewGame } from './screens/NewGame';
 import { Overview } from './screens/Overview';
 import { Product } from './screens/Product';
+import { Team } from './screens/Team';
 import { useStore, type ScreenId } from './store';
 
-const SCREENS: ScreenId[] = ['overview', 'product', 'marketing', 'finance'];
+const SCREENS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
 
 export function App() {
   const { t } = useTranslation();
@@ -46,6 +47,7 @@ export function App() {
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
         {screen === 'overview' && <Overview />}
         {screen === 'product' && <Product />}
+        {screen === 'team' && <Team />}
         {screen === 'marketing' && <Marketing />}
         {screen === 'finance' && <Finance />}
       </main>

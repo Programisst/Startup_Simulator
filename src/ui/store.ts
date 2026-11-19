@@ -4,7 +4,7 @@ import { applyCommand, createGame, tick, type Command, type CommandError, type G
 import { content } from '../content';
 import { deleteSave, loadGame, saveGame } from '../save/storage';
 
-export type ScreenId = 'overview' | 'product' | 'marketing' | 'finance';
+export type ScreenId = 'overview' | 'product' | 'team' | 'marketing' | 'finance';
 export type Speed = 0 | 1 | 2 | 5;
 
 interface Store {
