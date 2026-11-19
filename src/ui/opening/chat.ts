@@ -22,6 +22,8 @@ export type Stage = 'idea' | 'audience' | 'name' | 'thinking' | 'pickType' | 'sa
 export interface Line {
   from: 'friend' | 'me';
   key?: string;
+  /** Числа для подстановки в реплику (деньги показываются как деньги) */
+  params?: Record<string, number>;
   text?: string;
 }
 
@@ -50,6 +52,7 @@ export interface IdeaReviewLike {
 export interface QuickReply {
   id: string;
   key: string;
+  params?: Record<string, number>;
 }
 
 /** Короче этого идея — просто слово, друг попросит рассказать подробнее. */
@@ -83,7 +86,8 @@ export function reply(s: ChatState, raw: string): ChatState {
 export function quickReplies(s: ChatState): QuickReply[] {
   if (s.stage === 'name') return [{ id: 'skipName', key: 'opening.me.skipName' }];
   if (s.stage === 'pickType') return TYPES.map((id) => ({ id, key: `opening.type.${id}` }));
-  if (s.stage === 'savings') return SAVINGS.map((id) => ({ id, key: `opening.me.savings.${id}` }));
+  // В ответе видно, с какими деньгами начнёшь: игрок выбирает не наугад.
+  if (s.stage === 'savings') return SAVINGS.map((id) => ({ id, key: `opening.me.savings.${id}`, params: { cash: content.difficulties[id].startCash } }));
   if (s.stage === 'goal') return GOALS.map((id) => ({ id, key: `opening.me.goal.${id}` }));
   return [];
 }
@@ -105,7 +109,7 @@ function withType(s: ChatState, productType: ProductTypeId): ChatState {
 export function choose(s: ChatState, id: string): ChatState {
   const option = quickReplies(s).find((o) => o.id === id);
   if (!option) return s;
-  const me: Line = { from: 'me', key: option.key };
+  const me: Line = { from: 'me', key: option.key, ...(option.params ? { params: option.params } : {}) };
   if (s.stage === 'name') return say({ ...s, name: '' }, 'thinking', me, ...friend('thinking'));
   if (s.stage === 'pickType') return say(withType(s, id as ProductTypeId), 'savings', me, ...friend(`react.${id}`, 'askSavings'));
   if (s.stage === 'savings') return say({ ...s, difficulty: id as DifficultyId }, 'goal', me, ...friend(`savings.${id}`, 'askGoal'));

@@ -89,8 +89,15 @@ describe('переписка с другом', () => {
   it('сбережения задают сложность, цель — цель партии; в конце друг прощается', () => {
     let s = resolveIdea(upToThinking('Сервис, который сам выставляет счета клиентам малого бизнеса'), null);
     expect(quickReplies(s).map((o) => o.id)).toEqual(['easy', 'normal', 'hard']);
+    // В кнопках видно, с какими деньгами начнёшь: игрок не отвечает наугад.
+    expect(quickReplies(s).map((o) => o.params?.cash)).toEqual([
+      content.difficulties.easy.startCash,
+      content.difficulties.normal.startCash,
+      content.difficulties.hard.startCash,
+    ]);
     s = choose(s, 'hard');
     expect(s.stage).toBe('goal');
+    expect(s.lines.find((l) => l.from === 'me' && l.key === 'opening.me.savings.hard')?.params?.cash).toBe(content.difficulties.hard.startCash);
     expect(quickReplies(s).map((o) => o.id)).toEqual(['profit', 'valuation', 'sandbox']);
     s = choose(s, 'valuation');
     expect(s.stage).toBe('done');

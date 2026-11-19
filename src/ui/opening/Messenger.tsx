@@ -2,6 +2,7 @@
 // Реплики друга появляются по одной, с «печатает…»; отвечать можно своими словами или кнопками.
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { money } from '../format';
 import { quickReplies, type ChatState, type Line } from './chat';
 import './messenger.css';
 
@@ -45,7 +46,9 @@ export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {
   const settledRef = useRef(onSettled);
   settledRef.current = onSettled;
 
-  const textOf = (l: Line) => l.text ?? t(l.key ?? '');
+  /** Числа в репликах — это деньги: показываем их как деньги. */
+  const fmt = (params?: Record<string, number>) => Object.fromEntries(Object.entries(params ?? {}).map(([k, v]) => [k, money(v)]));
+  const textOf = (l: Line) => l.text ?? t(l.key ?? '', fmt(l.params));
   const next = chat.lines[shown];
 
   // Реплики появляются по очереди: свои — сразу, друга — после «печатает…».
@@ -145,7 +148,7 @@ export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {
         <div className={`ms-quick${options.length ? ' shown' : ''}`}>
           {options.map((o, i) => (
             <button key={o.id} type="button" className="ms-chip" style={{ animationDelay: `${i * 60}ms` }} onClick={() => onChoose(o.id)}>
-              {t(o.key)}
+              {t(o.key, fmt(o.params))}
             </button>
           ))}
         </div>
