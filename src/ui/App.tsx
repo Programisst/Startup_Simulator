@@ -49,7 +49,7 @@ export function App() {
 
   if (roomMode) {
     return (
-      <div className="layout room-mode" data-coach={tutorial ?? undefined}>
+      <div className={computerOpen ? 'layout room-mode at-computer' : 'layout room-mode'} data-coach={tutorial ?? undefined}>
         <main className="content full">
           <GameRoom step={tutorial} />
         </main>
