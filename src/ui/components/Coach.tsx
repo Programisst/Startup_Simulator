@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { featuresOf, roomView } from '../../core';
 import { useStore } from '../store';
+import { FriendAvatar } from '../opening/Avatar';
 import { tutorialStep, type TutorialStep } from '../tutorial';
+import './coach.css';
 
 /** Текущий шаг обучения. menuAlwaysOpen — когда квартиры нет и меню компании всегда на экране. */
 export function useTutorialStep(menuAlwaysOpen = false): TutorialStep | null {
@@ -34,14 +36,18 @@ export function Coach({ step, inline = false }: { step: TutorialStep | null; inl
   const view = roomView(game, content);
 
   return (
-    <aside className={inline ? 'coach inline' : 'coach'} role="status" aria-live="polite">
-      <span className="coach-label">{t('coach.label')}</span>
-      <p>
-        {t(`coach.${step}`, {
-          core: t(`productTypes.${game.productType}.core`),
-          days: view.task?.daysLeft ?? 0,
-        })}
-      </p>
+    // Подсказки пишет друг: как сообщение в мессенджере. Новый шаг — новое сообщение (заново выезжает).
+    <aside key={step} className={inline ? 'coach friend inline' : 'coach friend'} role="status" aria-live="polite">
+      <FriendAvatar size={inline ? 32 : 42} className="coach-avatar" />
+      <div className="coach-body">
+        <span className="coach-label">{t('coach.label')}</span>
+        <p>
+          {t(`coach.${step}`, {
+            core: t(`productTypes.${game.productType}.core`),
+            days: view.task?.daysLeft ?? 0,
+          })}
+        </p>
+      </div>
       <button className={step === 'done' ? 'primary' : 'coach-skip'} onClick={endTutorial}>
         {t(step === 'done' ? 'coach.gotIt' : 'coach.skip')}
       </button>

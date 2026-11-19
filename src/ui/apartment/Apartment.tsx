@@ -8,7 +8,7 @@ import { daylightAt } from './engine/daylight';
 import { SPOTS, type LampId, type Spot } from './engine/scene';
 import { World } from './engine/world';
 import { Laptop } from './laptop/Laptop';
-import { AUTOPILOT_IDLE_SECONDS, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
+import { AUTOPILOT_IDLE_SECONDS, frameSeconds, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
 import './apartment.css';
 
 type ComputerPhase = 'closed' | 'open' | 'closing';
@@ -68,6 +68,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const arrowRef = useRef<HTMLDivElement>(null);
   const worldRef = useRef<World | null>(null);
   const keys = useRef(new Set<string>());
   const busy = useRef(false);
@@ -149,7 +150,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
         let hudTimer = 0;
         let nearId: string | null = null;
         const frame = (now: number) => {
-          const dt = Math.min(0.1, (now - last) / 1000);
+          const dt = frameSeconds(now, last);
           last = now;
           let ix = 0;
           let iy = 0;
@@ -200,6 +201,10 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
           if (found && promptRef.current) {
             const p = world.project(found.anchor);
             promptRef.current.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px) translate(-50%, -100%)`;
+          }
+          if (arrowRef.current) {
+            const p = world.project(DESK.anchor);
+            arrowRef.current.style.transform = `translate(${Math.round(p.x)}px, ${Math.round(p.y)}px) translate(-50%, -100%)`;
           }
           if (bubbleRef.current) {
             const p = world.project(world.headPoint());
@@ -505,6 +510,12 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
           {promptText}
         </div>
       )}
+      {/* Обучение: стрелка над столом — «тебе сюда». Пропадает, когда герой уже за компьютером. */}
+      <div ref={arrowRef} className={`lm-arrow${link?.pointAtDesk && computer === 'closed' && !seatedAlone && !fade ? ' show' : ''}`} aria-hidden="true">
+        <svg viewBox="0 0 14 16" width="28" height="32" shapeRendering="crispEdges">
+          <path d="M4 0h6v8h4l-7 8-7-8h4z" fill="#f6c34a" stroke="#26324a" strokeWidth="1.4" />
+        </svg>
+      </div>
       <div ref={bubbleRef} className={`lm-bubble${bubble ? ' show' : ''}`}>
         <span key={bubble?.id}>{bubble?.text}</span>
       </div>
@@ -526,7 +537,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
 
       {fade && (
         <div className={`lm-fade ${fade}`}>
-          <div className="lm-fade-title">{t('room.sleep.title')}</div>
+          <div className="lm-fade-title">{opening ? t('opening.dayTitle') : t('room.sleep.title')}</div>
           <div className="lm-fade-sub">{link ? t('room.sleep.restDay') : opening ? t('opening.morning') : t('room.sleep.subtitle', { day: wakeDay })}</div>
         </div>
       )}

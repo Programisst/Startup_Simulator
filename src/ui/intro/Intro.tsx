@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { hash } from '../apartment/engine/art';
 import { drawEditorScreen } from '../apartment/engine/editorScreen';
 import { MonitorTyping } from '../apartment/engine/monitor';
+import { frameSeconds } from '../apartment/link';
 import { FLIGHT_SECONDS, flightCamera, HOME_SCREEN, HOME_WINDOW, INTERIOR, LOGO, logoPixels, paintCity, paintInterior, SCENE_H, SCENE_W } from './scene';
 import './intro.css';
 
@@ -80,7 +81,7 @@ export function Intro({ hasSave, onDone, freeze }: IntroProps) {
 
     const frame = (now: number) => {
       const time = (now - t0) / 1000;
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const dt = frameSeconds(now, last);
       last = now;
       typing.advance(dt);
       const view = { w: canvas.width, h: canvas.height };

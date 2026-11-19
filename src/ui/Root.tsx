@@ -1,14 +1,23 @@
 // Вся игра по одной ссылке: заставка → «Новая игра» → вечер и переписка с другом → утро первого дня.
 // «Продолжить» сразу открывает сохранённую партию. Где рисовать нельзя (старый браузер, проверки) — обычный экран игры.
 import { useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { hasSave } from '../save/storage';
 import { App } from './App';
 import { Intro } from './intro/Intro';
 import { canDraw } from './office/GameRoom';
 import { Opening } from './opening/Opening';
 import { useStore } from './store';
+import './opening/curtain.css';
+
+/** Сколько «День 1» стоит на тёмном экране, пока за ним открывается утро, и сколько длится рассвет. */
+const CURTAIN_HOLD_MS = 1100;
+const DAWN_MS = 2600;
 
 export function Root() {
+  const { t } = useTranslation();
+  // Занавес «День 1»: тот же, что в конце сна, — за ним партия начинается, и квартира проступает рассветом.
+  const [curtain, setCurtain] = useState<'on' | 'dawn' | null>(null);
   const game = useStore((s) => s.game);
   const roomBroken = useStore((s) => s.roomBroken);
   const start = useStore((s) => s.start);
@@ -27,8 +36,38 @@ export function Root() {
     if (showStart) void import('./apartment/Apartment');
   }, [showStart]);
 
-  if (!showStart) return <App />;
-  if (stage === 'opening') return <Opening onStart={start} />;
+  useEffect(() => {
+    if (curtain !== 'on' || !game) return;
+    const id = window.setTimeout(() => setCurtain('dawn'), CURTAIN_HOLD_MS);
+    return () => window.clearTimeout(id);
+  }, [curtain, game]);
+  useEffect(() => {
+    if (curtain !== 'dawn') return;
+    const id = window.setTimeout(() => setCurtain(null), DAWN_MS);
+    return () => window.clearTimeout(id);
+  }, [curtain]);
+
+  if (!showStart)
+    return (
+      <>
+        <App />
+        {curtain && (
+          <div className={`rt-curtain ${curtain}`} aria-hidden="true">
+            <div className="rt-curtain-title">{t('opening.dayTitle')}</div>
+            <div className="rt-curtain-sub">{t('opening.morning')}</div>
+          </div>
+        )}
+      </>
+    );
+  if (stage === 'opening')
+    return (
+      <Opening
+        onStart={(setup) => {
+          setCurtain('on');
+          start(setup);
+        }}
+      />
+    );
   return (
     <Intro
       hasSave={hasSave()}

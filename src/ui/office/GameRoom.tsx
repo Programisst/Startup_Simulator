@@ -107,6 +107,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     },
     focusText: t('founderCare.focus', { pct: num(view.founder.focus * 100), boost: num(view.founder.focusBoost * 100) }),
     onComputer: setComputerOpen,
+    pointAtDesk: step === 'goToComputer' || step === 'backToComputer',
   };
 
   return (

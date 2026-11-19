@@ -453,3 +453,33 @@ html.lm-standalone body {
 .lm-goal .goal-bar i {
   background: #a7e08f;
 }
+
+/* Обучение: прыгающая стрелка над столом. */
+.lm-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.lm-arrow.show {
+  opacity: 1;
+}
+.lm-arrow svg {
+  display: block;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 3px 0 rgba(38, 50, 74, 0.5));
+  animation: lmArrowBob 0.9s ease-in-out infinite;
+}
+@keyframes lmArrowBob {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lm-arrow svg {
+    animation: none;
+  }
+}

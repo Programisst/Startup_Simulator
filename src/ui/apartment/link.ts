@@ -38,6 +38,8 @@ export interface RoomLink {
   onDockApp: (item: string) => void;
   /** Что даёт набор кода — строка для экрана редактора */
   focusText: string;
+  /** Обучение просит подойти к компьютеру: над столом прыгает стрелка */
+  pointAtDesk: boolean;
   /** Игрок сел за компьютер или встал */
   onComputer: (open: boolean) => void;
 }
@@ -55,4 +57,12 @@ export function worksAtDesk(activity: FounderActivity): boolean {
 /** Сколько игровых минут показывают часы квартиры после dt секунд. Стоят на паузе и пока герой спит. */
 export function advanceClock(minutes: number, dt: number, o: { rate: number; paused: boolean; sleeping: boolean }): number {
   return o.paused || o.sleeping ? minutes : minutes + dt * o.rate;
+}
+
+/**
+ * Сколько секунд прошло между кадрами. Отметка кадра от браузера бывает чуть раньше момента запуска цикла —
+ * тогда разница отрицательная, а отрицательное время ломает анимацию героя. Долгий перерыв (вкладка в фоне) — не больше 0,1 с.
+ */
+export function frameSeconds(now: number, last: number): number {
+  return Math.min(0.1, Math.max(0, (now - last) / 1000));
 }

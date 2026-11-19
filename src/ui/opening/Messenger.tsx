@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { money } from '../format';
+import { FriendAvatar as Avatar } from './Avatar';
 import { quickReplies, type ChatState, type Line } from './chat';
 import './messenger.css';
 
@@ -20,21 +21,6 @@ const TYPED_STAGES = new Set(['idea', 'audience', 'name']);
 /** Сколько друг «печатает» реплику: чем длиннее, тем дольше, но без долгих пауз. */
 function typingMs(text: string): number {
   return Math.min(2300, 520 + text.length * 20);
-}
-
-/** Аватар друга: маленький пиксельный портрет, нарисованный квадратиками. */
-function Avatar({ size }: { size: number }) {
-  // Каждая строка — 10 клеток: h — волосы, s — кожа, e — глаза, m — рот, t — футболка, . — фон.
-  const rows = ['..hhhhhh..', '.hhhhhhhh.', '.hssssssh.', '.sesssses.', '.ssssssss.', '..ssmmss..', '...ssss...', '.tttttttt.', 'tttttttttt', 'tttttttttt'];
-  const color: Record<string, string> = { h: '#3b2a24', s: '#f0c39c', e: '#26324a', m: '#c4553b', t: '#3fae62' };
-  return (
-    <svg className="ms-avatar" width={size} height={size} viewBox="0 0 10 10" shapeRendering="crispEdges" aria-hidden="true">
-      <rect width="10" height="10" fill="#f6c34a" />
-      {rows.flatMap((row, y) =>
-        [...row].map((c, x) => (c === '.' ? null : <rect key={`${x}-${y}`} x={x} y={y} width="1" height="1" fill={color[c]} />)),
-      )}
-    </svg>
-  );
 }
 
 export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {

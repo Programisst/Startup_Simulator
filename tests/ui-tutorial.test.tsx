@@ -81,7 +81,7 @@ describe('обучение на экране (без 3D меню всегда п
   it('новая партия начинается с обучения и проходит все шаги до запуска', () => {
     expect(useStore.getState().tutorial).toBe(true);
     expect(stepNow()).toBe('openProduct');
-    expect(coach()).toContain('Откройте «Продукт»');
+    expect(coach()).toContain('открой «Продукт»');
 
     click(box.querySelector('[data-nav="product"]')!);
     expect(stepNow()).toBe('queueCore');
@@ -108,16 +108,16 @@ describe('обучение на экране (без 3D меню всегда п
     click(box.querySelector('[data-coach-target="launch"]')!);
     expect(useStore.getState().game!.launched).toBe(true);
     expect(stepNow()).toBe('done');
-    expect(coach()).toContain('Продукт на рынке');
+    expect(coach()).toContain('ты на рынке');
     expect(box.textContent?.match(/\bcoach\.[A-Za-z0-9_.]+/g) ?? []).toEqual([]);
 
-    click(button('Понятно'));
+    click(button('Понял 👍'));
     expect(box.querySelector('.coach')).toBeNull();
     expect(tutorialSeen()).toBe(true);
   });
 
   it('обучение можно пропустить, и во второй партии оно не появляется', () => {
-    click(button('Пропустить обучение'));
+    click(button('Я сам разберусь'));
     expect(box.querySelector('.coach')).toBeNull();
     act(() => useStore.getState().start(baseSetup));
     expect(useStore.getState().tutorial).toBe(false);

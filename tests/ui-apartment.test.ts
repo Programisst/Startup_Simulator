@@ -77,3 +77,13 @@ describe('когда герой сам садится работать', () => {
     expect(worksAtDesk('broke')).toBe(false);
   });
 });
+
+describe('время кадра', () => {
+  it('никогда не отрицательное и не больше 0,1 с — иначе анимация героя ломает рисование комнаты', async () => {
+    const { frameSeconds } = await import('../src/ui/apartment/link');
+    // Браузер может отдать отметку кадра чуть раньше, чем момент запуска цикла.
+    expect(frameSeconds(1000, 1005.4)).toBe(0);
+    expect(frameSeconds(1016, 1000)).toBeCloseTo(0.016);
+    expect(frameSeconds(5000, 1000)).toBe(0.1);
+  });
+});
