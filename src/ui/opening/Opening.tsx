@@ -2,10 +2,10 @@
 // Из переписки собирается своя партия. Нейросеть помогает понять идею; нет её — друг понимает по словам.
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { aiAnalyzeIdea } from '../../ai/client';
+import { aiAnalyzeIdea, aiFriend } from '../../ai/client';
 import type { NewGameSetup } from '../../core';
 import { RoomGuard } from '../office/GameRoom';
-import { chatSetup, choose, reply, resolveIdea, startChat } from './chat';
+import { chatSetup, choose, pendingLive, reply, resolveIdea, settleLive, startChat } from './chat';
 import { Messenger } from './Messenger';
 
 const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
@@ -41,6 +41,28 @@ export function Opening({ onStart }: { onStart: (setup: NewGameSetup) => void })
       alive = false;
     };
   }, [chat.stage, chat.idea, chat.audienceText, i18n.language]);
+
+  // Живая реакция друга на слова игрока: спрашиваем нейросеть, не ответила — остаётся заготовка.
+  const live = pendingLive(chat);
+  useEffect(() => {
+    if (live === null) return;
+    let alive = true;
+    const s = chatRef.current;
+    const said = s.lines.slice(0, live);
+    const message = [...said].reverse().find((l) => l.from === 'me')?.text ?? '';
+    const history = said.slice(0, -1).map((l) => ({ from: l.from === 'me' ? ('player' as const) : ('friend' as const), text: l.text ?? t(l.key ?? '') }));
+    void aiFriend({
+      lang: i18n.language === 'en' ? 'en' : 'ru',
+      company: { name: s.name, idea: s.idea, facts: ['It is the evening before the founder starts working on the startup full time.'] },
+      history,
+      message,
+    }).then((text) => {
+      if (alive) setChat((c) => settleLive(c, live, text));
+    });
+    return () => {
+      alive = false;
+    };
+  }, [live, t, i18n.language]);
 
   // Друг попрощался — герой встаёт и идёт спать.
   useEffect(() => {

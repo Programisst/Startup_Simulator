@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
 import { createGame } from '../src/core';
 import i18n from '../src/ui/i18n';
-import { chatSetup, choose, quickReplies, reply, resolveIdea, startChat, type ChatState } from '../src/ui/opening/chat';
+import { chatSetup, choose, pendingLive, quickReplies, reply, resolveIdea, settleLive, startChat, type ChatState } from '../src/ui/opening/chat';
 
 const friendKeys = (s: ChatState) => s.lines.filter((l) => l.from === 'friend' && l.key).map((l) => l.key!);
 const lastFriend = (s: ChatState) => [...s.lines].reverse().find((l) => l.from === 'friend')!;
@@ -132,5 +132,24 @@ describe('переписка с другом', () => {
     keys.push(...friendKeys(unknown), ...unknown.lines.filter((l) => l.key).map((l) => l.key!));
     const missing = [...new Set(keys)].filter((k) => !i18n.exists(k));
     expect(missing).toEqual([]);
+  });
+
+  it('на идею и на «кто платит» друг реагирует живо: реплика ждёт нейросеть, без неё — заготовка', () => {
+    let s = reply(startChat(), 'Сервис, который сам выставляет счета клиентам малого бизнеса');
+    const live = pendingLive(s);
+    expect(live).not.toBeNull();
+    expect(s.lines[live!]!.key).toBe('opening.friend.likeIt');
+    // Пока друг «думает», дальше переписка не идёт, но вопрос уже стоит в очереди.
+    expect(s.stage).toBe('audience');
+    s = settleLive(s, live!, 'Счета — это вечная боль, я сам с этим мучился.');
+    expect(s.lines[live!]!.text).toBe('Счета — это вечная боль, я сам с этим мучился.');
+    expect(pendingLive(s)).toBeNull();
+
+    s = reply(s, 'Владельцы кафе');
+    const second = pendingLive(s)!;
+    s = settleLive(s, second, null);
+    expect(s.lines[second]!.text).toBeUndefined();
+    expect(i18n.exists(s.lines[second]!.key!)).toBe(true);
+    expect(pendingLive(s)).toBeNull();
   });
 });

@@ -62,6 +62,8 @@ export function Messenger({ chat, onReply, onChoose, onSettled }: Props) {
       setShown((n) => n + 1);
       return;
     }
+    // Живая реплика ещё ждёт нейросеть — друг «печатает», пока она не придёт.
+    if (next.live) return;
     const id = window.setTimeout(() => setShown((n) => n + 1), typingMs(textOf(next)));
     return () => window.clearTimeout(id);
     // textOf зависит только от t

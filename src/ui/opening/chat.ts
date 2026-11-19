@@ -25,6 +25,8 @@ export interface Line {
   /** Числа для подстановки в реплику (деньги показываются как деньги) */
   params?: Record<string, number>;
   text?: string;
+  /** Живая реплика друга: ждёт ответа нейросети, а пока не дождалась — стоит заготовка из key */
+  live?: boolean;
 }
 
 export interface ChatState {
@@ -62,6 +64,8 @@ const SAVINGS: DifficultyId[] = ['easy', 'normal', 'hard'];
 const GOALS: GoalId[] = ['profit', 'valuation', 'sandbox'];
 
 const friend = (...keys: string[]): Line[] => keys.map((key) => ({ from: 'friend', key: `opening.friend.${key}` }));
+/** Реакция друга на слова игрока: живая от нейросети, заготовка — если та не ответила. */
+const liveLine = (key: string): Line => ({ from: 'friend', key: `opening.friend.${key}`, live: true });
 const say = (s: ChatState, stage: Stage, ...lines: Line[]): ChatState => ({ ...s, stage, lines: [...s.lines, ...lines] });
 
 export function startChat(): ChatState {
@@ -75,9 +79,9 @@ export function reply(s: ChatState, raw: string): ChatState {
   const me: Line = { from: 'me', text };
   if (s.stage === 'idea') {
     if (text.length < MIN_IDEA) return say(s, 'idea', me, ...friend('tooShort'));
-    return say({ ...s, idea: cleanIdea(text) }, 'audience', me, ...friend('likeIt', 'askAudience'));
+    return say({ ...s, idea: cleanIdea(text) }, 'audience', me, liveLine('likeIt'), ...friend('askAudience'));
   }
-  if (s.stage === 'audience') return say({ ...s, audienceText: text }, 'name', me, ...friend('askName'));
+  if (s.stage === 'audience') return say({ ...s, audienceText: text }, 'name', me, liveLine('audienceOk'), ...friend('askName'));
   if (s.stage === 'name') return say({ ...s, name: text.slice(0, 40) }, 'thinking', me, ...friend('thinking'));
   return s;
 }
@@ -151,4 +155,18 @@ export function chatSetup(s: ChatState, seed: number, defaultName: string): NewG
     goal: s.goal ?? 'profit',
     difficulty: s.difficulty ?? 'normal',
   };
+}
+
+/** Номер живой реплики друга, которая ещё ждёт нейросеть; null — таких нет. */
+export function pendingLive(s: ChatState): number | null {
+  const i = s.lines.findIndex((l) => l.live);
+  return i < 0 ? null : i;
+}
+
+/** Нейросеть ответила (text) или нет (null — остаётся заготовка). */
+export function settleLive(s: ChatState, index: number, text: string | null): ChatState {
+  const line = s.lines[index];
+  if (!line?.live) return s;
+  const settled: Line = { from: line.from, ...(line.key ? { key: line.key } : {}), ...(text ? { text } : {}) };
+  return { ...s, lines: s.lines.map((l, i) => (i === index ? settled : l)) };
 }
