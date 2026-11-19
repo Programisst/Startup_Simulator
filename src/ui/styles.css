@@ -228,3 +228,9 @@ td:not(:first-child), th:not(:first-child) { text-align: right; }
 .salary { display: flex; align-items: center; gap: 8px; }
 .salary input { width: 110px; }
 .person .choices { margin-top: 0; }
+
+/* ---------- Экран «Офис»: квартира на всю область ---------- */
+.content.full { position: relative; padding: 0; overflow: hidden; min-height: 420px; }
+.content.full > .error { position: absolute; z-index: 5; top: 12px; left: 50%; transform: translateX(-50%); margin: 0; background: var(--panel); }
+.office-fallback { padding: 16px; }
+.office-loading { padding: 24px; }

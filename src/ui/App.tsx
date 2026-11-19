@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { EndScreen } from './components/EndScreen';
 import { EventModal } from './components/EventModal';
 import { TopBar } from './components/TopBar';
+import { GameRoom } from './office/GameRoom';
 import { Finance } from './screens/Finance';
 import { Marketing } from './screens/Marketing';
 import { NewGame } from './screens/NewGame';
@@ -11,7 +12,7 @@ import { Product } from './screens/Product';
 import { Team } from './screens/Team';
 import { useStore, type ScreenId } from './store';
 
-const SCREENS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
+const SCREENS: ScreenId[] = ['office', 'overview', 'product', 'team', 'marketing', 'finance'];
 
 export function App() {
   const { t } = useTranslation();
@@ -43,8 +44,9 @@ export function App() {
           </button>
         ))}
       </nav>
-      <main className="content">
+      <main className={screen === 'office' ? 'content full' : 'content'}>
         {lastError && <p className="error">{t(`errors.${lastError}`)}</p>}
+        {screen === 'office' && <GameRoom />}
         {screen === 'overview' && <Overview />}
         {screen === 'product' && <Product />}
         {screen === 'team' && <Team />}

@@ -1,0 +1,266 @@
+/* Концепт «Люмио»: пиксельная квартира на весь экран и спокойный тёмный интерфейс поверх. */
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: #121117;
+}
+
+.lm-page {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: #121117;
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  color: #efe9df;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.lm-page.ready {
+  opacity: 1;
+}
+
+.lm-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  image-rendering: pixelated;
+  transition:
+    filter 0.6s ease,
+    transform 0.8s cubic-bezier(0.2, 0.85, 0.2, 1);
+}
+.lm-stage.dimmed {
+  filter: blur(3px) brightness(0.5);
+  transform: scale(1.03);
+}
+
+.lm-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 48%, transparent 58%, rgba(8, 6, 12, 0.42) 100%);
+}
+
+/* ── HUD: тёмная плашка, моноширинные цифры, как строка состояния в Lumio */
+.lm-hud {
+  position: absolute;
+  left: 16px;
+  top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 14px 8px 12px;
+  border-radius: 9px;
+  background: rgba(19, 18, 25, 0.82);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
+    0 10px 26px rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(10px);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.lm-clock {
+  font: 600 15px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+  color: #f4efe6;
+}
+.lm-money {
+  font: 600 14px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  color: #a7e08f;
+}
+.lm-day {
+  font: 500 12px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  color: #a39daf;
+}
+.lm-sep {
+  width: 1px;
+  height: 14px;
+  margin: 0 3px;
+  background: rgba(255, 255, 255, 0.12);
+}
+.lm-sun {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: #f6c34a;
+  box-shadow: 0 0 10px rgba(246, 195, 74, 0.75);
+}
+.lm-sun.moon {
+  background: radial-gradient(circle at 70% 30%, transparent 4px, #e6ebfa 4.5px);
+  box-shadow: 0 0 9px rgba(190, 205, 255, 0.5);
+}
+.lm-coin {
+  width: 10px;
+  height: 10px;
+  margin: 0 1px;
+  border-radius: 50%;
+  background: #7cc46a;
+  box-shadow: inset 0 0 0 2px #5a9a4c;
+}
+
+/* ── Подсказка над предметом */
+.lm-prompt,
+.lm-bubble {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+.lm-prompt {
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -8px;
+  padding: 5px 11px 5px 5px;
+  border-radius: 8px;
+  background: rgba(19, 18, 25, 0.86);
+  color: #f4efe6;
+  font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  white-space: nowrap;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
+    0 8px 20px rgba(0, 0, 0, 0.3);
+  animation: lmIn 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.lm-prompt kbd,
+.lm-keys kbd {
+  min-width: 18px;
+  padding: 3px 5px;
+  border-radius: 5px;
+  background: #f1ece2;
+  color: #1f1c25;
+  font: 700 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+  text-align: center;
+  box-shadow: 0 2px 0 #9f978a;
+}
+
+/* ── Мысли героя */
+.lm-bubble {
+  z-index: 4;
+  margin-top: -10px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.lm-bubble.show {
+  opacity: 1;
+}
+.lm-bubble span {
+  position: relative;
+  display: block;
+  max-width: 250px;
+  width: max-content;
+  padding: 8px 12px 9px;
+  border-radius: 9px;
+  background: #fbf8f2;
+  color: #26232d;
+  font: 500 13px/1.35 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  box-shadow:
+    0 0 0 2px #26232d,
+    0 10px 24px rgba(0, 0, 0, 0.35);
+  animation: lmIn 0.3s cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+.lm-bubble span:empty {
+  display: none;
+}
+.lm-bubble span::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: -6px;
+  width: 9px;
+  height: 9px;
+  margin-left: -5px;
+  background: #fbf8f2;
+  transform: rotate(45deg);
+  box-shadow: 2px 2px 0 0 #26232d;
+}
+
+@keyframes lmIn {
+  from {
+    opacity: 0;
+    transform: translateY(5px) scale(0.96);
+  }
+}
+
+/* ── Управление внизу */
+.lm-keys {
+  position: absolute;
+  left: 50%;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px 7px 8px;
+  border-radius: 9px;
+  background: rgba(19, 18, 25, 0.74);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
+  color: #b9b2c2;
+  font: 500 12px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  white-space: nowrap;
+  transform: translateX(-50%);
+  pointer-events: none;
+  transition: opacity 1.2s ease;
+}
+.lm-keys.gone {
+  opacity: 0;
+}
+.lm-keys span {
+  margin-left: 3px;
+}
+.lm-keys i {
+  width: 1px;
+  height: 13px;
+  margin: 0 9px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* ── Сон: затемнение и «Утро» */
+.lm-fade {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #0b0a0f;
+  animation: lmFadeOut 1.4s ease both;
+}
+.lm-fade.in {
+  animation: lmFadeIn 0.9s ease both;
+}
+.lm-fade-title {
+  font: 600 30px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #f4efe6;
+}
+.lm-fade-sub {
+  font: 500 13px/1 'SF Mono', ui-monospace, Menlo, monospace;
+  color: #8f899b;
+}
+@keyframes lmFadeOut {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes lmFadeIn {
+  to {
+    opacity: 0;
+  }
+}
+
+.lm-error {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #f4efe6;
+  font: 500 14px/1.4 system-ui, sans-serif;
+}
