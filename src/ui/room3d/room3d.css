@@ -1,11 +1,29 @@
 /* 3D-квартира основателя. */
 
-html,
-body {
+/* Отдельная страница квартиры занимает всё окно. Внутри игры эти правила не действуют. */
+html.r3-standalone,
+html.r3-standalone body {
   margin: 0;
   height: 100%;
   overflow: hidden;
   background: #16131a;
+}
+
+/* Квартира внутри игры: занимает область экрана «Офис», а не всё окно. */
+.r3-page.embedded {
+  position: absolute;
+}
+.r3-status {
+  max-width: 320px;
+  color: #f6efe3;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.r3-money.negative {
+  color: #ff8f8f;
+}
+.r3-date {
+  font: 600 15px/1.2 system-ui, sans-serif;
 }
 
 .r3-page {

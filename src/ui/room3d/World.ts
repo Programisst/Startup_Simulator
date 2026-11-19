@@ -133,6 +133,12 @@ export class World {
   mode: Mode = 'walk';
   minutes = 7 * 60 + 40;
   day = 1;
+  /** Во сколько раз часы квартиры идут быстрее обычного (обычно: секунда — минута). */
+  clockRate = 1;
+  /** Часы стоят: игра на паузе. */
+  clockPaused = false;
+  /** Номер дня ведёт игра, а не сама квартира. */
+  externalDay = false;
   t = 0;
   onCoffeeReady: (() => void) | null = null;
 
@@ -356,7 +362,7 @@ export class World {
 
   wakeUp(): void {
     const morning = 7 * 60 + 30;
-    if (this.minutes > morning) this.day += 1;
+    if (this.minutes > morning && !this.externalDay) this.day += 1;
     this.minutes = morning;
     this.mode = 'walk';
     // Утром свет выключен.
@@ -378,10 +384,10 @@ export class World {
 
   update(dt: number, input: { x: number; y: number }): void {
     this.t += dt;
-    this.minutes += dt;
+    if (!this.clockPaused) this.minutes += dt * this.clockRate;
     if (this.minutes >= 1440) {
       this.minutes -= 1440;
-      this.day += 1;
+      if (!this.externalDay) this.day += 1;
     }
 
     let speed = 0;

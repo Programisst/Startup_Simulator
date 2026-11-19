@@ -42,7 +42,8 @@
   },
   "sleep": {
     "title": "Утро",
-    "subtitle": "День {{day}} · 07:30"
+    "subtitle": "День {{day}} · 07:30",
+    "nextDay": "Наступил следующий день"
   },
   "windowView": {
     "title": "Вид из окна",

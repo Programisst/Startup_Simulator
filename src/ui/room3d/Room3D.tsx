@@ -2,8 +2,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Laptop } from '../room/laptop/Laptop';
+import { money } from '../format';
 import { lightingAt } from './lighting';
-import type { Interaction3D } from './layout';
+import { INTERACTIONS, type Interaction3D } from './layout';
+import { AUTOPILOT_IDLE_SECONDS, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
 import type { OutfitId } from './hero/hero';
 import type { LampId } from './layout';
 import { WindowView } from './WindowView';
@@ -32,8 +34,16 @@ function clock(minutes: number): string {
   return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
 }
 
-export function Room3D() {
+export function Room3D({ link }: { link?: RoomLink } = {}) {
   const { t } = useTranslation();
+  // Связь с партией читается из ref: главный цикл создаётся один раз и не должен перезапускаться на каждый игровой день.
+  const linkRef = useRef(link);
+  linkRef.current = link;
+  const linked = link !== undefined;
+  /** Герой сел за компьютер сам, без игрока: экран ноутбука не открывается. */
+  const autoSeated = useRef(false);
+  const autoWalking = useRef(false);
+  const idleFor = useRef(0);
   const stageRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -74,6 +84,11 @@ export function Room3D() {
     const cam = CAM_MODES.find((c) => c === params.get('cam')) ?? 'follow';
     const world = new World(stage, outfit, cam);
     worldRef.current = world;
+    if (linkRef.current) {
+      world.externalDay = true;
+      world.clockRate = LINKED_CLOCK_RATE;
+      world.minutes = 9 * 60;
+    }
     // Только для проверок в режиме разработки: доступ к миру из консоли.
     if (import.meta.env.DEV) (window as unknown as { __world?: World }).__world = world;
     if (startTime) world.minutes = Number(startTime[1]) * 60 + Number(startTime[2]);
@@ -99,6 +114,36 @@ export function Room3D() {
         if (v) {
           ix += v[0];
           iy += v[1];
+        }
+      }
+      const game = linkRef.current;
+      if (game) {
+        world.clockPaused = !game.timeRuns;
+        if (game.locked) {
+          ix = 0;
+          iy = 0;
+        }
+        // Игрок взялся за управление — герой встаёт из-за стола и слушается.
+        const steering = ix !== 0 || iy !== 0;
+        if (steering) {
+          idleFor.current = 0;
+          autoWalking.current = false;
+          if (autoSeated.current) {
+            autoSeated.current = false;
+            world.stand();
+            busy.current = false;
+          }
+        } else {
+          idleFor.current += dt;
+        }
+        const wantsDesk = worksAtDesk(game.activity) && game.timeRuns;
+        if (autoSeated.current && !wantsDesk) {
+          // Работа кончилась или игра на паузе — герой встаёт.
+          autoSeated.current = false;
+          world.stand();
+        } else if (wantsDesk && !busy.current && !autoSeated.current && !autoWalking.current && world.mode === 'walk' && idleFor.current > AUTOPILOT_IDLE_SECONDS) {
+          const desk = INTERACTIONS.find((i) => i.id === 'computer');
+          if (desk) autoWalking.current = world.walkTo(desk.approach, desk);
         }
       }
       const input = busy.current ? { x: 0, y: 0 } : world.screenToWorld(ix, iy);
@@ -140,6 +185,19 @@ export function Room3D() {
     (target: Interaction3D) => {
       const world = worldRef.current;
       if (!world || busy.current) return;
+      if (target.id === 'computer' && autoWalking.current) {
+        // Герой дошёл до стола сам: просто садится работать.
+        autoWalking.current = false;
+        autoSeated.current = true;
+        world.sit();
+        return;
+      }
+      autoWalking.current = false;
+      if (autoSeated.current) {
+        autoSeated.current = false;
+        world.stand();
+      }
+      idleFor.current = 0;
       if (target.id === 'computer') {
         busy.current = true;
         world.sit();
@@ -158,6 +216,8 @@ export function Room3D() {
         world.sleep();
         window.setTimeout(() => setFade('out'), 900);
         window.setTimeout(() => {
+          // В игре сон — это переход на следующий игровой день.
+          linkRef.current?.sleep();
           world.wakeUp();
           setHud({ minutes: world.minutes, day: world.day });
           setFade('in');
@@ -165,6 +225,7 @@ export function Room3D() {
         window.setTimeout(() => {
           setFade(null);
           busy.current = false;
+          idleFor.current = 0;
           say(t('room.bubble.wake'));
         }, 4300);
       } else if (isLamp(target.id)) {
@@ -186,9 +247,15 @@ export function Room3D() {
 
   interactRef.current = interact;
 
+  // Мысль героя вслух, когда его занятие меняется.
+  const heroThought = link?.thought;
+  useEffect(() => {
+    if (heroThought && !busy.current) say(heroThought, 4200);
+  }, [heroThought, say]);
+
   // Мышь: короткий клик по полу — идти туда, по предмету — подойти и сделать действие.
   // Зажать и потянуть — повернуть комнату.
-  const canClick = computer === 'closed' && !fade && !windowView;
+  const canClick = computer === 'closed' && !fade && !windowView && !link?.locked;
   const drag = useRef<{ x: number; startX: number; moved: boolean } | null>(null);
   const onPointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -221,6 +288,13 @@ export function Room3D() {
       const world = worldRef.current;
       if (stageRef.current) stageRef.current.style.cursor = '';
       if (!world || !d || d.moved || !canClick || busy.current) return;
+      // Клик — тоже управление: герой бросает самостоятельную работу и идёт, куда сказали.
+      idleFor.current = 0;
+      autoWalking.current = false;
+      if (autoSeated.current) {
+        autoSeated.current = false;
+        world.stand();
+      }
       const picked = world.pick(e.clientX, e.clientY);
       if (!picked) return;
       // Уже стоим у предмета — действуем сразу.
@@ -232,6 +306,12 @@ export function Room3D() {
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
+      // Клавиши не перехватываются, когда игрок печатает или поверх открыто окно игры.
+      const el = e.target as HTMLElement | null;
+      const typing = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.tagName === 'SELECT';
+      if (typing || linkRef.current?.locked) return;
+      const onButton = el?.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space');
+      if (onButton) return;
       if (e.code in MOVE) e.preventDefault();
       if (windowView) {
         if (e.code === 'Escape' && windowView === 'open') setWindowView('closing');
@@ -277,7 +357,7 @@ export function Room3D() {
   const night = lightingAt(hud.minutes).lamps > 0.5;
 
   return (
-    <div className={`r3-page${ready ? ' ready' : ''}`}>
+    <div className={`r3-page${ready ? ' ready' : ''}${linked ? ' embedded' : ''}`}>
       <div
         ref={stageRef}
         className={`r3-stage${computer !== 'closed' ? ' dimmed' : ''}`}
@@ -291,19 +371,31 @@ export function Room3D() {
       <div className="r3-hud">
         <div className="r3-card">
           <span className={`r3-sun${night ? ' moon' : ''}`} />
-          <div>
-            <div className="r3-clock">{clock(hud.minutes)}</div>
-            <div className="r3-sub">
-              {weekday} · {t('room.hud.day', { day: hud.day })}
+          {link ? (
+            <div>
+              <div className="r3-date">{t('top.date', link.date)}</div>
+              <div className="r3-sub">{weekdays[link.weekday % 7]}</div>
             </div>
-          </div>
+          ) : (
+            <div>
+              <div className="r3-clock">{clock(hud.minutes)}</div>
+              <div className="r3-sub">
+                {weekday} · {t('room.hud.day', { day: hud.day })}
+              </div>
+            </div>
+          )}
         </div>
         <div className="r3-card">
           <div>
-            <div className="r3-money">$3 000</div>
+            <div className={`r3-money${link && link.cash < 0 ? ' negative' : ''}`}>{link ? money(link.cash) : '$3 000'}</div>
             <div className="r3-sub">{t('room.hud.account')}</div>
           </div>
         </div>
+        {link && (
+          <div className="r3-card">
+            <div className="r3-status">{link.status}</div>
+          </div>
+        )}
       </div>
 
       {near && computer === 'closed' && !fade && !bubble && !windowView && (
@@ -335,7 +427,7 @@ export function Room3D() {
       {fade && (
         <div className={`r3-fade ${fade}`}>
           <div className="r3-fade-title">{t('room.sleep.title')}</div>
-          <div className="r3-fade-sub">{t('room.sleep.subtitle', { day: wakeDay })}</div>
+          <div className="r3-fade-sub">{link ? t('room.sleep.nextDay') : t('room.sleep.subtitle', { day: wakeDay })}</div>
         </div>
       )}
 

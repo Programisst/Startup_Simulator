@@ -4,7 +4,7 @@ import { applyCommand, createGame, tick, type Command, type CommandError, type G
 import { content } from '../content';
 import { deleteSave, loadGame, saveGame } from '../save/storage';
 
-export type ScreenId = 'overview' | 'product' | 'team' | 'marketing' | 'finance';
+export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance';
 export type Speed = 0 | 1 | 2 | 5;
 
 interface Store {
@@ -25,10 +25,10 @@ interface Store {
 export const useStore = create<Store>((set, get) => ({
   game: null,
   speed: 0,
-  screen: 'overview',
+  screen: 'office',
   lastError: null,
 
-  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'overview', lastError: null }),
+  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null }),
 
   dispatch: (cmd) => {
     const { game } = get();
@@ -59,7 +59,7 @@ export const useStore = create<Store>((set, get) => ({
   load: () => {
     const game = loadGame();
     if (!game) return false;
-    set({ game, speed: 0, screen: 'overview', lastError: null });
+    set({ game, speed: 0, screen: 'office', lastError: null });
     return true;
   },
 
