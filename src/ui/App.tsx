@@ -50,7 +50,6 @@ export function App() {
   if (roomMode) {
     return (
       <div className="layout room-mode" data-coach={tutorial ?? undefined}>
-        <TopBar />
         <main className="content full">
           <GameRoom step={tutorial} />
         </main>

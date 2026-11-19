@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Laptop } from '../room/laptop/Laptop';
+import { money } from '../format';
 import { lightingAt } from './lighting';
 import { INTERACTIONS, type Interaction3D } from './layout';
 import { AUTOPILOT_IDLE_SECONDS, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
@@ -393,14 +394,26 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
 
       <div className="r3-hud">
         {link ? (
-          // В игре дата и деньги уже есть в верхней строке; здесь — время суток и чем занят основатель.
-          <div className="r3-card">
-            <span className={`r3-sun${night ? ' moon' : ''}`} />
-            <div className="r3-status">
-              <div className="r3-sub">{weekdays[link.weekday % 7]}</div>
-              {link.status}
+          <>
+            <div className="r3-card">
+              <span className={`r3-sun${night ? ' moon' : ''}`} />
+              <div>
+                <div className="r3-date">{t('top.date', link.date)}</div>
+                <div className="r3-sub">{weekdays[link.weekday % 7]}</div>
+              </div>
             </div>
-          </div>
+            <div className="r3-card">
+              <div>
+                <div className={`r3-money${link.cash < 0 ? ' negative' : ''}`}>{money(link.cash)}</div>
+                <div className={`r3-sub${link.daysToBankruptcy !== null ? ' alert' : ''}`}>
+                  {link.daysToBankruptcy !== null ? t('top.crisis', { days: link.daysToBankruptcy }) : t('room.hud.account')}
+                </div>
+              </div>
+            </div>
+            <div className="r3-card">
+              <div className="r3-status">{link.status}</div>
+            </div>
+          </>
         ) : (
           <>
             <div className="r3-card">
@@ -421,6 +434,8 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
           </>
         )}
       </div>
+
+      {link && <div className="r3-hud r3-hud-right">{link.controls}</div>}
 
       {seatedAlone && computer === 'closed' && !fade && !windowView && (
         <div className="r3-prompt r3-prompt-fixed">
