@@ -1,4 +1,4 @@
-// Создание компании: игрок записывает идею своими словами в «блокнот основателя»,
+// Создание компании: окно «Новая компания» на рабочем столе ноутбука. Игрок записывает идею своими словами,
 // игра по словам определяет тип продукта, аудиторию и способ заработка. Нет идеи — есть готовые подсказки.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +7,7 @@ import { content } from '../../content';
 import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
 import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
 import { hasSave } from '../../save/storage';
+import { Landscape } from '../room/laptop/Landscape';
 import { money } from '../format';
 import { useStore } from '../store';
 import './newgame.css';
@@ -175,11 +176,25 @@ export function NewGame() {
 
   return (
     <main className="ng">
+      {/* Тот же рабочий стол, что на компьютере в квартире: игра начинается за ноутбуком. */}
+      <div className="ng-wall" aria-hidden="true">
+        <Landscape variant="dusk" id="newgame" />
+      </div>
+      <div className="ng-menubar" aria-hidden="true">
+        <span className="ng-logo" />
+        <b>{t('app.title')}</b>
+        <span>{t('new.kicker')}</span>
+      </div>
       <article className="ng-sheet">
-        <header className="ng-head">
-          <span className="ng-kicker">
-            {t('app.title')} · {t('new.kicker')}
+        <div className="ng-titlebar">
+          <span className="ng-lights" aria-hidden="true">
+            <i />
+            <i />
+            <i />
           </span>
+          {t('new.kicker')}
+        </div>
+        <header className="ng-head">
           <h1>{t('new.title')}</h1>
           <p>{t('new.lead', { cash: money(diff.startCash) })}</p>
         </header>
