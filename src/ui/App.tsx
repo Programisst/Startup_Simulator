@@ -5,6 +5,7 @@ import { EndScreen } from './components/EndScreen';
 import { EventModal } from './components/EventModal';
 import { FeedToasts } from './components/Feed';
 import { GoalCard, GoalToast } from './components/GoalCard';
+import { Phone } from './components/Phone';
 import { TopBar } from './components/TopBar';
 import { canDraw, GameRoom } from './office/GameRoom';
 import { FeedApp, GoalsApp, MailApp, SettingsApp } from './screens/Apps';
@@ -58,8 +59,8 @@ export function App() {
         <main className="content full">
           <GameRoom step={tutorial} />
         </main>
-        {/* За компьютером подсказка показывается внутри его экрана. */}
-        {!computerOpen && <Coach step={tutorial} />}
+        {/* В комнате друг пишет на телефон; за компьютером подсказка показывается внутри его экрана. */}
+        <Phone step={tutorial} hidden={computerOpen} />
         <GoalToast />
         <FeedToasts />
         {overlays}
