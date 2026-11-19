@@ -467,14 +467,6 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
             </div>
           </div>
           <div className="lm-card lm-status">{link.status}</div>
-          <div className="lm-card lm-energy">
-            <div>
-              <div className="lm-sub">{t('room.hud.energy')}</div>
-              <div className={`lm-energy-bar${link.tired ? ' low' : ''}`}>
-                <i style={{ width: `${Math.max(0, Math.min(100, link.energy))}%` }} />
-              </div>
-            </div>
-          </div>
         </div>
       ) : (
         <div className="lm-hud">

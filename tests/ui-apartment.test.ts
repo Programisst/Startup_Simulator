@@ -87,3 +87,17 @@ describe('время кадра', () => {
     expect(frameSeconds(5000, 1000)).toBe(0.1);
   });
 });
+
+describe('плашки квартиры', () => {
+  it('статус основателя — коротко, одной строкой: подсказки «что делать» пишет друг', async () => {
+    const ru = (await import('../src/content/ru/ui.json')).default as { office: { status: Record<string, string> } };
+    for (const [id, text] of Object.entries(ru.office.status)) expect(text.length, id).toBeLessThanOrEqual(30);
+  });
+
+  it('в квартире нет полоски сил и карточки цели — они путали; цель видна в компьютере', () => {
+    const room = readFileSync(join(root, 'src/ui/apartment/Apartment.tsx'), 'utf-8');
+    const controls = readFileSync(join(root, 'src/ui/office/RoomControls.tsx'), 'utf-8');
+    expect(room).not.toContain('lm-energy');
+    expect(controls).not.toContain('GoalCard');
+  });
+});
