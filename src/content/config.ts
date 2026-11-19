@@ -84,7 +84,7 @@ export const config: GameConfig = {
       { id: 'content', kind: 'content', costFactor: { consumer: 1, business: 1 }, halfAt: 150, noise: 0 },
     ],
     businessTypes: ['saas', 'ai', 'devtools'],
-    contentPerDouble: 4000,
+    contentPerDouble: 1500,
     contentCap: 1.5,
     contentDecayPerDay: 0.01,
   },

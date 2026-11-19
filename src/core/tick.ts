@@ -183,7 +183,6 @@ export function tick(state: GameState, content: GameContent): GameState {
   let adRevenue = 0;
 
   if (s.launched) {
-    // Реклама не идёт, если платить за неё нечем.
     // Реклама не идёт, если платить за неё нечем — ни по одному каналу.
     const canPay = s.cash > 0;
     const mk = cfg.marketing;

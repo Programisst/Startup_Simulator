@@ -8,8 +8,8 @@ export function channelSpend(s: GameState, id: ChannelId): number {
   return id === 'search' ? s.adSpendPerDay : (s.adChannels?.[id] ?? 0);
 }
 
-export function totalAdSpend(s: GameState, cfg: MarketingConfig): number {
-  return cfg.channels.reduce((sum, c) => sum + channelSpend(s, c.id), 0);
+export function totalAdSpend(s: Pick<GameState, 'adSpendPerDay' | 'adChannels'>): number {
+  return s.adSpendPerDay + Object.values(s.adChannels ?? {}).reduce((sum, v) => sum + (v ?? 0), 0);
 }
 
 /** Какая часть бюджета работает: чем больше льёшь в один канал, тем хуже отдача. При бюджете halfAt — половина. */
@@ -89,6 +89,6 @@ export function marketingView(s: GameState, config: GameConfig): MarketingView {
       unpredictable: def.noise >= 0.3,
     };
   });
-  const totalPerDay = totalAdSpend(s, cfg);
+  const totalPerDay = totalAdSpend(s);
   return { channels, totalPerDay, totalPerMonth: totalPerDay * 30, contentStock: s.contentStock ?? 0, contentBoost: contentBoost(s, cfg) - 1, contentCap: cfg.contentCap };
 }
