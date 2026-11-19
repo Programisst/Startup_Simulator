@@ -40,6 +40,8 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
   const linked = link !== undefined;
   /** Герой сел за компьютер сам, без игрока: экран компьютера не открывается. */
   const autoSeated = useRef(false);
+  /** Кто посадил героя за стол без открытого экрана: сам (работа по расчёту игры) или игрок (Esc за компьютером). */
+  const seatedBy = useRef<'auto' | 'player'>('auto');
   const autoWalking = useRef(false);
   const idleFor = useRef(0);
   const [seatedAlone, setSeatedAlone] = useState(false);
@@ -134,26 +136,27 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
             }
           }
           const game = linkRef.current;
+          if (game?.locked) {
+            ix = 0;
+            iy = 0;
+          }
+          // Игрок взялся за управление — герой встаёт из-за стола и слушается.
+          if (ix !== 0 || iy !== 0) {
+            idleFor.current = 0;
+            autoWalking.current = false;
+            if (autoSeated.current) {
+              seat(false);
+              world.stand();
+              busy.current = false;
+            }
+          } else {
+            idleFor.current += dt;
+          }
           if (game) {
             world.clockPaused = !game.timeRuns;
-            if (game.locked) {
-              ix = 0;
-              iy = 0;
-            }
-            // Игрок взялся за управление — герой встаёт из-за стола и слушается.
-            if (ix !== 0 || iy !== 0) {
-              idleFor.current = 0;
-              autoWalking.current = false;
-              if (autoSeated.current) {
-                seat(false);
-                world.stand();
-                busy.current = false;
-              }
-            } else {
-              idleFor.current += dt;
-            }
             const wantsDesk = worksAtDesk(game.activity) && game.timeRuns;
-            if (autoSeated.current && !wantsDesk) {
+            // Героя, которого посадил сам игрок, игра не поднимает: он сидит, пока игрок не пойдёт.
+            if (autoSeated.current && seatedBy.current === 'auto' && !wantsDesk) {
               // Работа кончилась или игра на паузе — герой встаёт.
               seat(false);
               world.stand();
@@ -203,6 +206,7 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
       if (spot.id === 'computer' && autoWalking.current) {
         // Герой дошёл до стола сам: просто садится работать.
         autoWalking.current = false;
+        seatedBy.current = 'auto';
         seat(true);
         world.sit();
         return;
@@ -354,13 +358,16 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
     };
   }, [computer, interact, touched]);
 
+  // Экран закрыт (Esc): камера снова показывает комнату, а герой остаётся за столом и печатает.
+  // Встаёт он, когда игрок пошёл (клавиши или клик по комнате); E снова открывает экран.
   const onComputerClosed = useCallback(() => {
     setComputer('closed');
-    worldRef.current?.stand();
+    seatedBy.current = 'player';
+    seat(true);
     busy.current = false;
     idleFor.current = 0;
     keys.current.clear();
-  }, []);
+  }, [seat]);
 
   const night = daylightAt(hud.minutes).dark > 0.5;
   const promptText = near
@@ -423,6 +430,12 @@ export function Apartment({ link }: { link?: RoomLink } = {}) {
         <div className="lm-prompt lm-prompt-fixed">
           <kbd>E</kbd>
           {t('room.prompt.openComputer')}
+          <i className="lm-prompt-sep" />
+          <kbd>W</kbd>
+          <kbd>A</kbd>
+          <kbd>S</kbd>
+          <kbd>D</kbd>
+          {t('room.prompt.standUp')}
         </div>
       )}
       {near && promptText && computer === 'closed' && !fade && !bubble && (
