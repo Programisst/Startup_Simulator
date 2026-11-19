@@ -1,0 +1,226 @@
+/* Экран создания компании: блокнот основателя на тёмном столе. */
+.ng {
+  --paper: #f4eedf;
+  --paper-edge: #e4dbc6;
+  --ink: #23201b;
+  --ink-soft: #6d6558;
+  --rule: #cfd9e6;
+  --margin: #e39a8f;
+  --pen: #1f3f8f;
+  --sticker: #ffe680;
+  --stamp: #b3392d;
+  --hand: 'Noteworthy', 'Segoe Print', 'Bradley Hand', 'Comic Sans MS', cursive;
+  --type: 'American Typewriter', 'Courier New', Courier, monospace;
+  --serif: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, serif;
+
+  min-height: 100vh;
+  padding: 32px 16px 64px;
+  background:
+    repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 9px),
+    linear-gradient(180deg, #2b2019 0%, #1b1410 100%);
+  color: var(--ink);
+  font-family: var(--serif);
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.ng-sheet {
+  position: relative;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 36px 40px 40px 76px;
+  background: var(--paper);
+  border-radius: 3px;
+  box-shadow:
+    0 1px 0 var(--paper-edge),
+    0 3px 0 #d8cfb9,
+    0 4px 0 var(--paper-edge),
+    0 24px 50px rgba(0, 0, 0, 0.55);
+  transform: rotate(-0.35deg);
+}
+/* Красная линия полей и дырки от колец. */
+.ng-sheet::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 56px;
+  width: 2px;
+  background: var(--margin);
+  opacity: 0.7;
+}
+.ng-sheet::after {
+  content: '';
+  position: absolute;
+  top: 60px;
+  bottom: 60px;
+  left: 20px;
+  width: 16px;
+  background: radial-gradient(circle, #1b1410 0 6px, transparent 7px) center top / 16px 120px repeat-y;
+  opacity: 0.85;
+}
+
+.ng h1,
+.ng h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 700;
+  color: var(--ink);
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ng h1 { font-size: 40px; line-height: 1.1; margin: 6px 0 10px; }
+.ng h2 {
+  font-family: var(--type);
+  font-size: 13px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--ink-soft);
+  margin-bottom: 10px;
+}
+.ng p { margin: 0; }
+.ng section { margin-top: 30px; }
+.ng-kicker { font-family: var(--type); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--stamp); }
+.ng-head p { max-width: 560px; color: var(--ink-soft); }
+.ng-note { font-size: 14px; color: var(--ink-soft); font-style: italic; }
+
+.ng button,
+.ng input,
+.ng select,
+.ng textarea {
+  font: inherit;
+  color: var(--ink);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+}
+.ng button { cursor: pointer; }
+.ng button:hover:not(:disabled) { border-color: var(--ink); }
+.ng :focus-visible { outline: 2px solid var(--pen); outline-offset: 3px; }
+
+/* Идея: строки тетради, почерк. */
+.ng-idea-text {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  resize: vertical;
+  font-family: var(--hand) !important;
+  font-size: 22px !important;
+  line-height: 44px !important;
+  color: var(--pen) !important;
+  background: repeating-linear-gradient(transparent 0 42px, var(--rule) 42px 44px) !important;
+  background-attachment: local !important;
+}
+.ng-idea-text::placeholder { color: #a9a294; }
+.ng-idea-foot { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-top: 8px; }
+.ng-count { font-family: var(--type); font-size: 12px; color: var(--ink-soft); }
+
+.ng .ng-link {
+  font-family: var(--hand);
+  font-size: 17px;
+  color: var(--pen);
+  border-bottom: 2px solid currentColor;
+  border-radius: 0;
+  line-height: 1.2;
+}
+.ng .ng-link:hover { color: var(--stamp); }
+
+.ng-offers { margin-top: 18px; }
+.ng-themes { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-bottom: 12px; }
+.ng .ng-tag { font-family: var(--type); font-size: 13px; color: var(--ink-soft); padding: 1px 2px; }
+.ng .ng-tag.on { color: var(--ink); background: linear-gradient(transparent 55%, #ffd84a 55%); }
+.ng-stickers { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; margin: 12px 0 14px; }
+.ng .ng-sticker {
+  display: block;
+  text-align: left;
+  padding: 14px 14px 18px;
+  font-family: var(--hand);
+  font-size: 16px;
+  line-height: 1.35;
+  color: #3a3220;
+  background: var(--sticker);
+  box-shadow: 0 6px 10px -4px rgba(0, 0, 0, 0.35);
+  transition: transform 0.15s ease;
+}
+.ng .ng-sticker:nth-child(odd) { transform: rotate(-1.4deg); }
+.ng .ng-sticker:nth-child(even) { transform: rotate(1.1deg); background: #ffd0a8; }
+.ng .ng-sticker:nth-child(3n) { background: #c9ecc0; }
+.ng .ng-sticker:hover { transform: rotate(0) translateY(-3px); }
+.ng-sticker small { display: block; margin-bottom: 4px; font-family: var(--type); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.65; }
+
+/* Разбор идеи: три строки анкеты. */
+.ng-fields { margin: 12px 0 0; }
+.ng-fields > div { display: grid; grid-template-columns: 110px 1fr; gap: 12px; align-items: baseline; padding: 8px 0; border-bottom: 1px dashed #c9bfa8; }
+.ng-fields dt { font-family: var(--type); font-size: 13px; color: var(--ink-soft); }
+.ng-fields dd { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.ng-fields small { font-size: 14px; color: var(--ink-soft); font-style: italic; }
+.ng select {
+  width: auto;
+  max-width: 100%;
+  font-family: var(--hand);
+  font-size: 19px;
+  color: var(--pen);
+  cursor: pointer;
+  padding-right: 4px;
+}
+.ng select:disabled { color: #a9a294; cursor: default; }
+
+.ng-name-row { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px 18px; }
+.ng-name input {
+  flex: 1 1 260px;
+  max-width: 380px;
+  font-family: var(--hand);
+  font-size: 24px;
+  color: var(--pen);
+  border-bottom: 2px solid var(--ink);
+  padding: 2px 0;
+}
+.ng-name input::placeholder { color: #a9a294; }
+
+.ng-tabs { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; }
+.ng .ng-tab {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1.5px solid #b9ae95;
+  border-radius: 2px;
+}
+.ng .ng-tab b { font-weight: 700; }
+.ng .ng-tab small { font-size: 13px; color: var(--ink-soft); }
+.ng .ng-tab.on { border-color: var(--ink); background: #fffaf0; box-shadow: 3px 3px 0 var(--ink); }
+.ng-receipt { margin-top: 12px !important; font-family: var(--type); font-size: 13px; color: var(--ink-soft); }
+
+.ng-foot { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 22px; margin-top: 36px; }
+.ng .ng-start {
+  padding: 12px 26px;
+  font-family: var(--type);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--stamp);
+  border: 3px double var(--stamp);
+  border-radius: 4px;
+  transform: rotate(-1.5deg);
+  transition: transform 0.12s ease, background 0.12s ease;
+}
+.ng .ng-start:hover:not(:disabled) { background: var(--stamp); color: var(--paper); border-color: var(--stamp); transform: rotate(-1.5deg) scale(1.03); }
+.ng .ng-start:disabled { color: #b5ab97; border-color: #cfc5b0; cursor: default; opacity: 1; }
+
+@media (max-width: 640px) {
+  .ng { padding: 12px 8px 40px; }
+  .ng-sheet { padding: 24px 18px 28px 40px; transform: none; }
+  .ng-sheet::before { left: 28px; }
+  .ng-sheet::after { display: none; }
+  .ng h1 { font-size: 30px; }
+  .ng-fields > div { grid-template-columns: 1fr; gap: 2px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ng .ng-sticker,
+  .ng .ng-start { transition: none; }
+}

@@ -252,6 +252,8 @@ export interface GameState {
   sideJobShare: number;
 
   companyName: string;
+  /** Идея продукта словами игрока. Необязательное поле: в старых сохранениях его нет. */
+  idea?: string;
   productType: ProductTypeId;
   audienceId: string;
   businessModel: BusinessModel;
@@ -301,6 +303,8 @@ export interface GameState {
 export interface NewGameSetup {
   seed: number;
   companyName: string;
+  /** Идея продукта словами игрока */
+  idea?: string;
   productType: ProductTypeId;
   audienceId: string;
   businessModel: BusinessModel;

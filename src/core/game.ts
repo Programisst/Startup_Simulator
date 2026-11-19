@@ -1,5 +1,6 @@
 // Создание новой партии.
 
+import { cleanIdea } from './idea';
 import { createRng, nextRange } from './rng';
 import type { DayBreakdown, GameContent, GameState, Market, NewGameSetup } from './types';
 
@@ -50,6 +51,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     userValue: type.userValue,
   };
 
+  const idea = cleanIdea(setup.idea ?? '');
   const needsPrice = setup.businessModel === 'subscription' || setup.businessModel === 'oneTime';
 
   return {
@@ -64,6 +66,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     sideJobIncomePerMonth: difficulty.sideJobIncomePerMonth,
     sideJobShare: 0,
     companyName: setup.companyName,
+    ...(idea ? { idea } : {}),
     productType: setup.productType,
     audienceId: audience.id,
     businessModel: setup.businessModel,
