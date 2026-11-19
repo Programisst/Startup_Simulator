@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Laptop } from '../room/laptop/Laptop';
-import { money } from '../format';
 import { lightingAt } from './lighting';
 import { INTERACTIONS, type Interaction3D } from './layout';
 import { AUTOPILOT_IDLE_SECONDS, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
@@ -44,6 +43,12 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
   const autoSeated = useRef(false);
   const autoWalking = useRef(false);
   const idleFor = useRef(0);
+  /** То же, что autoSeated, но для отрисовки подсказки «открыть компьютер». */
+  const [seatedAlone, setSeatedAlone] = useState(false);
+  const seat = useCallback((value: boolean) => {
+    autoSeated.current = value;
+    setSeatedAlone(value);
+  }, []);
   const stageRef = useRef<HTMLDivElement>(null);
   const promptRef = useRef<HTMLDivElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
@@ -129,7 +134,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
           idleFor.current = 0;
           autoWalking.current = false;
           if (autoSeated.current) {
-            autoSeated.current = false;
+            seat(false);
             world.stand();
             busy.current = false;
           }
@@ -139,7 +144,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
         const wantsDesk = worksAtDesk(game.activity) && game.timeRuns;
         if (autoSeated.current && !wantsDesk) {
           // Работа кончилась или игра на паузе — герой встаёт.
-          autoSeated.current = false;
+          seat(false);
           world.stand();
         } else if (wantsDesk && !busy.current && !autoSeated.current && !autoWalking.current && world.mode === 'walk' && idleFor.current > AUTOPILOT_IDLE_SECONDS) {
           const desk = INTERACTIONS.find((i) => i.id === 'computer');
@@ -179,7 +184,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       world.dispose();
       worldRef.current = null;
     };
-  }, [say, t, startTime]);
+  }, [say, t, startTime, seat]);
 
   const interact = useCallback(
     (target: Interaction3D) => {
@@ -188,15 +193,14 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       if (target.id === 'computer' && autoWalking.current) {
         // Герой дошёл до стола сам: просто садится работать.
         autoWalking.current = false;
-        autoSeated.current = true;
+        seat(true);
         world.sit();
         return;
       }
       autoWalking.current = false;
-      if (autoSeated.current) {
-        autoSeated.current = false;
-        world.stand();
-      }
+      const alreadySeated = autoSeated.current;
+      if (alreadySeated && target.id !== 'computer') world.stand();
+      seat(false);
       idleFor.current = 0;
       if (target.id === 'computer') {
         busy.current = true;
@@ -204,7 +208,8 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
         const rect = stageRef.current?.getBoundingClientRect();
         const m = world.monitorOnScreen();
         setOrigin({ x: (rect?.left ?? 0) + m.x, y: (rect?.top ?? 0) + m.y });
-        window.setTimeout(() => setComputer('open'), 650);
+        // Уже сидит за столом — экран открывается сразу.
+        window.setTimeout(() => setComputer('open'), alreadySeated ? 80 : 650);
       } else if (target.id === 'coffee') {
         busy.current = true;
         world.brew();
@@ -242,10 +247,17 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
         window.setTimeout(() => setWindowView('open'), 850);
       }
     },
-    [say, t],
+    [say, t, seat],
   );
 
   interactRef.current = interact;
+
+  // Игра узнаёт, что игрок сел за компьютер или встал.
+  const computerOpen = computer !== 'closed';
+  useEffect(() => {
+    linkRef.current?.onComputer(computerOpen);
+  }, [computerOpen]);
+  useEffect(() => () => linkRef.current?.onComputer(false), []);
 
   // Мысль героя вслух, когда его занятие меняется.
   const heroThought = link?.thought;
@@ -291,38 +303,48 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       // Клик — тоже управление: герой бросает самостоятельную работу и идёт, куда сказали.
       idleFor.current = 0;
       autoWalking.current = false;
+      const picked = world.pick(e.clientX, e.clientY);
       if (autoSeated.current) {
-        autoSeated.current = false;
+        // Герой уже за столом: клик по столу открывает компьютер, клик в другое место — встаёт и идёт.
+        if (picked?.action?.id === 'computer') return interact(picked.action);
+        seat(false);
         world.stand();
       }
-      const picked = world.pick(e.clientX, e.clientY);
       if (!picked) return;
       // Уже стоим у предмета — действуем сразу.
       if (picked.action && world.nearby()?.id === picked.action.id) interact(picked.action);
       else world.walkTo(picked.target, picked.action);
     },
-    [canClick, interact],
+    [canClick, interact, seat],
   );
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
-      // Клавиши не перехватываются, когда игрок печатает или поверх открыто окно игры.
+      if (linkRef.current?.locked) return;
+      // За компьютером клавиши принадлежат его программам; квартира слушает только Esc.
+      if (computer !== 'closed') {
+        if (e.code === 'Escape' && computer === 'open') setComputer('closing');
+        return;
+      }
+      // Клавиши не перехватываются, когда игрок печатает или нажимает кнопку игры.
       const el = e.target as HTMLElement | null;
       const typing = el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.tagName === 'SELECT';
-      if (typing || linkRef.current?.locked) return;
-      const onButton = el?.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space');
-      if (onButton) return;
+      if (typing) return;
+      if (el?.tagName === 'BUTTON' && (e.code === 'Enter' || e.code === 'Space')) return;
       if (e.code in MOVE) e.preventDefault();
       if (windowView) {
         if (e.code === 'Escape' && windowView === 'open') setWindowView('closing');
         return;
       }
-      if (computer !== 'closed') {
-        if (e.code === 'Escape' && computer === 'open') setComputer('closing');
+      const act = (e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') && !e.repeat;
+      if (act && autoSeated.current) {
+        // Герой уже сидит за столом — открываем компьютер.
+        const desk = INTERACTIONS.find((i) => i.id === 'computer');
+        if (desk) interact(desk);
         return;
       }
       keys.current.add(e.code);
-      if ((e.code === 'KeyE' || e.code === 'Enter' || e.code === 'Space') && !e.repeat) {
+      if (act) {
         const target = worldRef.current?.nearby();
         if (target) interact(target);
       }
@@ -351,6 +373,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
     setComputer('closed');
     worldRef.current?.stand();
     busy.current = false;
+    idleFor.current = 0;
     keys.current.clear();
   }, []);
 
@@ -369,35 +392,42 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       />
 
       <div className="r3-hud">
-        <div className="r3-card">
-          <span className={`r3-sun${night ? ' moon' : ''}`} />
-          {link ? (
-            <div>
-              <div className="r3-date">{t('top.date', link.date)}</div>
+        {link ? (
+          // В игре дата и деньги уже есть в верхней строке; здесь — время суток и чем занят основатель.
+          <div className="r3-card">
+            <span className={`r3-sun${night ? ' moon' : ''}`} />
+            <div className="r3-status">
               <div className="r3-sub">{weekdays[link.weekday % 7]}</div>
+              {link.status}
             </div>
-          ) : (
-            <div>
-              <div className="r3-clock">{clock(hud.minutes)}</div>
-              <div className="r3-sub">
-                {weekday} · {t('room.hud.day', { day: hud.day })}
+          </div>
+        ) : (
+          <>
+            <div className="r3-card">
+              <span className={`r3-sun${night ? ' moon' : ''}`} />
+              <div>
+                <div className="r3-clock">{clock(hud.minutes)}</div>
+                <div className="r3-sub">
+                  {weekday} · {t('room.hud.day', { day: hud.day })}
+                </div>
               </div>
             </div>
-          )}
-        </div>
-        <div className="r3-card">
-          <div>
-            <div className={`r3-money${link && link.cash < 0 ? ' negative' : ''}`}>{link ? money(link.cash) : '$3 000'}</div>
-            <div className="r3-sub">{t('room.hud.account')}</div>
-          </div>
-        </div>
-        {link && (
-          <div className="r3-card">
-            <div className="r3-status">{link.status}</div>
-          </div>
+            <div className="r3-card">
+              <div>
+                <div className="r3-money">$3 000</div>
+                <div className="r3-sub">{t('room.hud.account')}</div>
+              </div>
+            </div>
+          </>
         )}
       </div>
 
+      {seatedAlone && computer === 'closed' && !fade && !windowView && (
+        <div className="r3-prompt r3-prompt-fixed">
+          <kbd>E</kbd>
+          {t('room.prompt.openComputer')}
+        </div>
+      )}
       {near && computer === 'closed' && !fade && !bubble && !windowView && (
         <div ref={promptRef} key={near.id} className="r3-prompt">
           <kbd>E</kbd>
@@ -442,7 +472,7 @@ export function Room3D({ link }: { link?: RoomLink } = {}) {
       )}
 
       {computer !== 'closed' && (
-        <Laptop minutes={hud.minutes} weekday={weekday} origin={origin} closing={computer === 'closing'} onClosed={onComputerClosed} />
+        <Laptop minutes={hud.minutes} weekday={weekday} origin={origin} closing={computer === 'closing'} onClosed={onComputerClosed} company={link?.companyApp} />
       )}
     </div>
   );

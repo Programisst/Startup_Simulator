@@ -2521,3 +2521,20 @@ button.br-btn:not(.dim):hover,
   border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.45), transparent 70%);
 }
+
+/* ---------- Программа «Компания» из игры ---------- */
+.os-window.os-company {
+  z-index: 4;
+  background: #0f1218;
+  user-select: text;
+}
+/* Экран ноутбука уменьшен под окно браузера, поэтому игровые экраны рисуются крупнее — чтобы текст читался. */
+.os-company-zoom {
+  width: calc(100% / 1.4);
+  height: calc(100% / 1.4);
+  transform: scale(1.4);
+  transform-origin: 0 0;
+}
+.os-pill[hidden] {
+  display: none;
+}

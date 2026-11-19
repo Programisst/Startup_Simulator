@@ -13,6 +13,9 @@ html.r3-standalone body {
 .r3-page.embedded {
   position: absolute;
 }
+.r3-status .r3-sub {
+  margin: 0 0 3px;
+}
 .r3-status {
   max-width: 320px;
   color: #f6efe3;
@@ -367,4 +370,14 @@ html.r3-standalone body {
   .r3-window-thought {
     animation-duration: 0.01s;
   }
+}
+
+/* Подсказка «открыть компьютер», когда герой сам сел работать. */
+.r3-prompt.r3-prompt-fixed {
+  left: 50%;
+  top: auto;
+  bottom: 74px;
+  margin: 0;
+  transform: translateX(-50%);
+  animation: none;
 }

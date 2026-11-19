@@ -1,6 +1,6 @@
 // Ноутбук основателя крупным планом. Внутри — «экран» 1440×900, который масштабируется под окно.
 // Пока игрок не трогает мышь и клавиатуру, работает основатель. Любой клик или клавиша — и управление у игрока.
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Actions } from './actions';
 import { BrowserWindow } from './BrowserWindow';
@@ -89,11 +89,21 @@ interface Props {
   origin: { x: number; y: number };
   closing: boolean;
   onClosed: () => void;
+  /** Программа «Компания» из игры. Если задана, она открыта поверх остальных окон, а управление сразу у игрока. */
+  company?: ReactNode;
 }
 
-export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
+export function Laptop({ minutes, weekday, origin, closing, onClosed, company }: Props) {
   const { t } = useTranslation();
-  const store = useMemo(() => new LaptopStore(), []);
+  const hasCompany = company !== undefined && company !== null;
+  const [companyFront, setCompanyFront] = useState(true);
+  const store = useMemo(() => {
+    const created = new LaptopStore();
+    // В игре за компьютером работает игрок, а не «основатель на автопилоте».
+    if (hasCompany) created.set({ manual: true });
+    return created;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const actions = useMemo(() => new Actions(store), [store]);
   const s = useSyncExternalStore(store.subscribe, store.get);
   const screenRef = useRef<HTMLDivElement>(null);
@@ -126,7 +136,8 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
 
   // Клавиатура игрока.
   useEffect(() => {
-    if (closing) return;
+    // Пока открыта «Компания», клавиши идут в её поля, а не в редактор кода.
+    if (closing || (hasCompany && companyFront)) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') return;
       if (!store.get().manual) store.set({ manual: true });
@@ -134,7 +145,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [closing, store, actions]);
+  }, [closing, store, actions, hasCompany, companyFront]);
 
   useLayoutEffect(() => {
     const el = screenRef.current;
@@ -163,6 +174,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
 
   const openDock = (item: DockItem) => {
     if (item === 'browser' || item === 'editor') {
+      setCompanyFront(false);
       if (!s.running.includes(item)) {
         store.set({ bounce: item });
         window.setTimeout(() => store.set({ bounce: null }), 900);
@@ -211,7 +223,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
 
               <div className="os-menubar" style={{ height: MENU_H }}>
                 <span className="os-logo" />
-                <b>{s.app === 'browser' ? t('laptop.os.browser') : t('laptop.os.editor')}</b>
+                <b>{hasCompany && companyFront ? t('laptop.company.title') : s.app === 'browser' ? t('laptop.os.browser') : t('laptop.os.editor')}</b>
                 {menu.map((m, i) => (
                   <button
                     type="button"
@@ -244,6 +256,15 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
                 <BrowserWindow s={s} actions={actions} />
               </div>
 
+              {hasCompany && (
+                <div
+                  className={`os-window os-company ${companyFront ? 'front' : 'closed'}`}
+                  style={{ left: WINDOW.x, top: WINDOW.y, width: WINDOW.w, height: WINDOW.h }}
+                >
+                  <div className="os-company-zoom">{company}</div>
+                </div>
+              )}
+
               <div className="os-dock" style={{ left: DOCK_X, top: DOCK_Y, width: DOCK_W, height: DOCK_H }}>
                 {DOCK_ITEMS.map((item) => (
                   <button
@@ -260,8 +281,12 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed }: Props) {
                 ))}
               </div>
 
-              <div className={`os-pill${s.manual ? ' manual' : ''}`}>
-                {s.manual ? (
+              <div className={`os-pill${s.manual ? ' manual' : ''}`} hidden={hasCompany && companyFront}>
+                {hasCompany ? (
+                  <button type="button" onPointerDown={(e) => e.stopPropagation()} onClick={() => setCompanyFront(true)}>
+                    ← {t('laptop.company.back')}
+                  </button>
+                ) : s.manual ? (
                   <>
                     <span>{t('laptop.autopilot.manual')}</span>
                     <button
