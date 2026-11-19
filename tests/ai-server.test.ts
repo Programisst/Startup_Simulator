@@ -197,3 +197,53 @@ describe('AI-посредник', () => {
   });
 });
 
+
+describe('ИИ-друг основателя', () => {
+  const friend = {
+    lang: 'ru',
+    company: { name: 'Нянька рядом', idea: 'Приложение, где мамы находят няню рядом с домом', facts: ['Вечер перед первым днём.'] },
+    history: [{ from: 'friend', text: 'Рассказывай, что за идея.' }],
+    message: 'Приложение, где мамы находят няню рядом с домом',
+  };
+
+  it('в запросе есть характер друга, компания, прошлые реплики и слова игрока; ответ — одна реплика', async () => {
+    const systems: (string | undefined)[] = [];
+    const { call, prompts } = setup({
+      ask: async (user, _schema, system) => {
+        prompts.push(user);
+        systems.push(system);
+        return { reply: 'О, это прям больная тема у знакомых мам.' };
+      },
+    });
+    expect(await call(AI_ROUTES.friend, friend)).toMatchObject({ mine: true, status: 200, body: { reply: 'О, это прям больная тема у знакомых мам.' } });
+    expect(systems[0]).toContain('old friend');
+    expect(systems[0]).toContain('Нянька рядом');
+    expect(systems[0]).toContain('Вечер перед первым днём.');
+    expect(systems[0]).toContain('in Russian');
+    expect(prompts[0]).toContain('Friend: Рассказывай, что за идея.');
+    expect(prompts[0]).toContain('<player>\nПриложение, где мамы находят няню рядом с домом\n</player>');
+  });
+
+  it('пустая реплика отклоняется, длинное обрезается, лишняя история отбрасывается', async () => {
+    const { call, prompts } = setup({
+      ask: async (user) => {
+        prompts.push(user);
+        return { reply: 'Ок.' };
+      },
+    });
+    expect((await call(AI_ROUTES.friend, { ...friend, message: '  ' })).status).toBe(400);
+    expect(prompts).toHaveLength(0);
+    const history = Array.from({ length: 30 }, (_, i) => ({ from: 'player', text: `реплика ${i}` }));
+    await call(AI_ROUTES.friend, { ...friend, message: 'я'.repeat(900), history });
+    expect(prompts[0]).toContain(`<player>\n${'я'.repeat(400)}\n</player>`);
+    expect(prompts[0]).not.toContain('реплика 0');
+    expect(prompts[0]).toContain('реплика 29');
+  });
+
+  it('разговоры с другом считаются в общих пределах расхода', async () => {
+    const { call } = setup();
+    expect((await call(AI_ROUTES.friend, friend)).status).toBe(200);
+    expect((await call(AI_ROUTES.friend, friend)).status).toBe(200);
+    expect((await call(AI_ROUTES.friend, friend)).status).toBe(429);
+  });
+});

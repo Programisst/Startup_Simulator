@@ -28,7 +28,6 @@ describe('в игре одна квартира — пиксельная', () =>
     expect(existsSync(join(root, 'src/ui/room3d'))).toBe(false);
     expect(existsSync(join(root, 'src/ui/room'))).toBe(false);
     expect(existsSync(join(root, 'src/ui/office/OfficeScene.tsx'))).toBe(false);
-    expect(existsSync(join(root, 'src/concepts/lumio'))).toBe(false);
   });
 
   it('экран «Офис» показывает пиксельную квартиру', () => {
@@ -75,5 +74,44 @@ describe('когда герой сам садится работать', () => {
     expect(worksAtDesk('sideJob')).toBe(true);
     expect(worksAtDesk('idle')).toBe(false);
     expect(worksAtDesk('broke')).toBe(false);
+  });
+});
+
+describe('время кадра', () => {
+  it('никогда не отрицательное и не больше 0,1 с — иначе анимация героя ломает рисование комнаты', async () => {
+    const { frameSeconds } = await import('../src/ui/apartment/link');
+    // Браузер может отдать отметку кадра чуть раньше, чем момент запуска цикла.
+    expect(frameSeconds(1000, 1005.4)).toBe(0);
+    expect(frameSeconds(1016, 1000)).toBeCloseTo(0.016);
+    expect(frameSeconds(5000, 1000)).toBe(0.1);
+  });
+});
+
+describe('плашки квартиры', () => {
+  it('статус основателя — коротко, одной строкой: подсказки «что делать» пишет друг', async () => {
+    const ru = (await import('../src/content/ru/ui.json')).default as { office: { status: Record<string, string> } };
+    for (const [id, text] of Object.entries(ru.office.status)) expect(text.length, id).toBeLessThanOrEqual(30);
+  });
+
+  it('в квартире нет полоски сил и карточки цели — они путали; цель видна в компьютере', () => {
+    const room = readFileSync(join(root, 'src/ui/apartment/Apartment.tsx'), 'utf-8');
+    const controls = readFileSync(join(root, 'src/ui/office/RoomControls.tsx'), 'utf-8');
+    expect(room).not.toContain('lm-energy');
+    expect(controls).not.toContain('GoalCard');
+  });
+});
+
+describe('время суток — как у игрока на часах', () => {
+  it('настоящее время переводится в минуты суток', async () => {
+    const { realMinutes } = await import('../src/ui/apartment/engine/daylight');
+    expect(realMinutes(new Date(2026, 10, 19, 18, 45, 30))).toBe(18 * 60 + 45.5);
+    expect(realMinutes(new Date(2026, 10, 19, 0, 0, 0))).toBe(0);
+  });
+
+  it('без ?time квартира (и вид из-за стола) берёт настоящее время', () => {
+    const src = readFileSync(join(root, 'src/ui/apartment/Apartment.tsx'), 'utf-8');
+    expect(src).toContain('world.realClock = true');
+    const world = readFileSync(join(root, 'src/ui/apartment/engine/world.ts'), 'utf-8');
+    expect(world).toContain('realMinutes(new Date())');
   });
 });

@@ -6,6 +6,7 @@ export const AI_ROUTES = {
   analyze: '/api/ai/analyze',
   ideas: '/api/ai/ideas',
   talk: '/api/ai/talk',
+  friend: '/api/ai/friend',
 } as const;
 
 export type AiLang = 'ru' | 'en';
@@ -64,4 +65,20 @@ export interface AiTalkResponse {
   reply: string;
   /** Как реплика основателя подействовала на человека */
   outcome: string;
+}
+
+/** Переписка основателя со старым другом. Всё о компании передаётся готовыми словами: посредник ничего не знает об игре. */
+export interface AiFriendRequest {
+  lang: AiLang;
+  /** Что известно о компании — короткими фактами */
+  company: { name: string; idea: string; facts: string[] };
+  /** Переписка до этого, по порядку */
+  history: { from: 'player' | 'friend'; text: string }[];
+  /** Новое сообщение игрока */
+  message: string;
+}
+
+/** Сырой ответ: игра сама проверяет его, прежде чем показать. */
+export interface AiFriendResponse {
+  reply: string;
 }

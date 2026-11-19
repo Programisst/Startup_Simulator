@@ -75,3 +75,8 @@ export function daylightAt(minutes: number): Daylight {
 }
 
 export const css = (c: RGB, a = 1) => `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
+
+/** Минуты суток по настоящим часам игрока: в игре утро, день, закат и ночь — как у него за окном. */
+export function realMinutes(d: Date): number {
+  return d.getHours() * 60 + d.getMinutes() + d.getSeconds() / 60;
+}

@@ -52,7 +52,7 @@ html.lm-standalone body {
   background: radial-gradient(ellipse 75% 70% at 50% 48%, transparent 58%, rgba(8, 6, 12, 0.42) 100%);
 }
 
-/* ── HUD: тёмная плашка, моноширинные цифры, как строка состояния в Lumio */
+/* ── HUD: тёмная плашка, моноширинные цифры, как строка состояния */
 .lm-hud {
   position: absolute;
   left: 16px;
@@ -364,7 +364,8 @@ html.lm-standalone body {
   outline: 2px solid #f6c34a;
   outline-offset: 2px;
 }
-[data-coach='startTime'] .lm-speed [data-coach-target='speed1'] {
+[data-coach='startTime'] .lm-speed [data-coach-target='speed1'],
+[data-coach='resumeTime'] .lm-speed [data-coach-target='speed1'] {
   box-shadow: 0 0 0 2px #f6c34a;
   animation: lmNudge 1.1s ease-in-out infinite;
 }
@@ -387,7 +388,8 @@ html.lm-standalone body {
   transform: translateX(-50%);
 }
 @media (prefers-reduced-motion: reduce) {
-  [data-coach='startTime'] .lm-speed [data-coach-target='speed1'] {
+  [data-coach='startTime'] .lm-speed [data-coach-target='speed1'],
+  [data-coach='resumeTime'] .lm-speed [data-coach-target='speed1'] {
     animation: none;
   }
 }
@@ -399,57 +401,32 @@ html.lm-standalone body {
   background: rgba(255, 255, 255, 0.16);
 }
 
-/* Силы основателя: тонкая полоска под подписью. Устал — полоска краснеет. */
-.lm-energy .lm-sub {
-  margin: 0 0 6px;
-}
-.lm-energy-bar {
-  width: 92px;
-  height: 6px;
-  border-radius: 3px;
-  background: rgba(255, 255, 255, 0.12);
-  overflow: hidden;
-}
-.lm-energy-bar i {
-  display: block;
-  height: 100%;
-  border-radius: 3px;
-  background: #a7e08f;
-  transition: width 0.5s ease;
-}
-.lm-energy-bar.low i {
-  background: #ff8f8f;
-}
-
-/* Ближайшая цель — во всю ширину под кнопками времени. */
-.lm-hud-row.lm-hud-right {
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  max-width: 340px;
-}
-.lm-goal {
-  flex: 1 1 100%;
-  align-items: flex-start;
-  padding: 11px 14px 12px;
+/* Обучение: прыгающая стрелка над столом. */
+.lm-arrow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 6;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
-.lm-goal .goal {
-  width: 100%;
+.lm-arrow.show {
+  opacity: 1;
 }
-.lm-goal b {
-  font-size: 14px;
-  color: #f4efe6;
+.lm-arrow svg {
+  display: block;
+  margin-bottom: 6px;
+  filter: drop-shadow(0 3px 0 rgba(38, 50, 74, 0.5));
+  animation: lmArrowBob 0.9s ease-in-out infinite;
 }
-.lm-goal .goal-label {
-  color: #f6c34a;
+@keyframes lmArrowBob {
+  50% {
+    transform: translateY(-8px);
+  }
 }
-.lm-goal .goal-hint,
-.lm-goal .goal-meta {
-  color: #a39daf;
-}
-.lm-goal .goal-bar {
-  background: rgba(255, 255, 255, 0.12);
-}
-.lm-goal .goal-bar i {
-  background: #a7e08f;
+@media (prefers-reduced-motion: reduce) {
+  .lm-arrow svg {
+    animation: none;
+  }
 }

@@ -218,6 +218,10 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
 [data-coach='queueCore'] [data-coach-target='queueCore'],
 [data-coach='launch'] [data-coach-target='launch'],
 [data-coach='startTime'] [data-coach-target='speed1'],
+[data-coach='resumeTime'] [data-coach-target='speed1'],
+[data-coach='openMarketing'] [data-nav='marketing'],
+[data-coach='setAds'] [data-coach-target='ads10'],
+[data-coach='openFinance'] [data-nav='finance'],
 [data-coach='openProduct'] .company-app [data-nav='product'],
 [data-coach='openProductLaunch'] .company-app [data-nav='product'],
 [data-coach='queueCore'] .company-app [data-coach-target='queueCore'],
@@ -234,20 +238,7 @@ button.coach-skip:hover:not(:disabled) { color: var(--text); border-color: trans
   [data-coach] [data-nav], [data-coach] [data-coach-target] { animation: none; }
 }
 
-/* Подсказка обучения в квартире — в том же виде, что её плашки. */
-.layout.room-mode > .coach {
-  border: 0;
-  border-radius: 14px;
-  background: rgba(24, 20, 28, 0.72);
-  color: #f6efe3;
-  backdrop-filter: blur(14px) saturate(1.4);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 10px 30px rgba(0, 0, 0, 0.3);
-}
-.layout.room-mode > .coach .coach-label { color: #f6c34a; }
-.layout.room-mode > .coach button.coach-skip { color: #c4baad; }
-.layout.room-mode > .coach button.primary { background: #f6c34a; border-color: #f6c34a; color: #1c1620; }
+/* Подсказка обучения в квартире — сообщение от друга: вид задан в components/coach.css. */
 
 /* ---------- Окна событий и конца партии в игре с квартирой ----------
    За компьютером это системное окно-вопрос, в квартире — плашка в её стиле. */

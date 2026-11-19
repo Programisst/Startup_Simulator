@@ -8,7 +8,7 @@ import { markTutorialSeen, tutorialSeen } from './tutorial';
 export type ScreenId = 'office' | 'overview' | 'product' | 'team' | 'marketing' | 'finance' | 'feed' | 'mail' | 'goals' | 'settings' | 'bank';
 export type Speed = 0 | 1 | 2 | 5;
 /** Сколько настоящих миллисекунд длится игровой день на скорости ×1. */
-export const DAY_MS = 4000;
+export const DAY_MS = 15000;
 
 interface Store {
   game: GameState | null;
@@ -21,6 +21,8 @@ interface Store {
   roomBroken: boolean;
   /** Идёт обучение первой партии */
   tutorial: boolean;
+  /** В этой партии игрок уже открывал «Финансы» (обучение не зовёт туда снова) */
+  financeSeen: boolean;
   setComputerOpen: (open: boolean) => void;
   endTutorial: () => void;
   restartTutorial: () => void;
@@ -42,6 +44,7 @@ export const useStore = create<Store>((set, get) => ({
   computerOpen: false,
   roomBroken: false,
   tutorial: false,
+  financeSeen: false,
 
   setComputerOpen: (computerOpen) => set({ computerOpen }),
   endTutorial: () => {
@@ -50,7 +53,7 @@ export const useStore = create<Store>((set, get) => ({
   },
   restartTutorial: () => set({ tutorial: true }),
 
-  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null, computerOpen: false, tutorial: !tutorialSeen() }),
+  start: (setup) => set({ game: createGame(setup, content), speed: 0, screen: 'office', lastError: null, computerOpen: false, tutorial: !tutorialSeen(), financeSeen: false }),
 
   dispatch: (cmd) => {
     const { game } = get();
@@ -71,7 +74,7 @@ export const useStore = create<Store>((set, get) => ({
   },
 
   setSpeed: (speed) => set({ speed }),
-  setScreen: (screen) => set({ screen }),
+  setScreen: (screen) => set((s) => ({ screen, financeSeen: s.financeSeen || screen === 'finance' })),
 
   save: () => {
     const { game } = get();

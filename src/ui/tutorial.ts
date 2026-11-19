@@ -1,4 +1,4 @@
-// Обучение первой партии: какой шаг показывать игроку прямо сейчас.
+// Обучение первой партии: какой шаг показывать игроку прямо сейчас — от первого утра до первых денег.
 // Шаг выводится из состояния игры, поэтому обучение нельзя «сломать»: что бы игрок ни сделал, подсказка подстроится.
 
 export type TutorialStep =
@@ -10,6 +10,11 @@ export type TutorialStep =
   | 'backToComputer'
   | 'openProductLaunch'
   | 'launch'
+  | 'openMarketing'
+  | 'setAds'
+  | 'resumeTime'
+  | 'waitMoney'
+  | 'openFinance'
   | 'done';
 
 export interface TutorialInput {
@@ -21,16 +26,31 @@ export interface TutorialInput {
   computerOpen: boolean;
   /** Открыт раздел «Продукт» */
   onProduct: boolean;
+  /** Открыт раздел «Маркетинг» */
+  onMarketing: boolean;
+  /** Открыт раздел «Финансы» */
+  onFinance: boolean;
+  /** В этой партии игрок уже заглядывал в «Финансы» */
+  financeSeen: boolean;
   /** Время стоит на паузе */
   paused: boolean;
   coreQueued: boolean;
   coreDone: boolean;
   launched: boolean;
+  /** Реклама включена */
+  adsOn: boolean;
+  /** Продукт уже приносит деньги */
+  earned: boolean;
 }
 
 export function tutorialStep(i: TutorialInput): TutorialStep | null {
   if (!i.active || !i.running) return null;
-  if (i.launched) return 'done';
+  if (i.launched) {
+    // После запуска — до первых денег: реклама, ожидание, «Финансы».
+    if (i.earned) return i.onFinance || i.financeSeen ? 'done' : 'openFinance';
+    if (!i.adsOn) return i.onMarketing ? 'setAds' : 'openMarketing';
+    return i.paused ? 'resumeTime' : 'waitMoney';
+  }
   if (i.coreDone) {
     if (!i.computerOpen) return 'backToComputer';
     return i.onProduct ? 'launch' : 'openProductLaunch';

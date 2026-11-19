@@ -7,7 +7,7 @@ import { findPath } from './nav';
 import { COFFEE_LED, FLOOR_LAMP_SHADE, MONITOR_SCREEN, hash, make, type Art, type Spr } from './art';
 import { City } from './city';
 import { zoomLimits, zoomStep } from './zoom';
-import { css, daylightAt, type Daylight, type RGB } from './daylight';
+import { css, daylightAt, realMinutes, type Daylight, type RGB } from './daylight';
 import {
   CLOCK,
   COFFEE_CUP,
@@ -64,6 +64,8 @@ export class World {
   clockPaused = false;
   /** День ведёт игра: после сна квартира сама не прибавляет день. */
   externalDay = false;
+  /** Часы идут по настоящему времени игрока (небо и свет — как у него за окном). */
+  realClock = false;
   /** Код на мониторе: печатается, пока герой сидит за компьютером. */
   readonly monitor = new MonitorTyping();
   /** Настоящий текст на мониторе и издалека. false (?monitor=pixel) — издалека пиксели, текст только вблизи. */
@@ -294,7 +296,9 @@ export class World {
   update(dt: number, input: { x: number; y: number }): void {
     this.time += dt;
     if (this.hero.mode === 'sit') this.monitor.advance(dt);
-    this.minutes = advanceClock(this.minutes, dt, { rate: this.clockRate, paused: this.clockPaused, sleeping: this.hero.mode === 'sleep' });
+    this.minutes = this.realClock
+      ? realMinutes(new Date())
+      : advanceClock(this.minutes, dt, { rate: this.clockRate, paused: this.clockPaused, sleeping: this.hero.mode === 'sleep' });
     const h = this.hero;
     let moving = false;
 

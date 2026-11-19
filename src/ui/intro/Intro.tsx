@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { hash } from '../apartment/engine/art';
 import { drawEditorScreen } from '../apartment/engine/editorScreen';
 import { MonitorTyping } from '../apartment/engine/monitor';
+import { frameSeconds } from '../apartment/link';
 import { FLIGHT_SECONDS, flightCamera, HOME_SCREEN, HOME_WINDOW, INTERIOR, LOGO, logoPixels, paintCity, paintInterior, SCENE_H, SCENE_W } from './scene';
 import './intro.css';
 
@@ -53,6 +54,10 @@ export function Intro({ hasSave, onDone, freeze }: IntroProps) {
     room.width = INTERIOR.w;
     room.height = INTERIOR.h;
     const rctx = room.getContext('2d')!;
+    // Экран редактора на iMac рисуется в постоянном размере — таком, каким он будет в конце полёта:
+    // там он резкий один к одному, а по дороге плавно уменьшен целиком и не дрожит.
+    const editor = document.createElement('canvas');
+    const ectx = editor.getContext('2d')!;
 
     let raf = 0;
     let finished = false;
@@ -66,6 +71,9 @@ export function Intro({ hasSave, onDone, freeze }: IntroProps) {
       const dpr = window.devicePixelRatio || 1;
       canvas.width = Math.round(window.innerWidth * dpr);
       canvas.height = Math.round(window.innerHeight * dpr);
+      const end = flightCamera(1, { w: canvas.width, h: canvas.height });
+      editor.width = Math.max(1, Math.round(HOME_SCREEN.w * end.scale));
+      editor.height = Math.max(1, Math.round(HOME_SCREEN.h * end.scale));
     };
     resize();
     window.addEventListener('resize', resize);
@@ -73,7 +81,7 @@ export function Intro({ hasSave, onDone, freeze }: IntroProps) {
 
     const frame = (now: number) => {
       const time = (now - t0) / 1000;
-      const dt = Math.min(0.1, (now - last) / 1000);
+      const dt = frameSeconds(now, last);
       last = now;
       typing.advance(dt);
       const view = { w: canvas.width, h: canvas.height };
@@ -96,15 +104,20 @@ export function Intro({ hasSave, onDone, freeze }: IntroProps) {
       ctx.drawImage(base, 0, 0);
       ctx.drawImage(room, HOME_WINDOW.x, HOME_WINDOW.y, HOME_WINDOW.w, HOME_WINDOW.h);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      // Вблизи на iMac проступает настоящий код.
+      // Вблизи на iMac проступает настоящий код. Экран редактора рисуется в постоянном размере и плавно
+      // увеличивается целиком, как картинка: иначе на каждом кадре полёта буквы перестраивались бы и дрожали.
       const sw = HOME_SCREEN.w * cam.scale;
-      drawEditorScreen(
-        ctx,
-        { x: HOME_SCREEN.x * cam.scale + cam.x, y: HOME_SCREEN.y * cam.scale + cam.y, w: sw, h: HOME_SCREEN.h * cam.scale },
-        typing,
-        time,
-        smooth(140, 260, sw),
-      );
+      const amount = smooth(140, 260, sw);
+      if (amount > 0) {
+        ectx.clearRect(0, 0, editor.width, editor.height);
+        drawEditorScreen(ectx, { x: 0, y: 0, w: editor.width, h: editor.height }, typing, time, 1);
+        ctx.save();
+        ctx.globalAlpha = amount;
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = 'high';
+        ctx.drawImage(editor, HOME_SCREEN.x * cam.scale + cam.x, HOME_SCREEN.y * cam.scale + cam.y, sw, HOME_SCREEN.h * cam.scale);
+        ctx.restore();
+      }
 
       // Логотип в пикселях экрана: блоки слетаются на место, при полёте — разлетаются.
       // Логотип слева, на чистом небе; дом основателя и график — справа.

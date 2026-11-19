@@ -3,7 +3,7 @@
 import { content } from '../content';
 import { ideaLexicon } from '../content/ideas';
 import { checkIdeaAnswer, cleanIdea, type IdeaVerdict, type TalkOutcome } from '../core';
-import { AI_ROUTES, type AiAnalyzeRequest, type AiAnalyzeResponse, type AiIdeasRequest, type AiIdeasResponse, type AiLang, type AiStatus, type AiTalkRequest, type AiTalkResponse } from './protocol';
+import { AI_ROUTES, type AiAnalyzeRequest, type AiAnalyzeResponse, type AiIdeasRequest, type AiIdeasResponse, type AiLang, type AiStatus, type AiTalkRequest, type AiTalkResponse, type AiFriendRequest, type AiFriendResponse } from './protocol';
 
 const TIMEOUT_MS = 45_000;
 
@@ -76,4 +76,14 @@ export async function aiTalk(request: AiTalkRequest): Promise<{ reply: string; o
   if (!raw || !reply) return null;
   const outcome: TalkOutcome = raw.outcome === 'better' || raw.outcome === 'worse' ? raw.outcome : 'same';
   return { reply, outcome };
+}
+
+/** Сколько ждать живую реплику друга: дольше — друг говорит заготовку, переписка не замирает. */
+const FRIEND_TIMEOUT_MS = 8000;
+
+/** Живая реплика старого друга в переписке. Пустой или неудачный ответ — null: игра берёт заготовку. */
+export async function aiFriend(request: AiFriendRequest): Promise<string | null> {
+  const raw = await call<AiFriendResponse>(AI_ROUTES.friend, request, FRIEND_TIMEOUT_MS);
+  const reply = text(raw?.reply, 400);
+  return reply || null;
 }
