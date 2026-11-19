@@ -280,3 +280,11 @@ describe('усталость для сцены', () => {
     expect(roomView(old, content).founder.fatigue).toBe('fresh');
   });
 });
+
+describe('строка о наборе кода на экране редактора', () => {
+  it('короткая: плашка с ней и кнопкой «Вернуться к компании» не должна доставать до значков нижней панели', () => {
+    // Плашка стоит слева от панели значков. При шрифте 12,5 в неё вместе с кнопкой помещается около 28 знаков текста.
+    const longest = (ui.founderCare as Record<string, string>).focus!.replace('{{pct}}', '100').replace('{{boost}}', '50');
+    expect(longest.length).toBeLessThanOrEqual(28);
+  });
+});
