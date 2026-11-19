@@ -2,6 +2,7 @@
 
 import { cleanIdea } from './idea';
 import { createRng, nextRange } from './rng';
+import { createTeam } from './team';
 import type { DayBreakdown, GameContent, GameState, Market, NewGameSetup } from './types';
 
 export const EMPTY_DAY: DayBreakdown = {
@@ -18,6 +19,7 @@ export const EMPTY_DAY: DayBreakdown = {
   feeCost: 0,
   loanCost: 0,
   livingCost: 0,
+  salaryCost: 0,
   sideIncome: 0,
   expenses: 0,
 };
@@ -88,6 +90,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     polish: 0,
     tasks: [],
     rush: false,
+    team: createTeam(setup.seed, content),
     modifiers: [],
     loans: [],
     negativeCashDays: 0,

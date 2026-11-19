@@ -114,6 +114,46 @@ export interface DifficultyDef {
   marketHarshness: number;
 }
 
+export type EmployeeRole = 'developer' | 'marketer';
+/** Черта характера: старательный, спокойный, преданный, небрежный. */
+export type TraitId = 'diligent' | 'calm' | 'loyal' | 'sloppy';
+
+/** Настройки найма и команды. */
+export interface TeamConfig {
+  /** Сколько сотрудников помещается (пока офис один — комната основателя) */
+  maxSize: number;
+  candidatesShown: number;
+  /** Раз во сколько дней список кандидатов обновляется */
+  candidatesEveryDays: number;
+  skillMin: number;
+  skillMax: number;
+  /** Зарплата в месяц при навыке 1 */
+  salaryBase: Record<EmployeeRole, number>;
+  /** Насколько круто зарплата растёт с навыком */
+  salaryExponent: number;
+  /** Разброс зарплатных ожиданий, доля (0.15 = ±15%) */
+  salarySpread: number;
+  /** Доля разработчиков среди кандидатов */
+  developerShare: number;
+  /** Выходное пособие при увольнении, в месячных зарплатах */
+  severanceMonths: number;
+  startMotivation: number;
+  /** Какую часть пути к целевой мотивации сотрудник проходит за день */
+  motivationSpeed: number;
+  rushPenalty: number;
+  brokePenalty: number;
+  profitBonus: number;
+  loyalBonus: number;
+  /** Ниже этой мотивации сотрудник может уйти сам */
+  quitBelow: number;
+  quitDailyChance: number;
+  /** Прибавка к выработке старательного */
+  diligentBonus: number;
+  /** Прибавка к притоку пользователей за единицу навыка маркетолога и её потолок */
+  marketingPerPoint: number;
+  marketingCap: number;
+}
+
 export interface GameConfig {
   startReputation: number;
   startCapacity: number;
@@ -138,6 +178,7 @@ export interface GameConfig {
   goalValuation: number;
   /** Насколько рынок каждой партии случайно отличается от базового, доля (0.15 = ±15%) */
   marketVariation: number;
+  team: TeamConfig;
 }
 
 export interface GameContent {
@@ -195,6 +236,46 @@ export interface EventLogEntry {
   chanceResults: boolean[];
 }
 
+/** Кандидат на найм. Имя и внешность интерфейс подбирает сам по nameSeed. */
+export interface Candidate {
+  id: number;
+  role: EmployeeRole;
+  /** Навык: 1 — как основатель */
+  skill: number;
+  trait: TraitId;
+  /** Зарплата в месяц, на которую он согласен */
+  salaryAsk: number;
+  nameSeed: number;
+}
+
+export interface Employee extends Candidate {
+  /** Сколько ему платят сейчас, в месяц */
+  salary: number;
+  hiredDay: number;
+  /** Мотивация 0…100 */
+  motivation: number;
+}
+
+export interface TeamLogEntry {
+  day: number;
+  kind: 'hired' | 'fired' | 'quit';
+  employeeId: number;
+  nameSeed: number;
+  role: EmployeeRole;
+}
+
+/** Команда и рынок труда этой партии. */
+export interface TeamState {
+  /** Отдельный генератор случайности: наём не сдвигает случайность рынка и событий */
+  rng: RngState;
+  nextId: number;
+  /** День, когда список кандидатов обновлялся в последний раз */
+  refreshedDay: number;
+  employees: Employee[];
+  candidates: Candidate[];
+  log: TeamLogEntry[];
+}
+
 /** Из чего сложился последний день — для объяснения показателей игроку. */
 export interface DayBreakdown {
   paid: number;
@@ -210,6 +291,8 @@ export interface DayBreakdown {
   feeCost: number;
   loanCost: number;
   livingCost: number;
+  /** Зарплаты команды за день */
+  salaryCost: number;
   /** Доход от подработки основателя — не входит в доход продукта */
   sideIncome: number;
   expenses: number;
@@ -278,6 +361,8 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
+  team?: TeamState;
 
   modifiers: Modifier[];
   loans: Loan[];
@@ -324,6 +409,9 @@ export type Command =
   | { type: 'removeTask'; index: number }
   | { type: 'setRush'; rush: boolean }
   | { type: 'launch' }
+  | { type: 'hire'; candidateId: number }
+  | { type: 'fire'; employeeId: number }
+  | { type: 'setSalary'; employeeId: number; salary: number }
   | { type: 'chooseEvent'; choiceId: string }
   | { type: 'continueAsSandbox' };
 
@@ -338,6 +426,9 @@ export type CommandError =
   | 'alreadyQueued'
   | 'noSuchTask'
   | 'alreadyLaunched'
+  | 'noSuchCandidate'
+  | 'noSuchEmployee'
+  | 'teamFull'
   | 'noEvent'
   | 'unknownChoice'
   | 'eventPending';

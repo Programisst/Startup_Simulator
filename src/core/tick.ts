@@ -19,6 +19,7 @@ import {
   viralPerDay,
 } from './formulas';
 import { nextInt, nextRange, type RngState } from './rng';
+import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
 
 const RECENT_DAYS = 90;
@@ -51,7 +52,10 @@ export function currentQuality(s: GameState, content: GameContent): number {
 function develop(draft: GameState, content: GameContent, rng: RngState): RngState {
   const cfg = content.config;
   let r = rng;
-  let work = cfg.founderSkill * (1 - draft.sideJobShare) * (draft.rush ? cfg.rushSpeed : 1);
+  const team = teamOf(draft, content);
+  // Основатель делит день с подработкой, команда работает полный день; спешка ускоряет всех.
+  let work = (cfg.founderSkill * (1 - draft.sideJobShare) + teamWorkPerDay(team, cfg.team)) * (draft.rush ? cfg.rushSpeed : 1);
+  const sloppy = sloppyDevelopers(team);
   const tasks: Task[] = draft.tasks.map((t) => ({ ...t }));
 
   // Ограничение на число проходов защищает от зацикливания при нулевых стоимостях.
@@ -67,7 +71,7 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
           draft.doneFeatures = [...draft.doneFeatures, def.id];
           const newBugs = nextInt(r, draft.rush ? 2 : 1, draft.rush ? 6 : 3);
           r = newBugs.next;
-          draft.bugs += newBugs.value;
+          draft.bugs += newBugs.value + sloppy;
           draft.debt = clamp(draft.debt + (draft.rush ? 8 : 2), 0, 100);
         }
       } else {
@@ -141,9 +145,11 @@ export function tick(state: GameState, content: GameContent): GameState {
     feeCost: 0,
     loanCost: 0,
     livingCost: 0,
+    salaryCost: 0,
     sideIncome: 0,
     expenses: 0,
   };
+  const team = teamOf(s, content);
 
   let paymentRevenue = 0;
   let adRevenue = 0;
@@ -155,7 +161,7 @@ export function tick(state: GameState, content: GameContent): GameState {
 
     const noise = nextRange(rng, 0.9, 1.1);
     rng = noise.next;
-    const boost = modifierFactor(s, 'acquisition') * noise.value;
+    const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team);
     b.paid = paidPerDay(m, s.users, adSpend) * boost;
     b.organic = organicPerDay(m, s.users, s.reputation) * boost;
     b.viral = viralPerDay(m, s.users, s.quality) * boost;
@@ -200,8 +206,9 @@ export function tick(state: GameState, content: GameContent): GameState {
   s.loans = s.loans.filter((l) => l.untilDay > s.day);
   b.loanCost = s.loans.reduce((sum, l) => sum + l.dailyPayment, 0);
   b.livingCost = s.livingCostPerMonth / DAYS_IN_MONTH;
+  b.salaryCost = payrollPerMonth(team) / DAYS_IN_MONTH;
   b.sideIncome = (s.sideJobIncomePerMonth * s.sideJobShare) / DAYS_IN_MONTH;
-  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost;
+  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost;
 
   s.cash = cents(s.cash + b.revenue + b.sideIncome - b.expenses);
   s.lastDay = b;
@@ -212,6 +219,9 @@ export function tick(state: GameState, content: GameContent): GameState {
     const target = reputationTarget(s.quality, over, s.scandal);
     s.reputation = clamp(s.reputation + (target - s.reputation) * 0.01, 0, 100);
   }
+
+  // 5а. Команда: мотивация, уходы, новые кандидаты
+  s.team = stepTeam(s, content);
 
   // 6. Кассовый разрыв и банкротство
   s.negativeCashDays = s.cash < 0 ? s.negativeCashDays + 1 : 0;

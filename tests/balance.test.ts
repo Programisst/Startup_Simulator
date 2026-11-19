@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
 import type { DifficultyId } from '../src/core';
 import { runAll, summarize } from '../tools/balance/simulate';
-import { expert, idle, novice, sensible, sideJobOnly } from '../tools/balance/strategies';
+import { carefulHirer, expert, idle, novice, recklessHirer, sensible, sideJobOnly } from '../tools/balance/strategies';
 import { advance, newGame, run } from './helpers';
 
 const DIFFICULTIES: DifficultyId[] = ['easy', 'normal', 'hard'];
@@ -84,5 +84,25 @@ describe('сложность партии', () => {
     const late = summarize(runAll(sensible, 'normal', GAMES_PER_TYPE)).survived;
     const early = summarize(runAll(expert, 'normal', GAMES_PER_TYPE)).survived;
     expect(early - late).toBeGreaterThanOrEqual(0.2);
+  });
+});
+
+describe('наём и деньги', () => {
+  it.each(DIFFICULTIES)('%s: нанять сильного разработчика в первый день — верное банкротство за полгода', (id) => {
+    const s = summarize(runAll(recklessHirer, id, GAMES_PER_TYPE));
+    expect(s.bankrupt).toBe(1);
+    expect(s.medianBankruptDay).toBeLessThanOrEqual(6 * 30);
+  });
+
+  it('тот же игрок без найма живёт дольше: команда не по карману ускоряет конец', () => {
+    const reckless = summarize(runAll(recklessHirer, 'hard', GAMES_PER_TYPE));
+    const plain = summarize(runAll(expert, 'hard', GAMES_PER_TYPE));
+    expect(plain.survived).toBeGreaterThan(reckless.survived);
+  });
+
+  it.each(DIFFICULTIES)('%s: осторожный наём на прибыль не ухудшает шансы', (id) => {
+    const hiring = summarize(runAll(carefulHirer, id, GAMES_PER_TYPE)).survived;
+    const plain = summarize(runAll(expert, id, GAMES_PER_TYPE)).survived;
+    expect(hiring).toBeGreaterThanOrEqual(plain - 0.05);
   });
 });

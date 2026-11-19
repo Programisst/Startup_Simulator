@@ -1,10 +1,16 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { applyEffects } from './events';
+import { fire, hire, setSalary, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
 function fail(error: CommandError): CommandResult {
   return { ok: false, error };
+}
+
+function applyTeam(state: GameState, change: TeamChange): CommandResult {
+  if (!change.ok) return fail(change.error);
+  return { ok: true, state: { ...state, team: change.team, cash: Math.round((state.cash + change.cashDelta) * 100) / 100 } };
 }
 
 function isMoney(x: number, max: number): boolean {
@@ -21,6 +27,16 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
   const features = content.features[state.productType];
 
   switch (cmd.type) {
+    case 'hire':
+      return applyTeam(state, hire(state, cmd.candidateId, content));
+
+    case 'fire':
+      return applyTeam(state, fire(state, cmd.employeeId, content));
+
+    case 'setSalary':
+      if (!isMoney(cmd.salary, 1_000_000)) return fail('invalidValue');
+      return applyTeam(state, setSalary(state, cmd.employeeId, cmd.salary, content));
+
     case 'setAdSpend':
       if (!isMoney(cmd.perDay, 1_000_000)) return fail('invalidValue');
       return { ok: true, state: { ...state, adSpendPerDay: cmd.perDay } };
