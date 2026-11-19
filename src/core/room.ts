@@ -68,6 +68,8 @@ export interface RoomFounder {
   tired: boolean;
   /** Вымотан: добавляет ошибки */
   exhausted: boolean;
+  /** То же одним словом — для сцены: бодр, устал (зевает, ходит медленнее), вымотан (еле ходит) */
+  fatigue: 'fresh' | 'tired' | 'exhausted';
   coffeeActive: boolean;
   /** Сколько дней ещё действует кофе */
   coffeeDaysLeft: number;
@@ -225,6 +227,7 @@ export function roomView(s: GameState, content: GameContent): RoomView {
       pace: energyFactor(energyOf(s), content.config.founder),
       tired: energyOf(s) < content.config.founder.tiredBelow,
       exhausted: energyOf(s) < content.config.founder.exhaustedBelow,
+      fatigue: energyOf(s) < content.config.founder.exhaustedBelow ? 'exhausted' : energyOf(s) < content.config.founder.tiredBelow ? 'tired' : 'fresh',
       coffeeActive: coffeeActive(s),
       coffeeDaysLeft: Math.max(0, (s.coffeeUntilDay ?? 0) - s.day),
       coffeeReady: coffeeReady(s),

@@ -29,6 +29,9 @@ export function stepMilestones(draft: GameState, content: GameContent): string |
   // В наградах нет случайных исходов, поэтому генератор случайности не сдвигается.
   applyEffects(draft, next.effects, draft.rng, []);
   draft.milestones = [...(draft.milestones ?? []), { id: next.id, day: draft.day }];
+  // Закрыта последняя цель главы — в ленту идёт запись о пройденной главе.
+  const chapter = content.chapters.find((c) => c.milestones[c.milestones.length - 1] === next.id);
+  if (chapter) draft.news = [...(draft.news ?? []), { day: draft.day, kind: 'chapter' as const, id: chapter.id }].slice(-40);
   return next.id;
 }
 
@@ -37,6 +40,21 @@ export interface MilestoneView {
   current: { id: string; value: number; target: number; share: number; cashReward: number } | null;
   done: { id: string; day: number }[];
   total: number;
+  /** Текущая глава; когда все цели пройдены — последняя */
+  chapter: ChapterView;
+  chapters: ChapterView[];
+}
+
+export interface ChapterView {
+  id: string;
+  /** Номер главы с нуля */
+  index: number;
+  total: number;
+  /** Сколько целей главы пройдено и сколько в ней всего */
+  goalsDone: number;
+  goalsTotal: number;
+  done: boolean;
+  current: boolean;
 }
 
 /** Сводка целей для интерфейса. Состояние не меняет. */
@@ -44,6 +62,12 @@ export function milestoneView(s: GameState, content: GameContent): MilestoneView
   const next = nextMilestone(s, content);
   const value = next?.progress ? metricValue(s, next.progress.metric) : 0;
   const target = next?.progress?.target ?? 1;
+  const doneSet = new Set(doneIds(s));
+  const currentChapter = content.chapters.findIndex((c) => next !== null && c.milestones.includes(next.id));
+  const chapters: ChapterView[] = content.chapters.map((c, index) => {
+    const goalsDone = c.milestones.filter((id) => doneSet.has(id)).length;
+    return { id: c.id, index, total: content.chapters.length, goalsDone, goalsTotal: c.milestones.length, done: goalsDone === c.milestones.length, current: index === currentChapter };
+  });
   return {
     current: next
       ? {
@@ -56,6 +80,8 @@ export function milestoneView(s: GameState, content: GameContent): MilestoneView
       : null,
     done: s.milestones ?? [],
     total: content.milestones.length,
+    chapter: chapters.find((c) => c.current) ?? chapters[chapters.length - 1]!,
+    chapters,
   };
 }
 

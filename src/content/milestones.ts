@@ -1,7 +1,7 @@
 // Цели на пути компании: по порядку, от первой строчки кода до большой компании.
 // Названия и подсказки для игрока лежат в переводах под ключом goalsLadder.items.<id>.
 // Награды намеренно небольшие: это призы и известность, а не способ выжить. Большие деньги приносят инвесторы.
-import type { MilestoneDef } from '../core/types';
+import type { ChapterDef, MilestoneDef } from '../core/types';
 
 export const milestones: MilestoneDef[] = [
   { id: 'coreBuilt', condition: { minFeatures: 1 }, effects: [{ type: 'reputation', amount: 1 }], progress: { metric: 'features', target: 1 } },
@@ -18,15 +18,25 @@ export const milestones: MilestoneDef[] = [
   { id: 'team3', condition: { minTeam: 3 }, effects: [{ type: 'reputation', amount: 2 }], progress: { metric: 'team', target: 3 } },
   { id: 'officeCoworking', condition: { minOffice: 1 }, effects: [{ type: 'reputation', amount: 3 }] },
   { id: 'revenue5000', condition: { minRevenue30: 5000 }, effects: [{ type: 'reputation', amount: 4 }], progress: { metric: 'revenue30', target: 5000 } },
+  // Засчитывается, когда предложение пришло: соглашаться не обязательно, иначе отказ закрыл бы путь дальше.
+  { id: 'investorOffer', condition: { eventSeen: 'angelOffer' }, effects: [{ type: 'reputation', amount: 2 }] },
   { id: 'team6', condition: { minTeam: 6 }, effects: [{ type: 'reputation', amount: 2 }], progress: { metric: 'team', target: 6 } },
   { id: 'users10000', condition: { minUsers: 10_000 }, effects: [{ type: 'cash', amount: 1500 }], progress: { metric: 'users', target: 10_000 } },
   { id: 'officeSmall', condition: { minOffice: 2 }, effects: [{ type: 'reputation', amount: 4 }] },
   { id: 'revenue20000', condition: { minRevenue30: 20_000 }, effects: [{ type: 'reputation', amount: 5 }], progress: { metric: 'revenue30', target: 20_000 } },
   { id: 'team12', condition: { minTeam: 12 }, effects: [{ type: 'reputation', amount: 3 }], progress: { metric: 'team', target: 12 } },
-  { id: 'users50000', condition: { minUsers: 50_000 }, effects: [{ type: 'cash', amount: 5000 }], progress: { metric: 'users', target: 50_000 } },
   { id: 'officeBig', condition: { minOffice: 3 }, effects: [{ type: 'reputation', amount: 5 }] },
   { id: 'revenue100000', condition: { minRevenue30: 100_000 }, effects: [{ type: 'reputation', amount: 6 }], progress: { metric: 'revenue30', target: 100_000 } },
-  { id: 'team30', condition: { minTeam: 30 }, effects: [{ type: 'reputation', amount: 4 }], progress: { metric: 'team', target: 30 } },
   { id: 'officeFloor', condition: { minOffice: 4 }, effects: [{ type: 'reputation', amount: 6 }] },
   { id: 'users250000', condition: { minUsers: 250_000 }, effects: [{ type: 'reputation', amount: 8 }], progress: { metric: 'users', target: 250_000 } },
+];
+
+/** Шесть глав пути: от гаража до единорога. Главы идут подряд и вместе покрывают все цели. */
+export const chapters: ChapterDef[] = [
+  { id: 'garage', milestones: ['coreBuilt', 'launched', 'users10', 'users100'] },
+  { id: 'firstClients', milestones: ['revenue100', 'features3', 'users500', 'revenue1000'] },
+  { id: 'team', milestones: ['profitMonth', 'firstHire', 'users2000', 'team3'] },
+  { id: 'investor', milestones: ['officeCoworking', 'revenue5000', 'investorOffer', 'team6'] },
+  { id: 'office', milestones: ['users10000', 'officeSmall', 'revenue20000', 'team12'] },
+  { id: 'unicorn', milestones: ['officeBig', 'revenue100000', 'officeFloor', 'users250000'] },
 ];
