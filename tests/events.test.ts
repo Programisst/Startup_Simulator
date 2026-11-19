@@ -55,7 +55,8 @@ describe('содержимое событий', () => {
       expect(def.choices.length, def.id).toBeGreaterThanOrEqual(2);
       expect(def.choices.length, def.id).toBeLessThanOrEqual(3);
       expect(def.weight, def.id).toBeGreaterThan(0);
-      expect(def.cooldownDays, def.id).toBeGreaterThanOrEqual(60);
+      // Развилки разработки возникают по ходу работы, перерыв между ними задаёт сама работа.
+      if (!def.dev) expect(def.cooldownDays, def.id).toBeGreaterThanOrEqual(60);
       for (const e of def.choices.flatMap((c) => flat(c.effects))) {
         if (e.type === 'chance') {
           expect(e.probability, def.id).toBeGreaterThan(0);
@@ -90,6 +91,7 @@ describe('содержимое событий', () => {
       withTeam({ ...rich, cash: -50 }, team),
       { ...rich, quality: 30, cash: 900 },
       { ...rich, capacity: 100 },
+      { ...rich, energy: 10 },
     ];
     for (const def of content.events) expect(states.some((s) => conditionHolds(def.condition, s)), def.id).toBe(true);
   });

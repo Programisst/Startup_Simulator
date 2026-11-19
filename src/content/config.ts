@@ -48,4 +48,18 @@ export const config: GameConfig = {
     marketingPerPoint: 0.2,
     marketingCap: 0.6,
   },
+  founder: {
+    drainPerDay: 1.8,
+    rushDrain: 1.8,
+    idleRecovery: 4,
+    restGain: 35,
+    tiredBelow: 50,
+    minFactor: 0.5,
+    exhaustedBelow: 25,
+    coffeeBoost: 1.2,
+    coffeeDays: 3,
+    coffeeCooldownDays: 10,
+    coffeeCost: 5,
+    dilemmaMinCost: 12,
+  },
 };

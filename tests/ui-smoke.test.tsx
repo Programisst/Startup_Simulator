@@ -77,7 +77,13 @@ describe('экраны', () => {
     expect(renderApp()).toContain('Сначала нужна основа продукта');
     useStore.getState().dispatch({ type: 'queueFeature', featureId: 'core' });
     expect(useStore.getState().game?.tasks).toHaveLength(1);
-    for (let i = 0; i < 30; i++) useStore.getState().step();
+    for (let i = 0; i < 30; i++) {
+      // На середине работы игра задаёт вопрос-развилку — отвечаем первым вариантом, иначе время стоит.
+      const pendingId = useStore.getState().game?.pendingEvent;
+      const pendingDef = content.events.find((e) => e.id === pendingId);
+      if (pendingDef) useStore.getState().dispatch({ type: 'chooseEvent', choiceId: pendingDef.choices[0]!.id });
+      useStore.getState().step();
+    }
     expect(useStore.getState().game?.doneFeatures).toEqual(['core']);
   });
 });

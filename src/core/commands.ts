@@ -1,6 +1,7 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { applyEffects } from './events';
+import { coffeeReady, energyOf } from './founder';
 import { fire, hire, setSalary, type TeamChange } from './team';
 import type { Command, CommandError, CommandResult, GameContent, GameState } from './types';
 
@@ -27,6 +28,23 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
   const features = content.features[state.productType];
 
   switch (cmd.type) {
+    case 'rest':
+      return { ok: true, state: { ...state, resting: true } };
+
+    case 'coffee': {
+      if (!coffeeReady(state)) return fail('coffeeTooSoon');
+      const f = content.config.founder;
+      return {
+        ok: true,
+        state: {
+          ...state,
+          coffeeUntilDay: state.day + f.coffeeDays,
+          coffeeReadyDay: state.day + f.coffeeCooldownDays,
+          energy: Math.max(0, energyOf(state) - f.coffeeCost),
+        },
+      };
+    }
+
     case 'hire':
       return applyTeam(state, hire(state, cmd.candidateId, content));
 

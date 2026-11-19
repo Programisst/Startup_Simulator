@@ -2,6 +2,7 @@
 // Описание формул — в docs/02-economy.md, раздел 16.
 
 import { clamp } from './formulas';
+import { founderWorkPerDay } from './founder';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
 import type { Candidate, Employee, EmployeeRole, GameContent, GameState, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
@@ -231,7 +232,7 @@ export function teamView(s: GameState, content: GameContent): TeamView {
   const cfg = content.config;
   const team = teamOf(s, content);
   const rush = s.rush ? cfg.rushSpeed : 1;
-  const founder = cfg.founderSkill * (1 - s.sideJobShare) * rush;
+  const founder = founderWorkPerDay(s, cfg) * rush;
   return {
     members: team.employees.map((e) => {
       const target = motivationTarget(e, s, cfg.team);

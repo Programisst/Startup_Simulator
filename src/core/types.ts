@@ -67,6 +67,8 @@ export interface EventCondition {
   minDebt?: number;
   overloaded?: boolean;
   cashNegative?: boolean;
+  /** Силы основателя не выше этого числа */
+  maxEnergy?: number;
   /** Сколько функций готово, считая основу */
   minFeatures?: number;
   /** Доход продукта за последние 30 дней */
@@ -107,6 +109,12 @@ export type Effect =
   | { type: 'modifier'; target: ModifierTarget; factor: number; days: number }
   /** Заём: деньги сейчас, возврат amount × repayFactor равными долями за days дней */
   | { type: 'loan'; amount: number; repayFactor: number; days: number }
+  /** Силы основателя */
+  | { type: 'energy'; amount: number }
+  /** Работа над текущей функцией: плюс — продвинулись, минус — откатились */
+  | { type: 'taskProgress'; amount: number }
+  /** Очки качества продукта */
+  | { type: 'polish'; amount: number }
   /** Мотивация всей команды */
   | { type: 'teamMotivation'; amount: number }
   /** Последствия для сотрудника, о котором событие */
@@ -145,6 +153,8 @@ export interface EventDef {
   once?: boolean;
   /** Срочное: случается сразу, как только выполнено условие */
   urgent?: boolean;
+  /** Развилка во время разработки: возникает на середине работы над функцией, а не случайно */
+  dev?: boolean;
   condition: EventCondition;
   choices: EventChoiceDef[];
 }
@@ -201,6 +211,33 @@ export interface TeamConfig {
   marketingCap: number;
 }
 
+/** Силы основателя: как он устаёт и отдыхает. */
+export interface FounderConfig {
+  /** Сколько сил уходит за рабочий день */
+  drainPerDay: number;
+  /** Во сколько раз быстрее уходят силы при спешке */
+  rushDrain: number;
+  /** Сколько сил возвращается за день без дел */
+  idleRecovery: number;
+  /** Сколько сил возвращает день отдыха */
+  restGain: number;
+  /** Ниже этого уровня основатель работает медленнее */
+  tiredBelow: number;
+  /** Во сколько раз медленнее он работает при нуле сил */
+  minFactor: number;
+  /** Ниже этого уровня к каждой готовой функции добавляется ошибка */
+  exhaustedBelow: number;
+  /** Во сколько раз кофе ускоряет работу и на сколько дней */
+  coffeeBoost: number;
+  coffeeDays: number;
+  /** Через сколько дней можно снова */
+  coffeeCooldownDays: number;
+  /** Сколько сил кофе отнимает сразу: рывок в долг */
+  coffeeCost: number;
+  /** Развилка возникает только у функций не короче этого числа дней работы */
+  dilemmaMinCost: number;
+}
+
 export interface GameConfig {
   startReputation: number;
   startCapacity: number;
@@ -226,6 +263,7 @@ export interface GameConfig {
   /** Насколько рынок каждой партии случайно отличается от базового, доля (0.15 = ±15%) */
   marketVariation: number;
   team: TeamConfig;
+  founder: FounderConfig;
 }
 
 export interface GameContent {
@@ -258,7 +296,7 @@ export interface Market {
 }
 
 export type Task =
-  | { kind: 'feature'; featureId: string; progress: number }
+  | { kind: 'feature'; featureId: string; progress: number; /** Развилка по этой функции уже была */ asked?: boolean }
   | { kind: 'bugfix'; progress: number }
   | { kind: 'refactor'; progress: number }
   /** Улучшение продукта: повторяемая задача, идёт, пока её не снимут */
@@ -273,6 +311,19 @@ export interface Modifier {
 export interface Loan {
   dailyPayment: number;
   untilDay: number;
+}
+
+/** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
+export interface NewsItem {
+  day: number;
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired';
+  /** Число, о котором новость: пользователей, платящих, долларов */
+  value?: number;
+  /** Для готовой функции — её id */
+  id?: string;
+  /** Для отзыва: тон и номер текста */
+  tone?: 'good' | 'mixed' | 'bad';
+  variant?: number;
 }
 
 export interface EventLogEntry {
@@ -411,6 +462,15 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Силы основателя 0…100. Необязательные поля ниже: в старых сохранениях их нет. */
+  energy?: number;
+  /** До какого дня действует кофе и с какого дня можно снова */
+  coffeeUntilDay?: number;
+  coffeeReadyDay?: number;
+  /** Сегодня основатель отдыхает и не работает */
+  resting?: boolean;
+  /** Лента: последние заметные события */
+  news?: NewsItem[];
   /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
   milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
@@ -463,6 +523,9 @@ export type Command =
   | { type: 'removeTask'; index: number }
   | { type: 'setRush'; rush: boolean }
   | { type: 'launch' }
+  /** День отдыха: основатель не работает и восстанавливает силы */
+  | { type: 'rest' }
+  | { type: 'coffee' }
   | { type: 'hire'; candidateId: number }
   | { type: 'fire'; employeeId: number }
   | { type: 'setSalary'; employeeId: number; salary: number }
@@ -480,6 +543,7 @@ export type CommandError =
   | 'alreadyQueued'
   | 'noSuchTask'
   | 'alreadyLaunched'
+  | 'coffeeTooSoon'
   | 'noSuchCandidate'
   | 'noSuchEmployee'
   | 'teamFull'

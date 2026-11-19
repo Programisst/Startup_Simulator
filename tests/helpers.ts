@@ -36,6 +36,13 @@ export function advance(state: GameState, days: number): GameState {
   return s;
 }
 
+/** То же, что advance, но основатель каждое утро полон сил: для проверки формул без усталости. */
+export function advanceFresh(state: GameState, days: number): GameState {
+  let s = state;
+  for (let i = 0; i < days && s.status === 'running'; i++) s = advance({ ...s, energy: 100 }, 1);
+  return s;
+}
+
 /** Партия с готовой основой продукта, запущенная на рынок. */
 export function launchedGame(overrides: Partial<NewGameSetup> = {}): GameState {
   // Запас денег большой, чтобы тесты продукта не зависели от расходов на жизнь.

@@ -31,6 +31,15 @@ export const adsOnly: Strategy = (s, content) => {
   return cmds;
 };
 
+/** Бережёт силы: отдыхает, когда устал, и пьёт кофе, когда есть над чем работать. */
+function care(s: GameState): Command[] {
+  const cmds: Command[] = [];
+  const energy = s.energy ?? 100;
+  if (energy < 50 && !s.resting) cmds.push({ type: 'rest' });
+  else if (s.tasks.length > 0 && s.day >= (s.coffeeReadyDay ?? 0) && energy > 60) cmds.push({ type: 'coffee' });
+  return cmds;
+}
+
 function scaleServers(s: GameState, content: GameContent): Command[] {
   const tiers = content.config.capacityTiers;
   const wanted = tiers.find((t) => t >= s.users * 1.25) ?? tiers[tiers.length - 1]!;
@@ -44,6 +53,7 @@ function scaleServers(s: GameState, content: GameContent): Command[] {
 function builder(launchAfter: number): Strategy {
   return (s, content) => {
     const cmds = answerEvent(s, content);
+    cmds.push(...care(s));
     const defs = content.features[s.productType];
     const core = coreId(s, content);
 
