@@ -16,6 +16,7 @@ export function Finance() {
           <table>
             <tbody>
               <tr><td>{t('finance.living')}</td><td>{perMonth(b.livingCost)}</td></tr>
+              <tr><td>{t('finance.salaries')}</td><td>{perMonth(b.salaryCost ?? 0)}</td></tr>
               <tr><td>{t('finance.servers')}</td><td>{perMonth(b.serverCost)}</td></tr>
               <tr><td>{t('finance.ads')}</td><td>{perMonth(b.adCost)}</td></tr>
               <tr><td>{t('finance.tools')}</td><td>{perMonth(b.toolsCost)}</td></tr>
