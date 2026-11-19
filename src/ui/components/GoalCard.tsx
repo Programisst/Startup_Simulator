@@ -28,6 +28,9 @@ export function GoalCard({ variant }: { variant: 'room' | 'app' }) {
   const cur = view.current;
   return (
     <div className={`goal goal-${variant}`}>
+      <span className="goal-label goal-chapter">
+        {t('goalsLadder.chapterLine', { index: view.chapter.index + 1, total: view.chapter.total, name: t(`goalsLadder.chapters.${view.chapter.id}`) })}
+      </span>
       <span className="goal-label">
         {t('goalsLadder.title')} · {t('goalsLadder.count', { done: view.done.length, total: view.total })}
       </span>

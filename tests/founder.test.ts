@@ -250,6 +250,37 @@ describe('набор кода самим игроком', () => {
   });
 });
 
+describe('усталость для сцены', () => {
+  const fatigue = (energy: number) => roomView({ ...newGame(), energy }, content).founder;
+
+  it('одно слово по уровню сил: бодр, устал, вымотан', () => {
+    expect(fatigue(100).fatigue).toBe('fresh');
+    expect(fatigue(f.tiredBelow).fatigue).toBe('fresh');
+    expect(fatigue(f.tiredBelow - 1).fatigue).toBe('tired');
+    expect(fatigue(f.exhaustedBelow).fatigue).toBe('tired');
+    expect(fatigue(f.exhaustedBelow - 1).fatigue).toBe('exhausted');
+    expect(fatigue(0).fatigue).toBe('exhausted');
+  });
+
+  it('согласовано с остальными признаками и с темпом работы', () => {
+    for (const energy of [100, 60, 49, 30, 24, 0]) {
+      const v = fatigue(energy);
+      expect(v.tired).toBe(v.fatigue !== 'fresh');
+      expect(v.exhausted).toBe(v.fatigue === 'exhausted');
+      expect(v.pace).toBeGreaterThanOrEqual(f.minFactor);
+      expect(v.pace).toBeLessThanOrEqual(1);
+    }
+    expect(fatigue(100).pace).toBe(1);
+    expect(fatigue(0).pace).toBe(f.minFactor);
+  });
+
+  it('старое сохранение без сил — герой бодр', () => {
+    const old = { ...newGame() };
+    delete old.energy;
+    expect(roomView(old, content).founder.fatigue).toBe('fresh');
+  });
+});
+
 describe('строка о наборе кода на экране редактора', () => {
   it('короткая: плашка с ней и кнопкой «Вернуться к компании» не должна доставать до значков нижней панели', () => {
     // Плашка стоит слева от панели значков. При шрифте 12,5 в неё вместе с кнопкой помещается около 28 знаков текста.

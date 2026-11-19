@@ -141,6 +141,37 @@ export function stepTeam(s: GameState, content: GameContent): TeamState {
   return team;
 }
 
+/**
+ * Места сотрудников в офисе: id → номер места.
+ * У кого место записано — оно его; остальным (люди из старых сохранений) достаются наименьшие свободные, по порядку найма.
+ */
+export function seatsOf(employees: Employee[]): Map<number, number> {
+  const seats = new Map<number, number>();
+  const taken = new Set<number>();
+  for (const e of employees) {
+    if (e.seat !== undefined && !taken.has(e.seat)) {
+      seats.set(e.id, e.seat);
+      taken.add(e.seat);
+    }
+  }
+  let next = 0;
+  for (const e of [...employees].sort((a, b) => a.id - b.id)) {
+    if (seats.has(e.id)) continue;
+    while (taken.has(next)) next += 1;
+    seats.set(e.id, next);
+    taken.add(next);
+  }
+  return seats;
+}
+
+/** Наименьшее свободное место. */
+function freeSeat(employees: Employee[]): number {
+  const taken = new Set(seatsOf(employees).values());
+  let seat = 0;
+  while (taken.has(seat)) seat += 1;
+  return seat;
+}
+
 export type TeamCommandError = 'noSuchCandidate' | 'noSuchEmployee' | 'teamFull';
 export type TeamChange = { ok: true; team: TeamState; cashDelta: number } | { ok: false; error: TeamCommandError };
 
@@ -150,7 +181,8 @@ export function hire(s: GameState, candidateId: number, content: GameContent): T
   const candidate = team.candidates.find((c) => c.id === candidateId);
   if (!candidate) return { ok: false, error: 'noSuchCandidate' };
   if (team.employees.length >= officeOf(s, content.config).seats) return { ok: false, error: 'teamFull' };
-  const employee: Employee = { ...candidate, salary: candidate.salaryAsk, hiredDay: s.day, motivation: cfg.startMotivation };
+  // Место закрепляется за человеком: уволили соседа — остальные не пересаживаются.
+  const employee: Employee = { ...candidate, salary: candidate.salaryAsk, hiredDay: s.day, motivation: cfg.startMotivation, seat: freeSeat(team.employees) };
   return {
     ok: true,
     cashDelta: 0,

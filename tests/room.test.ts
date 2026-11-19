@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { roomClock, roomView, tick } from '../src/core';
+import { roomClock, roomView, sceneTeam, teamView, tick, type Employee, type GameState } from '../src/core';
 import { content } from '../src/content';
-import { advance, launchedGame, newGame, run } from './helpers';
+import { advance, deepFreeze, launchedGame, newGame, run } from './helpers';
 
 const coreFeature = content.features.saas.find((f) => f.core)!;
 
@@ -134,5 +134,85 @@ describe('roomClock: часы в квартире внутри одного иг
       expect(m).toBeGreaterThanOrEqual(0);
       expect(m).toBeLessThan(1440);
     }
+  });
+});
+
+describe('команда для сцены', () => {
+  const worker = (id: number, over: Partial<Employee> = {}): Employee => ({ id, role: 'developer', skill: 1, trait: 'calm', salaryAsk: 1000, salary: 1000, nameSeed: id * 3, hiredDay: 0, motivation: 70, driver: 'money', ...over });
+  const withTeam = (s: GameState, employees: Employee[]): GameState => ({ ...s, team: { ...s.team!, employees } });
+  const rich = (): GameState => ({ ...newGame(), cash: 1e6 });
+
+  it('в начале: комната основателя, людей нет, все три места свободны', () => {
+    const t = roomView(newGame(), content).team;
+    expect(t.office).toEqual({ id: 'home', index: 0, seats: 3 });
+    expect(t.people).toEqual([]);
+    expect(t.freeSeats).toEqual([0, 1, 2]);
+  });
+
+  it('нанятые садятся на места по порядку, и место за человеком закреплено', () => {
+    let s = rich();
+    const hireFirst = () => {
+      const id = teamView(s, content).candidates[0]!.id;
+      s = run(s, { type: 'hire', candidateId: id });
+      return id;
+    };
+    const a = hireFirst();
+    const b = hireFirst();
+    const c = hireFirst();
+    const seat = (id: number) => sceneTeam(s, content).people.find((p) => p.id === id)?.seat;
+    expect([seat(a), seat(b), seat(c)]).toEqual([0, 1, 2]);
+    expect(sceneTeam(s, content).freeSeats).toEqual([]);
+
+    // Уволили первого: остальные не пересаживаются, место 0 свободно.
+    s = run(s, { type: 'fire', employeeId: a });
+    expect([seat(b), seat(c)]).toEqual([1, 2]);
+    expect(sceneTeam(s, content).freeSeats).toEqual([0]);
+
+    // Новичок садится на освободившееся место.
+    for (let i = 0; i < content.config.team.candidatesEveryDays; i++) s = tick({ ...s, pendingEvent: null }, { ...content, events: [], milestones: [] });
+    const d = hireFirst();
+    expect(seat(d)).toBe(0);
+    expect([seat(b), seat(c)]).toEqual([1, 2]);
+  });
+
+  it('после переезда места сохраняются, а свободных становится больше', () => {
+    let s = withTeam(rich(), [worker(1, { seat: 0 }), worker(2, { seat: 2 })]);
+    s = run(s, { type: 'moveOffice' });
+    const t = sceneTeam(s, content);
+    expect(t.office).toEqual({ id: 'coworking', index: 1, seats: 6 });
+    expect(t.people.map((p) => [p.id, p.seat])).toEqual([[1, 0], [2, 2]]);
+    expect(t.freeSeats).toEqual([1, 3, 4, 5]);
+  });
+
+  it('занятость: разработчик занят, когда есть задачи; маркетолог — когда продукт на рынке', () => {
+    const people = [worker(1), worker(2, { role: 'marketer' })];
+    const idle = sceneTeam(withTeam(rich(), people), content).people;
+    expect(idle.map((p) => p.busy)).toEqual([false, false]);
+    const building = sceneTeam(run(withTeam(rich(), people), { type: 'queueFeature', featureId: 'core' }), content).people;
+    expect(building.map((p) => p.busy)).toEqual([true, false]);
+    const live = sceneTeam(withTeam({ ...launchedGame(), cash: 1e6 }, people), content).people;
+    expect(live.map((p) => p.busy)).toEqual([false, true]);
+  });
+
+  it('настроение и готовность уйти берутся из расчёта', () => {
+    const s = withTeam({ ...rich(), cash: -1, rush: true }, [worker(1, { motivation: 90 }), worker(2, { motivation: 60 }), worker(3, { motivation: 20, salary: 100, trait: 'diligent' })]);
+    const p = sceneTeam(s, content).people;
+    expect(p.map((x) => x.mood)).toEqual(['high', 'mid', 'low']);
+    expect(p[2]!.leaving).toBe(true);
+    expect(sceneTeam(withTeam(rich(), [worker(1)]), content).people[0]!.leaving).toBe(false);
+  });
+
+  it('люди из старого сохранения без записанного места рассаживаются по порядку найма и не садятся на чужие места', () => {
+    const s = withTeam(rich(), [worker(7), worker(3), worker(5, { seat: 0 })]);
+    const seats = Object.fromEntries(sceneTeam(s, content).people.map((p) => [p.id, p.seat]));
+    expect(seats).toEqual({ 5: 0, 3: 1, 7: 2 });
+    const old: GameState = { ...launchedGame() };
+    delete old.team;
+    expect(sceneTeam(old, content).people).toEqual([]);
+  });
+
+  it('сводка не меняет состояние и одинакова при одном и том же составе', () => {
+    const s = deepFreeze(withTeam(rich(), [worker(1), worker(2)]));
+    expect(sceneTeam(s, content)).toEqual(sceneTeam(s, content));
   });
 });
