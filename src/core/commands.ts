@@ -1,5 +1,6 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
+import { startCampaign } from './campaigns';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf } from './founder';
@@ -51,6 +52,12 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'typeCode': {
       if (!Number.isFinite(cmd.chars) || cmd.chars <= 0 || cmd.chars > 10_000) return fail('invalidValue');
       return { ok: true, state: { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / content.config.founder.focusChars) } };
+    }
+
+    case 'runCampaign': {
+      const def = content.config.marketing.campaigns.find((c) => c.id === cmd.campaignId);
+      const started = def ? startCampaign(state, def) : null;
+      return started ? { ok: true, state: started } : fail('campaignUnavailable');
     }
 
     case 'moveOffice': {

@@ -87,6 +87,44 @@ export const config: GameConfig = {
     contentPerDouble: 1500,
     contentCap: 1.5,
     contentDecayPerDay: 0.01,
+    campaignQualityRef: 60,
+    campaigns: [
+      // Обзор у блогера: недорого и быстро, для массовых продуктов. Обычная ставка.
+      {
+        id: 'blogger', baseCost: 400, revenueShare: 0.12, days: 5, cooldownDays: 45,
+        fit: { consumer: 1.3, business: 0.8 },
+        weights: { fail: 35, ok: 45, hit: 20 },
+        results: { ok: { factor: 1.4, days: 14 }, hit: { factor: 2.5, days: 21, reputation: 4 } },
+      },
+      // Вирусный ролик: чаще мимо и может ударить по репутации, зато если зайдёт — взрыв.
+      {
+        id: 'stunt', baseCost: 700, revenueShare: 0.1, days: 3, cooldownDays: 60,
+        fit: { consumer: 1.2, business: 0.7 },
+        weights: { fail: 60, ok: 20, hit: 20 },
+        results: { fail: { reputation: -4 }, ok: { factor: 1.5, days: 10 }, hit: { factor: 4, days: 14, reputation: 6 } },
+      },
+      // Витрина новинок: бесплатно, но готовит её сам основатель и нужен приличный продукт.
+      {
+        id: 'showcase', baseCost: 0, revenueShare: 0, energyCost: 30, days: 4, cooldownDays: 120, minQuality: 50,
+        fit: { consumer: 1, business: 1.1 },
+        weights: { fail: 30, ok: 50, hit: 20 },
+        results: { ok: { factor: 1.5, days: 10, reputation: 2 }, hit: { factor: 3, days: 14, reputation: 6 } },
+      },
+      // Конференция: дорого и долго, зато почти без провалов. Для продуктов «для дела».
+      {
+        id: 'conference', baseCost: 1500, revenueShare: 0.2, days: 8, cooldownDays: 90,
+        fit: { consumer: 0.8, business: 1.3 },
+        weights: { fail: 15, ok: 65, hit: 20 },
+        results: { ok: { factor: 1.5, days: 21, reputation: 3 }, hit: { factor: 2.2, days: 30, reputation: 7 } },
+      },
+      // Розыгрыш призов: почти наверняка сработает, но слабо.
+      {
+        id: 'giveaway', baseCost: 500, revenueShare: 0.08, days: 6, cooldownDays: 45,
+        fit: { consumer: 1.1, business: 0.9 },
+        weights: { fail: 10, ok: 80, hit: 10 },
+        results: { ok: { factor: 1.25, days: 14 }, hit: { factor: 1.8, days: 14, reputation: 2 } },
+      },
+    ],
   },
   // Партия про рост, а не про выживание впроголодь: рынок откликается быстрее, чем в «честной» модели.
   pace: { acquisition: 1.3, revenue: 1.5, launchBoost: 3, launchDays: 30 },
