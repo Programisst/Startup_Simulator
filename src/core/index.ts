@@ -6,3 +6,4 @@ export { tick, currentQuality, featureScore } from './tick';
 export { applyCommand } from './commands';
 export { conditionHolds } from './events';
 export { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
+export { roomView, roomClock, type FounderActivity, type RoomAlerts, type RoomCalendar, type RoomProduct, type RoomTask, type RoomView } from './room';
