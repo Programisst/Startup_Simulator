@@ -151,7 +151,7 @@ describe('подработка, улучшение продукта и слож�
     const easy = newGame({ difficulty: 'easy' });
     const hard = newGame({ difficulty: 'hard' });
     expect(easy.cash).toBe(5000);
-    expect(hard.cash).toBe(2000);
+    expect(hard.cash).toBe(1800);
     expect(hard.livingCostPerMonth).toBeGreaterThan(easy.livingCostPerMonth);
     expect(hard.market.cacBase).toBeGreaterThan(easy.market.cacBase);
   });

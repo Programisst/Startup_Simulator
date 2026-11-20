@@ -216,6 +216,8 @@ export interface DifficultyDef {
   sideJobIncomePerMonth: number;
   /** Множитель цены рекламы и оттока: больше 1 — рынок жёстче */
   marketHarshness: number;
+  /** Свой разброс рынка партии (попала идея в рынок или нет). Не задан — общий из настроек. */
+  marketVariation?: number;
 }
 
 export type EmployeeRole = 'developer' | 'marketer';
