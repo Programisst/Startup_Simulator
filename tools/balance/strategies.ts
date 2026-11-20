@@ -1,5 +1,5 @@
 // Простые автоматические игроки для проверки баланса.
-import { cac, featuresOf, teamView, type Command, type GameContent, type GameState } from '../../src/core';
+import { acquisitionsView, cac, campaignsView, featuresOf, fundingView, headhuntView, officeView, releaseView, teamView, type Command, type GameContent, type GameState } from '../../src/core';
 
 export type Strategy = (s: GameState, content: GameContent) => Command[];
 
@@ -154,4 +154,66 @@ export const recklessHirer: Strategy = (s, content) => {
   return cmds;
 };
 
-export const strategies: Record<string, Strategy> = { idle, sideJobOnly, adsOnly, novice, sensible, expert, carefulHirer, recklessHirer };
+/**
+ * Активный игрок: всё, что делает осторожный наниматель, плюс все «решения с риском» —
+ * акции, обещанные обновления, охота за звёздами, раунды инвестиций и покупка компаний.
+ * Рискует с оглядкой: не тратит на одну ставку больше пятой части денег, проверяет компании перед покупкой
+ * и не покупает следующую, пока не вычистил ошибки и долг от предыдущей.
+ * Нужен, чтобы видеть, не стала ли игра проходиться сама собой, когда всё это сложено вместе.
+ */
+export const active: Strategy = (s, content) => {
+  const cmds = carefulHirer(s, content);
+  if (!s.launched || s.pendingEvent !== null) return cmds;
+  const cfg = content.config;
+  const revenue = s.recentDays.slice(-30).reduce((sum, d) => sum + d.revenue, 0);
+
+  // Порядок в продукте: чинит сразу, не дожидаясь пустой очереди (купленные компании привозят ошибки и долг).
+  if (s.bugs >= 5 && !s.tasks.some((t) => t.kind === 'bugfix')) cmds.push({ type: 'startBugfix' });
+  if (s.debt >= 25 && !s.tasks.some((t) => t.kind === 'refactor')) cmds.push({ type: 'startRefactor' });
+
+  // Офис: переезжает, когда мест нет, а денег хватает на переезд и полтора года аренды.
+  const office = officeView(s, cfg);
+  const seats = teamView(s, content);
+  if (office.next && seats.size >= seats.maxSize && s.cash > office.next.moveCost + office.next.rentPerMonth * 18) cmds.push({ type: 'moveOffice' });
+
+  // Акция: первая доступная, если она по карману и провал не слишком вероятен.
+  const campaign = campaignsView(s, cfg).list.find((c) => c.blocked === null && c.cost <= s.cash * 0.2 && c.odds.fail <= 40);
+  if (campaign) cmds.push({ type: 'runCampaign', campaignId: campaign.id });
+
+  // Обновление: крупное, срок впритык — и сам печатает код, пока оно в работе.
+  const release = releaseView(s, content);
+  if (release.active) {
+    if (s.tasks.length > 0 && !s.resting) cmds.push({ type: 'typeCode', chars: cfg.founder.typeCharsPerDay * cfg.founder.typeBonusCap });
+  } else if (release.blocked === null && s.tasks.length > 0 && (s.energy ?? 100) > 60) {
+    cmds.push({ type: 'announceRelease', size: 'large', deadline: 'exact' });
+  }
+
+  // Звезда: щедрое предложение, если зарплаты после него останутся меньше 40% дохода.
+  const team = teamView(s, content);
+  const offer = headhuntView(s, content).star?.offers.find((o) => o.id === 'generous');
+  if (offer && offer.blocked === null && !offer.risky && team.payrollPerMonth + offer.salary < revenue * 0.4 && s.cash > offer.bonus * 3) {
+    cmds.push({ type: 'headhunt', offer: 'generous' });
+  }
+
+  // Инвесторы: два раунда с ангелами за партию, с одной попыткой выторговать больше; звать — только не из слабой позиции.
+  const funding = fundingView(s, content);
+  const angels = funding.investors.find((i) => i.id === 'angels');
+  if (funding.rounds < 2 && angels?.blocked === null && funding.position.level !== 'weak') {
+    cmds.push({ type: 'openRound', investorId: 'angels' }, { type: 'counterOffer', stance: 'ask' }, { type: 'closeRound' });
+  }
+
+  // Покупка компании: сначала проверка, пустышки пропускает; серверы поднимает заранее.
+  const target = acquisitionsView(s, content).target;
+  if (target && target.price <= s.cash * 0.5 && s.bugs < 8 && s.debt < 30) {
+    if (target.check.state === 'none' && target.check.blocked === null) cmds.push({ type: 'checkTarget' });
+    else if (target.check.state === 'done' && target.health !== 'hollow') {
+      const tiers = cfg.capacityTiers;
+      const wanted = tiers.find((t) => t >= (s.users + target.users) * 1.25) ?? tiers[tiers.length - 1]!;
+      if (wanted > s.capacity) cmds.push({ type: 'setCapacity', capacity: wanted });
+      cmds.push({ type: 'buyTarget', offer: 'full' });
+    }
+  }
+  return cmds;
+};
+
+export const strategies: Record<string, Strategy> = { idle, sideJobOnly, adsOnly, novice, sensible, expert, carefulHirer, recklessHirer, active };

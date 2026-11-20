@@ -97,6 +97,8 @@ export const config: GameConfig = {
     lowChance: 0.4,
     lowChanceWeak: 0.75,
     marketPerUser: 2,
+    strainBugs: 8,
+    strainDebt: 30,
     companies: 8,
   },
   funding: {

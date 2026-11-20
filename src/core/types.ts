@@ -317,6 +317,9 @@ export interface AcquisitionsConfig {
   lowChanceWeak: number;
   /** На сколько человек расширяется рынок за каждого перешедшего пользователя */
   marketPerUser: number;
+  /** С какого числа ошибок или технического долга экран предупреждает: продукт не готов принять ещё одну компанию */
+  strainBugs: number;
+  strainDebt: number;
   /** Сколько выдуманных названий компаний в текстах */
   companies: number;
 }
