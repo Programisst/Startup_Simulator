@@ -29,7 +29,7 @@ export function Overview() {
         <div className="card">
           <span>{t('metrics.users')}</span>
           <b>{num(game.users)}</b>
-          <small>{t('overview.paying', { count: num(game.paying) })}</small>
+          <small>{game.businessModel === 'subscription' ? t('overview.paying', { count: num(game.paying) }) : t(`overview.earnsBy.${game.businessModel}`)}</small>
         </div>
         <div className="card">
           <span>{t('metrics.revenue30')}</span>
