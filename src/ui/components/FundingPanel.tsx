@@ -82,7 +82,7 @@ export function FundingPanel() {
               <b>{t('finance.funding.investorLine', { name: nameOf(inv.id), offer: money(inv.offer), share: dec(inv.sharePct), price: inv.pricePct, after: dec(inv.shareAfterPct) })}</b>
             </p>
             <p className="muted">
-              {t(`finance.funding.investors.${inv.id}.hint`)} {t('finance.funding.patience', { count: inv.patience })}
+              {t(`finance.funding.investors.${inv.id}.hint`)} {t('finance.funding.interest', { pct: inv.interestPct })} {t('finance.funding.patience', { count: inv.patience })}
               {inv.perk && ` ${t('finance.funding.perk', { pct: inv.perk.boostPct, days: inv.perk.days })}`}
             </p>
             {inv.promise && (
@@ -90,7 +90,7 @@ export function FundingPanel() {
             )}
             <p>
               <button data-funding-open={inv.id} disabled={inv.blocked !== null} onClick={() => dispatch({ type: 'openRound', investorId: inv.id })}>
-                {t('finance.funding.open')}
+                {t('finance.funding.open', { pct: inv.interestPct })}
               </button>{' '}
               {inv.blocked && inv.blocked !== 'energy' && <span className="negative">{t(`finance.funding.blocked.${inv.blocked}`, { value: money(view.minValuation), days: view.cooldownDaysLeft })}</span>}
             </p>
