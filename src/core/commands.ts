@@ -1,6 +1,7 @@
 // Команды игрока. Интерфейс меняет игру только через applyCommand.
 
 import { startCampaign } from './campaigns';
+import { announceRelease, withReleaseWork } from './releases';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -67,9 +68,17 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
         progress = Math.max(task.progress, Math.min(progress, cost - 1e-6));
       }
       next.tasks = [{ ...task, progress }, ...state.tasks.slice(1)];
+      // Набранное игроком тоже идёт в зачёт обещанного обновления.
+      const release = withReleaseWork(state, progress - task.progress);
+      if (release) next.release = release;
       next.typedDay = state.day;
       next.typedToday = typedTodayOf(state) + share;
       return { ok: true, state: next };
+    }
+
+    case 'announceRelease': {
+      const announced = announceRelease(state, content, cmd.size, cmd.deadline);
+      return announced ? { ok: true, state: announced } : fail('releaseUnavailable');
     }
 
     case 'runCampaign': {

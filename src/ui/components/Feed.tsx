@@ -30,6 +30,10 @@ export function useFeedText(): (item: NewsItem) => string {
         const name = t(`goalsLadder.chapters.${item.id}`);
         return next ? t('feed.items.chapter', { name, next: t(`goalsLadder.chapters.${next.id}`) }) : t('feed.items.chapterLast', { name });
       }
+      case 'release': {
+        const outcome = item.tone === 'good' ? 'OnTime' : item.tone === 'bad' ? 'Missed' : 'Rough';
+        return t(`feed.items.release${outcome}`, { pct: num(item.value ?? 0) });
+      }
       case 'campaign': {
         const outcome = item.tone === 'good' ? 'Hit' : item.tone === 'bad' ? 'Fail' : 'Ok';
         return t(`feed.items.campaign${outcome}`, { name: t(`marketing.campaigns.items.${item.id}.name`), pct: num(item.value ?? 0) });
