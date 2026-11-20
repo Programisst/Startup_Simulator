@@ -94,6 +94,11 @@ export function AcquisitionPanel() {
           <p className="muted">{t('finance.acquire.lowHint')}</p>
           {!target.canBuyLow && <p className="negative">{t('finance.acquire.noCash')}</p>}
           {target.overload && <p className="negative">{t('finance.acquire.overload')}</p>}
+          {target.strained && (
+            <p className="negative" data-acquire-strained>
+              {t('finance.acquire.strained', { bugs: num(game.bugs), debt: num(game.debt) })}
+            </p>
+          )}
         </div>
       )}
 

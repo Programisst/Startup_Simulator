@@ -88,6 +88,12 @@ describe('компания на продажу', () => {
   it('предупреждает, если серверы не выдержат новых людей', () => {
     expect(acquisitionsView(live({ capacity: 10_100 }), content).target!.overload).toBe(true);
   });
+
+  it('предупреждает, если продукт ещё не оправился от прошлых проблем', () => {
+    expect(acquisitionsView(live(), content).target!.strained).toBe(false);
+    expect(acquisitionsView(live({ bugs: a.strainBugs }), content).target!.strained).toBe(true);
+    expect(acquisitionsView(live({ debt: a.strainDebt }), content).target!.strained).toBe(true);
+  });
 });
 
 describe('проверка', () => {

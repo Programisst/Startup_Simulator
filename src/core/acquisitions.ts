@@ -177,6 +177,8 @@ export interface AcquisitionsView {
     canBuyLow: boolean;
     /** Серверы не выдержат новых людей: мощность стоит поднять заранее */
     overload: boolean;
+    /** Продукт ещё не оправился от прошлых проблем: новые ошибки и долг уронят качество */
+    strained: boolean;
   } | null;
   integrating: { companySeed: number; users: number; price: number; daysLeft: number } | null;
   last: AcquisitionsState['last'];
@@ -226,6 +228,7 @@ export function acquisitionsView(s: GameState, content: GameContent): Acquisitio
       canBuyFull: s.cash >= terms.price,
       canBuyLow: s.cash >= terms.lowPrice,
       overload: s.users + terms.users > s.capacity,
+      strained: s.bugs >= a.strainBugs || s.debt >= a.strainDebt,
     };
   }
 

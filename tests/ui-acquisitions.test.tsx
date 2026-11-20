@@ -101,8 +101,9 @@ describe('панель «Покупка компаний»', () => {
     expect(container.textContent).toContain('Компании начнут предлагать вам, когда доход за 30 дней превысит');
     expect(container.querySelectorAll('[data-acquire-buy]')).toHaveLength(0);
 
-    act(() => useStore.setState({ game: game({ cash: 10, capacity: 10_000 }) }));
+    act(() => useStore.setState({ game: game({ cash: 10, capacity: 10_000, bugs: 12 }) }));
     expect(container.textContent).toContain('На покупку не хватает денег.');
+    expect(container.textContent).toContain('Продукт ещё не в порядке: ошибок 12');
     expect(container.textContent).toContain('Серверы не выдержат столько новых людей');
     expect(container.querySelector<HTMLButtonElement>('[data-acquire-buy="full"]')!.disabled).toBe(true);
     expect(missing(container.textContent)).toEqual([]);
