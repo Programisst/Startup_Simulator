@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { aiAvailable } from '../../ai/client';
 import { content } from '../../content';
 import { officeView, teamView, type Candidate, type TeamMemberView } from '../../core';
+import { HeadhuntPanel } from '../components/HeadhuntPanel';
 import { TalkChat } from '../components/TalkChat';
 import { dec, gameDate, money, num } from '../format';
 import { usePersonName } from '../names';
@@ -255,6 +256,8 @@ export function Team() {
           {!view.canHire && view.size >= view.maxSize && <p className="muted">{t('team.full')}</p>}
         </section>
       </div>
+
+      <HeadhuntPanel />
 
       <section className="panel">
         <h3>{t('team.log')}</h3>

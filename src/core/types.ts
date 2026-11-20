@@ -265,6 +265,88 @@ export interface TeamConfig {
   /** Прибавка к притоку пользователей за единицу навыка маркетолога и её потолок */
   marketingPerPoint: number;
   marketingCap: number;
+  /** Потолок суммарной прибавки от звёзд одной роли, доля (0.45 = +45%) */
+  starAuraCap: number;
+}
+
+/** Предложение звезде из чужой компании: скромное, щедрое, очень щедрое. */
+export type HeadhuntOfferId = 'modest' | 'generous' | 'lavish';
+
+export interface HeadhuntOfferDef {
+  id: HeadhuntOfferId;
+  /** Во сколько раз предложенная зарплата выше нынешней зарплаты звезды */
+  salary: number;
+  /** Разовая выплата при переходе, в предложенных месячных зарплатах */
+  bonusMonths: number;
+  /** Шанс согласия до поправок на характер и репутацию, доля */
+  chance: number;
+  /** На сколько падает мотивация коллег той же роли, которым платят заметно меньше */
+  jealousy: number;
+}
+
+/** Охота за звёздами: сильные люди из чужих компаний, которых можно переманить. */
+export interface HeadhuntConfig {
+  offers: HeadhuntOfferDef[];
+  /** Раз во сколько дней появляется новая звезда и сколько дней она ждёт предложения */
+  periodDays: number;
+  visibleDays: number;
+  /** Через сколько дней после предложения приходит ответ */
+  answerDays: number;
+  /** Сколько сил основателя стоят переговоры */
+  energyCost: number;
+  /** Доход за 30 дней, с которого компанию замечают сильные люди */
+  minRevenue30: number;
+  skillMin: number;
+  skillMax: number;
+  /** Какую зарплату звезда считает справедливой при переходе, в долях от нынешней */
+  fairSalary: number;
+  /** На сколько звезда ускоряет коллег своей роли, доля */
+  aura: number;
+  /** Завидуют те, кто получает меньше этой доли от зарплаты звезды */
+  jealousBelow: number;
+  /** Поправка к шансу, когда компания подходит и не подходит человеку по характеру */
+  fitGood: number;
+  fitBad: number;
+  /** Насколько репутация сдвигает шанс: (репутация − 50) / 100 × вес */
+  reputationWeight: number;
+  chanceMin: number;
+  chanceMax: number;
+  /** Шанс, что чужая компания в ответ придёт за вашим человеком: после перехода и после отказа */
+  retaliationOnJoin: number;
+  retaliationOnDecline: number;
+  /** Событие, которым приходит ответный удар, и сколько дней человек должен проработать, чтобы за ним пришли */
+  retaliationEvent: string;
+  retaliationMinDaysHired: number;
+  /** Сколько выдуманных компаний-конкурентов в текстах */
+  companies: number;
+}
+
+/** Звезда из чужой компании. */
+export interface StarDef {
+  nameSeed: number;
+  role: EmployeeRole;
+  skill: number;
+  trait: TraitId;
+  driver: DriverId;
+  /** Сколько ей платят сейчас, в месяц */
+  salaryNow: number;
+  /** Номер компании, где она работает: название подбирает интерфейс */
+  companySeed: number;
+}
+
+export type HeadhuntOutcome = 'joined' | 'declined';
+
+export interface HeadhuntState {
+  /** Отдельный генератор случайности: ответ звезды не сдвигает остальную партию */
+  rng: RngState;
+  /** Номер периода, звезде которого уже сделали предложение */
+  window: number | null;
+  pending: { star: StarDef; offer: HeadhuntOfferId; salary: number; bonus: number; chance: number; resolveDay: number } | null;
+  last: { day: number; outcome: HeadhuntOutcome; nameSeed: number; role: EmployeeRole; retaliation: boolean } | null;
+  /** Чужая компания готовит ответный удар: событие придёт, как только игрок свободен */
+  raid?: boolean;
+  /** Сколько звёзд перешло за партию */
+  joined: number;
 }
 
 /** Рекламный канал. Названия выдуманные: настоящие площадки в игре не упоминаются. */
@@ -430,6 +512,7 @@ export interface ReleaseState {
 
 export interface GameConfig {
   releases: ReleaseConfig;
+  headhunt: HeadhuntConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -523,8 +606,8 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release';
-  /** Число, о котором новость: пользователей, платящих, долларов */
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt';
+  /** Число, о котором новость: пользователей, платящих, долларов; для звезды — число, по которому подбирается имя */
   value?: number;
   /** Для готовой функции — её id */
   id?: string;
@@ -572,6 +655,9 @@ export interface Employee extends Candidate {
   lastTalkDay?: number;
   /** Последние реплики разговоров — чтобы человек «помнил», о чём говорили */
   chat?: ChatLine[];
+  /** Звезда, переманенная из чужой компании, и на сколько она ускоряет коллег своей роли (доля) */
+  star?: boolean;
+  aura?: number;
 }
 
 /** Чем кончился разговор: стало лучше, без изменений, стало хуже. */
@@ -696,6 +782,8 @@ export interface GameState {
   rush: boolean;
   /** Обещанное обновление продукта: объявленное сейчас и последний исход. В старых сохранениях поля нет. */
   release?: ReleaseState;
+  /** Охота за звёздами: сделанное предложение и последний ответ. Появляется с первым предложением. */
+  headhunt?: HeadhuntState;
   /** Маркетинговые акции: идущая сейчас, когда какую запускали, последний исход. В старых сохранениях поля нет. */
   campaigns?: CampaignsState;
   /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
@@ -770,6 +858,8 @@ export type Command =
   | { type: 'setChannelSpend'; channel: ChannelId; perDay: number }
   | { type: 'runCampaign'; campaignId: string }
   | { type: 'announceRelease'; size: ReleaseSizeDef['id']; deadline: ReleaseDeadlineDef['id'] }
+  /** Сделать предложение звезде из чужой компании */
+  | { type: 'headhunt'; offer: HeadhuntOfferId }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -813,6 +903,7 @@ export type CommandError =
   | 'coffeeTooSoon'
   | 'campaignUnavailable'
   | 'releaseUnavailable'
+  | 'headhuntUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'

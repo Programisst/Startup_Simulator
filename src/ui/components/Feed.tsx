@@ -4,12 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import type { NewsItem } from '../../core';
 import { gameDate, money, num } from '../format';
+import { usePersonName } from '../names';
 import { useStore } from '../store';
 
 /** Превращает запись ленты в строку для игрока. */
 export function useFeedText(): (item: NewsItem) => string {
   const { t } = useTranslation();
   const game = useStore((s) => s.game);
+  const nameOf = usePersonName();
   return (item) => {
     switch (item.kind) {
       case 'users':
@@ -34,6 +36,8 @@ export function useFeedText(): (item: NewsItem) => string {
         const outcome = item.tone === 'good' ? 'OnTime' : item.tone === 'bad' ? 'Missed' : 'Rough';
         return t(`feed.items.release${outcome}`, { pct: num(item.value ?? 0) });
       }
+      case 'headhunt':
+        return t(item.id === 'joined' ? 'feed.items.headhuntJoined' : 'feed.items.headhuntDeclined', { name: nameOf(item.value ?? 0) });
       case 'campaign': {
         const outcome = item.tone === 'good' ? 'Hit' : item.tone === 'bad' ? 'Fail' : 'Ok';
         return t(`feed.items.campaign${outcome}`, { name: t(`marketing.campaigns.items.${item.id}.name`), pct: num(item.value ?? 0) });
