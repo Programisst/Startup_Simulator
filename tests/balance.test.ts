@@ -3,7 +3,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { content } from '../src/content';
 import type { DifficultyId } from '../src/core';
-import { runAll, summarize } from '../tools/balance/simulate';
+import { PRODUCT_TYPES, play, runAll, summarize } from '../tools/balance/simulate';
 import { carefulHirer, expert, idle, novice, recklessHirer, sensible, sideJobOnly } from '../tools/balance/strategies';
 import { advance, newGame, run } from './helpers';
 
@@ -23,8 +23,10 @@ describe('давление денег', () => {
   it.each(DIFFICULTIES)('%s: без продукта деньги убывают каждый месяц даже при полной подработке', (id) => {
     let s = run(newGame({ difficulty: id }), { type: 'setSideJob', share: 1 });
     let previous = s.cash;
-    for (let m = 0; m < 6; m++) {
+    // Четыре месяца: дальше на сложной деньги кончаются и приходит заём в кризис, он на время поднимает счёт.
+    for (let m = 0; m < 4; m++) {
       s = advance(s, 30);
+      expect(s.loans).toHaveLength(0);
       expect(s.cash).toBeLessThan(previous);
       previous = s.cash;
     }
@@ -66,10 +68,36 @@ describe('сложность партии', () => {
     expect(survived(novice, 'easy')).toBeGreaterThanOrEqual(0.9);
   });
 
-  it('сложная: проходима только хорошей игрой', () => {
-    expect(survived(novice, 'hard')).toBeLessThanOrEqual(0.6);
-    expect(survived(sensible, 'hard')).toBeLessThanOrEqual(0.6);
-    expect(survived(expert, 'hard')).toBeGreaterThanOrEqual(0.7);
+  it('сложная — как в жизни: у грамотного игрока выживает примерно половина компаний, у слабого — меньшинство', () => {
+    // В жизни пять лет переживает 45–50% новых компаний (docs/02-economy.md, раздел 32).
+    for (const competent of [expert, carefulHirer]) {
+      const share = survived(competent, 'hard');
+      expect(share).toBeGreaterThanOrEqual(0.35);
+      expect(share).toBeLessThanOrEqual(0.65);
+    }
+    expect(survived(novice, 'hard')).toBeLessThanOrEqual(0.4);
+    expect(survived(sensible, 'hard')).toBeLessThanOrEqual(0.35);
+  });
+
+  it('сложная: исход решает игра, а не тип продукта — ни один тип не безнадёжен и ни один не безопасен', () => {
+    for (const productType of PRODUCT_TYPES) {
+      let alive = 0;
+      for (let i = 0; i < GAMES_PER_TYPE; i++) if (play(productType, carefulHirer, 1000 + i, 'hard').status !== 'bankrupt') alive++;
+      expect(alive / GAMES_PER_TYPE, productType).toBeGreaterThanOrEqual(0.1);
+      expect(alive / GAMES_PER_TYPE, productType).toBeLessThanOrEqual(0.9);
+    }
+  });
+
+  it('сложная: рынок партии разбросан шире — идея может не попасть в рынок', () => {
+    const spread = (id: DifficultyId) => {
+      const fits = Array.from({ length: 200 }, (_, seed) => newGame({ difficulty: id, seed: seed + 1 }).market.fit);
+      return Math.max(...fits) / Math.min(...fits);
+    };
+    expect(content.difficulties.hard.marketVariation).toBeGreaterThan(content.config.marketVariation);
+    expect(spread('hard')).toBeGreaterThan(spread('normal') * 1.5);
+    // Обычная и лёгкая берут общий разброс: их партии от этой настройки не меняются.
+    expect(content.difficulties.normal.marketVariation).toBeUndefined();
+    expect(content.difficulties.easy.marketVariation).toBeUndefined();
   });
 
   it('сложности идут по возрастанию, сложная заметно жёстче обычной', () => {

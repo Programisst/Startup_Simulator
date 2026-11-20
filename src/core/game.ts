@@ -33,7 +33,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
 
   // Рынок каждой партии немного отличается от базового: это часть seed, а не решений игрока.
   const difficulty = content.difficulties[setup.difficulty];
-  const v = content.config.marketVariation;
+  const v = difficulty.marketVariation ?? content.config.marketVariation;
   const fitRoll = nextRange(createRng(setup.seed), 1 - v, 1 + v);
   const cacRoll = nextRange(fitRoll.next, 1 - v, 1 + v);
   const churnRoll = nextRange(cacRoll.next, 1 - v, 1 + v);
