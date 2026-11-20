@@ -4,7 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import '../src/ui/i18n';
-import type { GameState, NewsItem } from '../src/core';
+import { content } from '../src/content';
+import { applyCommand, type GameState, type NewsItem } from '../src/core';
 import { FundingPanel } from '../src/ui/components/FundingPanel';
 import { useFeedText } from '../src/ui/components/Feed';
 import { useStore } from '../src/ui/store';
@@ -47,7 +48,12 @@ function FeedLines() {
 
 describe('панель «Раунд инвестиций»', () => {
   it('три инвестора без пропущенных текстов; переговоры, сделка и выкуп доли работают с экрана', () => {
-    useStore.setState({ game: game() });
+    // Партия, в которой ангелы на первой встрече делают предложение (чаще они отказывают).
+    const lucky = Array.from({ length: 50 }, (_, i) => ({ ...game(), seed: i + 1 })).find((g) => {
+      const met = applyCommand(g, { type: 'openRound', investorId: 'angels' }, content);
+      return met.ok && met.state.funding?.talks;
+    })!;
+    useStore.setState({ game: lucky });
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -64,16 +70,18 @@ describe('панель «Раунд инвестиций»', () => {
     expect(container.textContent).toContain('Раунд инвестиций');
     expect(container.textContent).toContain('Ваша позиция на переговорах — обычная');
     expect(container.querySelectorAll('[data-funding-open]')).toHaveLength(3);
-    expect(container.textContent).toMatch(/Венчурный фонд: \$[\d\s ]+ за 15% компании — 100% от оценки\. У вас останется 85%\./);
+    expect(container.textContent).toMatch(/Венчурный фонд: \$[\d\s ]+ за 20% компании — 100% от оценки\. У вас останется 80%\./);
     expect(container.textContent).toMatch(/доход за 30 дней должен вырасти на 100% — до \$60[\s ]000/);
     expect(container.textContent).toContain('приток пользователей +30% на 120 дн.');
+    expect(container.textContent).toMatch(/Встретиться · шанс 45%/);
+    expect(container.textContent).toContain('Шанс, что сделают предложение: 25%.');
     expect(container.querySelector('[data-funding-buyback]')).toBeNull();
     expect(container.querySelector('[data-feed]')!.textContent).toContain('фонд забрал 5% вашей доли');
     expect(missing(container.textContent)).toEqual([]);
 
     click('[data-funding-open="angels"]');
     expect(container.textContent).toContain('Переговоры: Бизнес-ангелы');
-    expect(container.textContent).toMatch(/Попросить больше\s*\$[\d\s ]+ · шанс 70%/);
+    expect(container.textContent).toMatch(/Попросить больше\s*\$[\d\s ]+ · шанс 60%/);
     expect(container.textContent).toContain('Отказов до ухода инвестора: 3.');
     expect(container.querySelectorAll('[data-funding-open]')).toHaveLength(0);
     expect(missing(container.textContent)).toEqual([]);
@@ -86,16 +94,16 @@ describe('панель «Раунд инвестиций»', () => {
     click('[data-funding-accept]');
     const after = useStore.getState().game!;
     expect(after.cash).toBeGreaterThan(before);
-    expect(after.founderShare).toBeCloseTo(0.94, 6);
-    expect(container.textContent).toMatch(/Раунд закрыт: \$[\d\s ]+ за 6% компании\./);
-    expect(container.textContent).toContain('Следующий раунд можно начать через 120 дн.');
-    expect(container.textContent).toContain('Ваша доля: 94%');
+    expect(after.founderShare).toBeCloseTo(0.9, 6);
+    expect(container.textContent).toMatch(/Раунд закрыт: \$[\d\s ]+ за 10% компании\./);
+    expect(container.textContent).toContain('Следующий раунд можно начать через 360 дн.');
+    expect(container.textContent).toContain('Ваша доля: 90%');
     expect(container.querySelectorAll('[data-funding-buy]')).toHaveLength(2);
     expect(missing(container.textContent)).toEqual([]);
 
     useStore.setState({ game: { ...after, cash: 1e7 } });
     click('[data-funding-buy="0.01"]');
-    expect(useStore.getState().game!.founderShare).toBeCloseTo(0.95, 6);
+    expect(useStore.getState().game!.founderShare).toBeCloseTo(0.91, 6);
 
     act(() => root.unmount());
     container.remove();

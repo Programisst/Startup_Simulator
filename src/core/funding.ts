@@ -64,6 +64,11 @@ function firstOffer(s: GameState, def: InvestorDef, cfg: FundingConfig): number 
   return round100(valuationOf(s) * def.share * price);
 }
 
+/** Шанс, что инвестор, выслушав вас, вообще сделает предложение: большинству основателей отказывают. */
+export function interestChance(s: GameState, def: InvestorDef, cfg: FundingConfig): number {
+  return clamp(def.interest + cfg.positionInterest * fundingPosition(s).score, cfg.interestMin, cfg.interestMax);
+}
+
 export type FundingBlock = 'notLaunched' | 'valuation' | 'talks' | 'cooldown' | 'share' | 'promise' | 'energy';
 
 /** Почему нельзя начать переговоры (с этим инвестором, если он назван); null — можно. */
@@ -82,16 +87,26 @@ export function fundingBlock(s: GameState, content: GameContent, def?: InvestorD
   return null;
 }
 
-/** Начинает переговоры: инвестор называет первую цену. Возвращает null, если нельзя. */
+/**
+ * Встреча с инвестором: силы уходят в любом случае. Заинтересовался — называет первую цену, и начинается торг;
+ * нет — отказ, и следующую встречу придётся подождать. Возвращает null, если встреча невозможна.
+ */
 export function openRound(s: GameState, content: GameContent, investorId: string): GameState | null {
   const cfg = content.config.funding;
   const def = cfg.investors.find((i) => i.id === investorId);
   if (!def || fundingBlock(s, content, def) !== null) return null;
+  const st = fundingOf(s);
+  const energy = Math.max(0, energyOf(s) - cfg.energyCost);
+  const roll = nextFloat(st.rng);
+  if (roll.value >= interestChance(s, def, cfg)) {
+    return { ...s, energy, funding: { ...st, rng: roll.next, readyDay: s.day + cfg.cooldownDeclined, last: { day: s.day, kind: 'declined', investor: def.id, amount: 0, share: 0 } } };
+  }
   return {
     ...s,
-    energy: Math.max(0, energyOf(s) - cfg.energyCost),
+    energy,
     funding: {
-      ...fundingOf(s),
+      ...st,
+      rng: roll.next,
       talks: { investor: def.id, share: def.share, offer: firstOffer(s, def, cfg), valuation: valuationOf(s), patience: def.patience, raises: 0, untilDay: s.day + cfg.talkDays },
     },
   };
@@ -227,6 +242,8 @@ export interface InvestorView {
   id: string;
   /** Какую долю компании покупает, в процентах */
   sharePct: number;
+  /** Шанс, что инвестор вообще сделает предложение, в процентах */
+  interestPct: number;
   /** Первое предложение в деньгах и во сколько процентов от честной цены доли оно выходит */
   offer: number;
   pricePct: number;
@@ -288,6 +305,7 @@ export function fundingView(s: GameState, content: GameContent): FundingView {
     return {
       id: def.id,
       sharePct: pct(def.share),
+      interestPct: Math.round(interestChance(s, def, cfg) * 100),
       offer,
       pricePct: Math.round((offer / fair(def.share)) * 100),
       patience: def.patience,

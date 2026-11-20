@@ -30,7 +30,13 @@ const send = (s: GameState, cmd: Command, c: GameContent = content): GameState =
   if (!result.ok) throw new Error(`Команда ${cmd.type} отклонена: ${result.error}`);
   return result.state;
 };
-const open = (s: GameState, id: string): GameState => run(s, { type: 'openRound', investorId: id });
+/** Настройки, в которых инвестор всегда заинтересован или всегда отказывает: встреча не зависит от удачи. */
+const mood = (interested: boolean): GameContent => ({
+  ...quiet,
+  config: { ...content.config, funding: { ...cfg, interestMin: 0, interestMax: 1, investors: cfg.investors.map((i) => ({ ...i, interest: interested ? 5 : -5 })) } },
+});
+/** Встреча, на которой инвестор точно делает предложение. */
+const open = (s: GameState, id: string): GameState => send(s, { type: 'openRound', investorId: id }, mood(true));
 const v = (s: GameState) => valuation(s.months, s.users, s.market);
 
 describe('инвесторы', () => {
@@ -39,14 +45,18 @@ describe('инвесторы', () => {
     expect(view.blocked).toBeNull();
     const [angels, fund, strategic] = view.investors;
     expect(angels).toMatchObject({ id: 'angels', perk: null, promise: null, blocked: null });
-    expect(fund).toMatchObject({ id: 'fund', perk: null, promise: { growthPct: 100, days: 180, penaltyPct: 5 } });
+    expect(fund).toMatchObject({ id: 'fund', perk: null, promise: { growthPct: 100, days: 360, penaltyPct: 5 } });
     expect(strategic).toMatchObject({ id: 'strategic', promise: null, perk: { boostPct: 30, days: 120 } });
     expect(angels!.sharePct).toBeLessThan(fund!.sharePct);
-    expect(fund!.sharePct).toBeLessThan(strategic!.sharePct);
+    expect(fund!.sharePct).toBeLessThanOrEqual(strategic!.sharePct);
+    // Ангелы соглашаются чаще фонда, фонд — чаще корпорации; но чаще всего отказывают все.
+    expect(angels!.interestPct).toBeGreaterThan(fund!.interestPct);
+    expect(fund!.interestPct).toBeGreaterThan(strategic!.interestPct);
+    expect(angels!.interestPct).toBeLessThan(50);
     expect(angels!.patience).toBeGreaterThan(fund!.patience);
     expect(strategic!.pricePct).toBeLessThan(fund!.pricePct);
     expect(fund!.offer).toBe(round100(v(live()) * investor('fund').share * investor('fund').price));
-    expect(fund!.shareAfterPct).toBe(85);
+    expect(fund!.shareAfterPct).toBe(80);
     expect(fund!.promise!.target).toBeCloseTo(30_000 * 2, 6);
   });
 
@@ -63,7 +73,7 @@ describe('инвесторы', () => {
   it('нельзя отдать слишком много: у основателя должна остаться заметная доля', () => {
     const diluted = live({ founderShare: 0.24 });
     const view = fundingView(diluted, content);
-    expect(view.investors.map((i) => i.blocked)).toEqual([null, null, 'share']);
+    expect(view.investors.map((i) => i.blocked)).toEqual([null, 'share', 'share']);
     expect(applyCommand(diluted, { type: 'openRound', investorId: 'strategic' }, content).ok).toBe(false);
   });
 });
@@ -101,6 +111,36 @@ describe('позиция на переговорах', () => {
   });
 });
 
+describe('встреча', () => {
+  it('чаще всего инвестор отказывает: силы потрачены, предложения нет, новая встреча — не сразу', () => {
+    const s = live();
+    const declined = send(s, { type: 'openRound', investorId: 'fund' }, mood(false));
+    expect(declined.energy).toBe(100 - cfg.energyCost);
+    expect(declined.cash).toBe(s.cash);
+    expect(declined.reputation).toBe(s.reputation);
+    expect(fundingView(declined, content)).toMatchObject({ talks: null, blocked: 'cooldown', cooldownDaysLeft: cfg.cooldownDeclined, last: { kind: 'declined', investor: 'fund' }, rounds: 0 });
+  });
+
+  it('предложение делают примерно с обещанной частотой', () => {
+    const shown = fundingView(live(), content).investors[0]!.interestPct / 100;
+    let offers = 0;
+    const games = 400;
+    for (let seed = 1; seed <= games; seed++) {
+      if (run({ ...live(), seed }, { type: 'openRound', investorId: 'angels' }).funding!.talks) offers += 1;
+    }
+    expect(Math.abs(offers / games - shown)).toBeLessThan(0.07);
+  });
+
+  it('сильной компании отказывают реже, слабой — почти всегда', () => {
+    const interest = (s: GameState) => fundingView(s, content).investors[1]!.interestPct;
+    const strong = live({ months: [month(0, 30_000, 1000), month(1, 30_000, 1500, 5000)], reputation: 80 });
+    const weak = live({ months: [month(0, 30_000, 1000), month(1, 30_000, 900, -40_000)], reputation: 30 });
+    expect(interest(live())).toBe(Math.round(investor('fund').interest * 100));
+    expect(interest(strong)).toBe(Math.round((investor('fund').interest + 3 * cfg.positionInterest) * 100));
+    expect(interest(weak)).toBe(Math.round(cfg.interestMin * 100));
+  });
+});
+
 describe('переговоры', () => {
   it('начало стоит сил; инвестор называет первую цену; второго инвестора параллельно позвать нельзя', () => {
     const s = live();
@@ -133,7 +173,7 @@ describe('переговоры', () => {
     const raised = send(talking, { type: 'counterOffer', stance: 'ask' }, rigged(true));
     const after = fundingView(raised, content).talks!;
     expect(after).toMatchObject({ offer: before.counters[0]!.offer, patience: before.patience, lastCounter: { stance: 'ask', ok: true } });
-    expect(after.pricePct).toBe(115);
+    expect(after.pricePct).toBe(Math.round(100 * (1 + counter('ask').raise)));
     expect(after.counters[0]!.chancePct).toBe(before.counters[0]!.chancePct - Math.round(cfg.raisePenalty * 100));
     expect(raised.cash).toBe(talking.cash);
   });
@@ -221,7 +261,7 @@ describe('сделка', () => {
     const first = run(open(live(), 'fund'), { type: 'closeRound' });
     const later = { ...first, day: first.day + cfg.cooldownClosed, energy: 100 };
     const second = run(open(later, 'angels'), { type: 'closeRound' });
-    expect(second.founderShare).toBeCloseTo(0.85 * 0.94, 4);
+    expect(second.founderShare).toBeCloseTo((1 - investor('fund').share) * (1 - investor('angels').share), 4);
     expect(fundingView(second, content).rounds).toBe(2);
   });
 });
@@ -231,7 +271,7 @@ describe('обещание фонду', () => {
 
   it('после сделки с фондом видно обещание: какой нужен доход и к какому сроку', () => {
     const s = promised();
-    expect(fundingView(s, content).promise).toMatchObject({ investor: 'fund', now: 30_000, target: 60_000, progress: 0, daysLeft: 180, penaltyPct: 5 });
+    expect(fundingView(s, content).promise).toMatchObject({ investor: 'fund', now: 30_000, target: 60_000, progress: 0, daysLeft: 360, penaltyPct: 5 });
     expect(fundingView(earning(s, 1500), content).promise!.progress).toBeCloseTo(0.5, 6);
     // Пока обещание не выполнено, второй фонд не позвать — даже когда перерыв прошёл.
     const later = { ...s, day: s.day + cfg.cooldownClosed, energy: 100 };
@@ -271,7 +311,7 @@ describe('выкуп доли', () => {
     expect(view.options.map((o) => o.sharePct)).toEqual([1, 5]);
     expect(view.options[0]).toMatchObject({ cost: round100(v(sold) * cfg.buybackPrice * 0.01), blocked: null });
     const back = run(sold, { type: 'buyBack', share: 0.05 });
-    expect(back.founderShare).toBeCloseTo(0.9, 6);
+    expect(back.founderShare).toBeCloseTo(0.85, 6);
     expect(back.cash).toBe(sold.cash - view.options[1]!.cost);
     expect((back.news ?? []).at(-1)).toMatchObject({ kind: 'funding', id: 'buyback', value: 5 });
   });

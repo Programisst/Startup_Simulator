@@ -60,10 +60,10 @@ describe('панель «Покупка компаний»', () => {
     const click = (selector: string) => act(() => container.querySelector<HTMLButtonElement>(selector)!.click());
 
     expect(container.textContent).toContain('Покупка компаний');
-    expect(container.textContent).toMatch(/«.+» — (небольшая|средняя|крупная) компания\. По её словам, [\d\s ]+ пользователей\. Цена \$[\d\s ]+\. Продаётся ещё 30 дн\./);
+    expect(container.textContent).toMatch(/«.+» — (небольшая|средняя|крупная) компания\. По её словам, [\d\s ]+ пользователей\. Цена \$[\d\s ]+\. Продаётся ещё 60 дн\./);
     expect(container.textContent).toContain('Что внутри — неизвестно');
-    expect(container.textContent).toMatch(/Здоровая \(45 из 100\)/);
-    expect(container.textContent).toMatch(/Пустышка \(20 из 100\).+Репутация -5\. Всплывут её долги: ещё \$[\d\s ]+\./);
+    expect(container.textContent).toMatch(/Здоровая \(30 из 100\)/);
+    expect(container.textContent).toMatch(/Пустышка \(25 из 100\).+Репутация -5\. Всплывут её долги: ещё \$[\d\s ]+\./);
     expect(container.textContent).toMatch(/Предложить \$[\d\s ]+ · шанс 40%/);
     expect(container.querySelector('[data-feed]')!.textContent).toContain('оказалась пустышкой: перешло всего 900');
     expect(missing(container.textContent)).toEqual([]);
@@ -71,7 +71,7 @@ describe('панель «Покупка компаний»', () => {
     const cash = useStore.getState().game!.cash;
     click('[data-acquire-check]');
     expect(useStore.getState().game!.cash).toBeLessThan(cash);
-    expect(container.textContent).toContain('Идёт проверка: результат через 5 дн.');
+    expect(container.textContent).toContain('Идёт проверка: результат через 20 дн.');
     expect(container.querySelector('[data-acquire-check]')).toBeNull();
 
     // Проверка готова: видно, что внутри, и остаётся только один исход.
@@ -84,7 +84,7 @@ describe('панель «Покупка компаний»', () => {
 
     click('[data-acquire-buy="full"]');
     expect(useStore.getState().game!.acquisitions!.integrating).not.toBeNull();
-    expect(container.textContent).toMatch(/Куплена «.+» за \$[\d\s ]+\. Обещано [\d\s ]+ пользователей\. Присоединение закончится через 15 дн\./);
+    expect(container.textContent).toMatch(/Куплена «.+» за \$[\d\s ]+\. Обещано [\d\s ]+ пользователей\. Присоединение закончится через 90 дн\./);
     expect(container.querySelectorAll('[data-acquire-buy]')).toHaveLength(0);
     expect(missing(container.textContent)).toEqual([]);
 

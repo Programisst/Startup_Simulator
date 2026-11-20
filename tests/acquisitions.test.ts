@@ -50,14 +50,14 @@ describe('компания на продажу', () => {
       seen[t.size] += 1;
       seen[t.health] += 1;
     }
-    expect(Math.abs(seen.solid / n - 0.45)).toBeLessThan(0.04);
-    expect(Math.abs(seen.messy / n - 0.35)).toBeLessThan(0.04);
-    expect(Math.abs(seen.hollow / n - 0.2)).toBeLessThan(0.04);
+    expect(Math.abs(seen.solid / n - 0.3)).toBeLessThan(0.04);
+    expect(Math.abs(seen.messy / n - 0.45)).toBeLessThan(0.04);
+    expect(Math.abs(seen.hollow / n - 0.25)).toBeLessThan(0.04);
     expect(Math.abs(seen.small / n - 0.5)).toBeLessThan(0.04);
     expect(seen.large).toBeGreaterThan(0);
   });
 
-  it('цена — год вашего дохода с такого числа пользователей; что внутри, сводка не выдаёт', () => {
+  it('цена — четыре года вашего дохода с такого числа пользователей; что внутри, сводка не выдаёт', () => {
     const s = withTarget('hollow', 'medium');
     const view = acquisitionsView(s, content);
     expect(view).toMatchObject({ unlocked: true, blocked: null, nextInDays: null });
@@ -66,9 +66,9 @@ describe('компания на продажу', () => {
     expect(t.lowPrice).toBe(round100(t.price * a.lowOffer));
     expect(t.check).toMatchObject({ state: 'none', cost: round100(t.price * a.checkCostShare), days: a.checkDays, blocked: null });
     expect(t.outcomes.map((o) => [o.health, o.oddsPct, o.users])).toEqual([
-      ['solid', 45, 1500],
-      ['messy', 35, 750],
-      ['hollow', 20, 150],
+      ['solid', 30, 1500],
+      ['messy', 45, 750],
+      ['hollow', 25, 150],
     ]);
     expect(t.outcomes.map((o) => o.hiddenDebt)).toEqual([0, 0, round100(t.price * healthDef('hollow').hiddenDebt)]);
     expect(t.outcomes[0]!.market).toBe(1500 * a.marketPerUser);
@@ -150,8 +150,7 @@ describe('покупка', () => {
     const { s, plain, done } = outcome('solid');
     expect(done.users - plain.users).toBeCloseTo(1500, 0);
     // Платящие переходят в той же доле, что у нас на день присоединения (она успевает немного вырасти).
-    expect(done.paying - plain.paying).toBeGreaterThan(145);
-    expect(done.paying - plain.paying).toBeLessThan(170);
+    expect(done.paying - plain.paying).toBeCloseTo((1500 * plain.paying) / plain.users, 0);
     expect(done.market.marketSize - s.market.marketSize).toBe(1500 * a.marketPerUser);
     expect(done.bugs - plain.bugs).toBe(healthDef('solid').bugs);
     expect(done.cash - plain.cash).toBeCloseTo(-acquisitionsView(s, content).target!.price, -2);

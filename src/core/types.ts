@@ -353,6 +353,8 @@ export interface InvestorDef {
   price: number;
   /** Сколько отказов выдержит, прежде чем уйти */
   patience: number;
+  /** Шанс, что он вообще сделает предложение, выслушав вас (до поправки на переговорную позицию) */
+  interest: number;
   /** Поправка к шансу, что он уступит в торге: сговорчивый — плюс, жёсткий — минус */
   flexibility: number;
   /** Помощь с клиентами после сделки: множитель притока и на сколько дней */
@@ -384,6 +386,10 @@ export interface FundingConfig {
   /** Насколько каждый пункт переговорной позиции сдвигает первое предложение и шанс уступки */
   positionPrice: number;
   positionChance: number;
+  /** Насколько каждый пункт позиции сдвигает шанс, что инвестор заинтересуется, и границы этого шанса */
+  positionInterest: number;
+  interestMin: number;
+  interestMax: number;
   /** Насколько каждая выторгованная уступка снижает шанс следующей */
   raisePenalty: number;
   chanceMin: number;
@@ -394,6 +400,8 @@ export interface FundingConfig {
   cooldownClosed: number;
   cooldownWalked: number;
   cooldownLeft: number;
+  /** Перерыв после того, как инвестор выслушал и отказал */
+  cooldownDeclined: number;
   /** Удар по репутации, когда инвестор уходит, хлопнув дверью */
   walkedReputation: number;
   /** Выкуп доли обратно: во сколько раз дороже оценки и какими частями */
@@ -410,7 +418,7 @@ export interface FundingState {
   readyDay: number;
   /** Обещание роста инвестору */
   promise: { investor: string; from: number; target: number; dueDay: number; penaltyShare: number } | null;
-  last: { day: number; kind: 'closed' | 'walked' | 'left' | 'expired'; investor: string; amount: number; share: number } | null;
+  last: { day: number; kind: 'closed' | 'walked' | 'left' | 'expired' | 'declined'; investor: string; amount: number; share: number } | null;
   rounds: number;
   /** Сдержанные и сорванные обещания: по ним инвесторы судят о вас */
   kept: number;
