@@ -102,6 +102,8 @@ export interface ScenePerson {
   leaving: boolean;
   /** Сколько дней в компании */
   daysHired: number;
+  /** Звезда, переманенная из чужой компании: ускоряет коллег своей роли */
+  star: boolean;
 }
 
 export interface SceneTeam {
@@ -196,6 +198,7 @@ export function sceneTeam(s: GameState, content: GameContent): SceneTeam {
       mood: e.motivation >= 75 ? ('high' as const) : e.motivation >= 45 ? ('mid' as const) : ('low' as const),
       leaving: motivationTarget(e, { ...s, teamSize: team.employees.length }, cfg.team) < cfg.team.quitBelow,
       daysHired: s.day - e.hiredDay,
+      star: e.star === true,
     }))
     .sort((a, b) => a.seat - b.seat);
   const taken = new Set(people.map((p) => p.seat));

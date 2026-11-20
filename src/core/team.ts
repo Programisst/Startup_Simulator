@@ -6,7 +6,7 @@ import { founderWorkPerDay } from './founder';
 import { totalAdSpend } from './marketing';
 import { officeIndex, officeOf } from './office';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
-import type { Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
+import type { Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, StarDef, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
 const TRAITS: TraitId[] = ['diligent', 'calm', 'loyal', 'sloppy'];
 const DRIVERS: DriverId[] = ['money', 'growth', 'peace', 'mission', 'people'];
@@ -65,15 +65,26 @@ function output(e: Employee, cfg: TeamConfig): number {
   return e.skill * motivationFactor(e.motivation, cfg) * (e.trait === 'diligent' ? 1 + cfg.diligentBonus : 1);
 }
 
-/** Сколько работы над продуктом в день делают разработчики (без основателя и без спешки). */
-export function teamWorkPerDay(team: TeamState, cfg: TeamConfig): number {
-  return team.employees.filter((e) => e.role === 'developer').reduce((sum, e) => sum + output(e, cfg), 0);
+/** На сколько звёзды этой роли ускоряют своих коллег, доля: рядом с сильным человеком все работают лучше. */
+export function starAura(team: TeamState, role: EmployeeRole, cfg: TeamConfig): number {
+  return Math.min(cfg.starAuraCap, team.employees.reduce((sum, e) => sum + (e.role === role ? (e.aura ?? 0) : 0), 0));
 }
 
-/** Множитель притока пользователей от маркетологов: 1 — никого нет. */
+/** Выработка всех людей роли: звёзды ускоряют коллег, но не самих себя. */
+function roleOutput(team: TeamState, role: EmployeeRole, cfg: TeamConfig): number {
+  const aura = starAura(team, role, cfg);
+  return team.employees.filter((e) => e.role === role).reduce((sum, e) => sum + output(e, cfg) * (e.star ? 1 : 1 + aura), 0);
+}
+
+/** Сколько работы над продуктом в день делают разработчики (без основателя и без спешки). */
+export function teamWorkPerDay(team: TeamState, cfg: TeamConfig): number {
+  return roleOutput(team, 'developer', cfg);
+}
+
+/** Множитель притока пользователей от маркетологов: 1 — никого нет. Звезда-маркетолог поднимает и сам потолок. */
 export function marketingBoost(team: TeamState, cfg: TeamConfig): number {
-  const points = team.employees.filter((e) => e.role === 'marketer').reduce((sum, e) => sum + output(e, cfg), 0);
-  return 1 + Math.min(cfg.marketingCap, points * cfg.marketingPerPoint);
+  const cap = cfg.marketingCap * (1 + starAura(team, 'marketer', cfg));
+  return 1 + Math.min(cap, roleOutput(team, 'marketer', cfg) * cfg.marketingPerPoint);
 }
 
 export function payrollPerMonth(team: TeamState): number {
@@ -171,6 +182,41 @@ function freeSeat(employees: Employee[]): number {
   let seat = 0;
   while (taken.has(seat)) seat += 1;
   return seat;
+}
+
+/**
+ * Звезда из чужой компании приходит в команду. Тем из коллег её роли, кому платят заметно меньше, обидно:
+ * их мотивация падает на jealousy.
+ */
+export function addStar(
+  team: TeamState,
+  star: StarDef,
+  terms: { salary: number; salaryAsk: number; aura: number; jealousy: number; jealousBelow: number },
+  day: number,
+  cfg: TeamConfig,
+): TeamState {
+  const employee: Employee = {
+    id: team.nextId,
+    role: star.role,
+    skill: star.skill,
+    trait: star.trait,
+    salaryAsk: terms.salaryAsk,
+    nameSeed: star.nameSeed,
+    driver: star.driver,
+    salary: terms.salary,
+    hiredDay: day,
+    motivation: cfg.startMotivation,
+    seat: freeSeat(team.employees),
+    star: true,
+    aura: terms.aura,
+  };
+  const jealous = (e: Employee) => terms.jealousy > 0 && e.role === star.role && e.salary < terms.salary * terms.jealousBelow;
+  return {
+    ...team,
+    nextId: team.nextId + 1,
+    employees: [...team.employees.map((e) => (jealous(e) ? { ...e, motivation: clamp(e.motivation - terms.jealousy, 0, 100) } : e)), employee],
+    log: addLog(team.log, { day, kind: 'hired', employeeId: employee.id, nameSeed: employee.nameSeed, role: employee.role }),
+  };
 }
 
 export type TeamCommandError = 'noSuchCandidate' | 'noSuchEmployee' | 'teamFull';

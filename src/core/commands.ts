@@ -2,6 +2,7 @@
 
 import { startCampaign } from './campaigns';
 import { announceRelease, withReleaseWork } from './releases';
+import { makeOffer } from './headhunt';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -79,6 +80,11 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'announceRelease': {
       const announced = announceRelease(state, content, cmd.size, cmd.deadline);
       return announced ? { ok: true, state: announced } : fail('releaseUnavailable');
+    }
+
+    case 'headhunt': {
+      const offered = makeOffer(state, content, cmd.offer);
+      return offered ? { ok: true, state: offered } : fail('headhuntUnavailable');
     }
 
     case 'runCampaign': {
