@@ -26,6 +26,7 @@ import { collectNews, withNews } from './news';
 import { stepCampaigns } from './campaigns';
 import { stepRelease, withReleaseWork } from './releases';
 import { stepHeadhunt } from './headhunt';
+import { stepFunding } from './funding';
 import { officeOf } from './office';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
@@ -285,6 +286,8 @@ export function tick(state: GameState, content: GameContent): GameState {
   s.team = stepTeam(s, content);
   // 5в. Охота за звёздами: ответ на предложение и ответный удар чужой компании
   stepHeadhunt(s, content);
+  // 5г. Инвесторы: срок предложения и обещание роста
+  stepFunding(s, content);
 
   // 6. Кассовый разрыв и банкротство
   s.negativeCashDays = s.cash < 0 ? s.negativeCashDays + 1 : 0;

@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
+import { FundingPanel } from '../components/FundingPanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -11,6 +12,7 @@ export function Finance() {
 
   return (
     <div className="screen">
+      <FundingPanel />
       <div className="two">
         <section className="panel">
           <h3>{t('finance.monthlyCosts')}</h3>
