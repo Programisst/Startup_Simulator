@@ -70,6 +70,8 @@ export const config: GameConfig = {
     focusChars: 240,
     focusBonus: 0.5,
     focusDecayPerDay: 0.34,
+    typeCharsPerDay: 30,
+    typeBonusCap: 1,
   },
   bank: { loanRateYear: 0.18, loanTermDays: 360, minLoan: 1000, baseLimit: 3000, revenueMultiple: 4, depositRateYear: 0.06 },
   marketing: {
