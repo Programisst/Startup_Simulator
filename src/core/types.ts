@@ -298,6 +298,40 @@ export interface MarketingConfig {
   contentCap: number;
   /** Какая доля запаса статей устаревает за день */
   contentDecayPerDay: number;
+  /** Разовые акции: ставка с риском вместо ровного бюджета */
+  campaigns: CampaignDef[];
+  /** При каком качестве продукта шансы акции равны записанным; хуже продукт — чаще провал */
+  campaignQualityRef: number;
+}
+
+export type CampaignOutcome = 'fail' | 'ok' | 'hit';
+
+/** Что акция даёт при этом исходе: во сколько раз и на сколько дней растёт приток, как меняется репутация. */
+export interface CampaignResult {
+  factor?: number;
+  days?: number;
+  reputation?: number;
+}
+
+/** Разовая маркетинговая акция. Деньги уходят сразу, исход становится известен через days дней. */
+export interface CampaignDef {
+  id: string;
+  /** Цена: не меньше baseCost, а у выросшей компании — доля дохода за 30 дней */
+  baseCost: number;
+  revenueShare: number;
+  /** Сколько сил основателя уходит на подготовку */
+  energyCost?: number;
+  /** Через сколько дней виден результат */
+  days: number;
+  /** Сколько дней после результата эту акцию нельзя повторить */
+  cooldownDays: number;
+  /** С продуктом хуже этого акцию не запустить */
+  minQuality?: number;
+  /** Насколько акция подходит продуктам «для людей» и «для дела»: больше 1 — шансы лучше */
+  fit: { consumer: number; business: number };
+  /** Шансы исходов при качестве campaignQualityRef и обычном соответствии (в сумме любые, важны доли) */
+  weights: Record<CampaignOutcome, number>;
+  results: Partial<Record<CampaignOutcome, CampaignResult>>;
 }
 
 /** Банк: кредит и вклад. */
@@ -434,10 +468,19 @@ export interface Loan {
   untilDay: number;
 }
 
+export interface CampaignsState {
+  /** Свой генератор случайности: исходы акций не сдвигают остальную случайность партии */
+  rng: number;
+  active: { id: string; endsDay: number; cost: number } | null;
+  /** День, когда акция этого вида закончилась в последний раз */
+  finishedDay: Record<string, number>;
+  last: { id: string; day: number; outcome: CampaignOutcome } | null;
+}
+
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign';
   /** Число, о котором новость: пользователей, платящих, долларов */
   value?: number;
   /** Для готовой функции — её id */
@@ -608,6 +651,8 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Маркетинговые акции: идущая сейчас, когда какую запускали, последний исход. В старых сохранениях поля нет. */
+  campaigns?: CampaignsState;
   /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
   adChannels?: Partial<Record<ChannelId, number>>;
   /** Запас статей и гайдов в долларах вложений: приводит людей сам и понемногу устаревает */
@@ -678,6 +723,7 @@ export type Command =
   | { type: 'setAdSpend'; perDay: number }
   /** Бюджет одного рекламного канала в день */
   | { type: 'setChannelSpend'; channel: ChannelId; perDay: number }
+  | { type: 'runCampaign'; campaignId: string }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -719,6 +765,7 @@ export type CommandError =
   | 'noSuchTask'
   | 'alreadyLaunched'
   | 'coffeeTooSoon'
+  | 'campaignUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'

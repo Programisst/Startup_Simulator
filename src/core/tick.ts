@@ -23,6 +23,7 @@ import {
 import { channelSpend, channelUsersPerDay, contentBoost, contentStockAfterDay } from './marketing';
 import { stepMilestones } from './milestones';
 import { collectNews, withNews } from './news';
+import { stepCampaigns } from './campaigns';
 import { officeOf } from './office';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
@@ -269,6 +270,9 @@ export function tick(state: GameState, content: GameContent): GameState {
     const target = reputationTarget(s.quality, over, s.scandal);
     s.reputation = clamp(s.reputation + (target - s.reputation) * 0.01, 0, 100);
   }
+
+  // 5б. Маркетинговая акция: если срок вышел — исход
+  stepCampaigns(s, cfg);
 
   // 5а. Команда: мотивация, уходы, новые кандидаты
   s.team = stepTeam(s, content);
