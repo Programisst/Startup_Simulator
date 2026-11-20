@@ -74,6 +74,21 @@ export const config: GameConfig = {
     typeBonusCap: 1,
   },
   bank: { loanRateYear: 0.18, loanTermDays: 360, minLoan: 1000, baseLimit: 3000, revenueMultiple: 4, depositRateYear: 0.06 },
+  releases: {
+    sizes: [
+      { id: 'small', teamDays: 10, factor: 1.3, days: 10, reputation: 1, failReputation: -2 },
+      { id: 'medium', teamDays: 20, factor: 1.7, days: 14, reputation: 2, failReputation: -4 },
+      { id: 'large', teamDays: 35, factor: 2.2, days: 21, reputation: 4, failReputation: -6 },
+    ],
+    deadlines: [
+      { id: 'safe', time: 1.3, reward: 0.75, penalty: 0.5 },
+      { id: 'exact', time: 1, reward: 1, penalty: 1 },
+      { id: 'bold', time: 0.75, reward: 1.6, penalty: 1.5 },
+    ],
+    cooldownDays: 20,
+    buggyAt: 10,
+    roughShare: 0.5,
+  },
   marketing: {
     channels: [
       // Поиск: надёжно и для всех, выдерживает большие бюджеты.

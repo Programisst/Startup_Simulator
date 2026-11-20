@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { featuresOf, overload, type Task } from '../../core';
 import { FounderCare } from '../components/FounderCare';
+import { ReleasePanel } from '../components/ReleasePanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -34,6 +35,8 @@ export function Product() {
         <div className="card"><span>{t('metrics.bugs')}</span><b>{num(game.bugs)}</b><small>{t('product.bugsHint')}</small></div>
         <div className="card"><span>{t('metrics.debt')}</span><b>{num(game.debt)}</b><small>{t('product.debtHint')}</small></div>
       </div>
+
+      {game.launched && <ReleasePanel />}
 
       {!game.launched && (
         <p className="notice">

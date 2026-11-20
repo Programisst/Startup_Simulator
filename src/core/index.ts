@@ -20,3 +20,4 @@ export { revenue30 as revenue30Of } from './events';
 export type { ChatLine, TalkOutcome } from './types';
 export { marketingView, channelSpend, totalAdSpend, channelEfficiency, contentBoost, type MarketingView, type ChannelView } from './marketing';
 export { campaignBlock, campaignCost, campaignOdds, campaignsOf, campaignsView, type CampaignBlock, type CampaignView, type CampaignsView } from './campaigns';
+export { basePace, releaseBlock, releaseOf, releaseTerms, releaseView, type ReleaseBlock, type ReleaseOption, type ReleaseView } from './releases';

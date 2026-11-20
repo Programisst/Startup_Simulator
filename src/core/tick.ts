@@ -24,6 +24,7 @@ import { channelSpend, channelUsersPerDay, contentBoost, contentStockAfterDay } 
 import { stepMilestones } from './milestones';
 import { collectNews, withNews } from './news';
 import { stepCampaigns } from './campaigns';
+import { stepRelease, withReleaseWork } from './releases';
 import { officeOf } from './office';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
@@ -62,6 +63,7 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
   const team = teamOf(draft, content);
   // Основатель делит день с подработкой, команда работает полный день; спешка ускоряет всех.
   let work = (founderWorkPerDay(draft, cfg) + teamWorkPerDay(team, cfg.team)) * (draft.rush ? cfg.rushSpeed : 1);
+  const workAtStart = work;
   // Небрежные разработчики и вымотанный основатель добавляют ошибки к готовой функции.
   const sloppy = sloppyDevelopers(team) + (energyOf(draft) < cfg.founder.exhaustedBelow && founderWorkPerDay(draft, cfg) > 0 ? 1 : 0);
   const tasks: Task[] = draft.tasks.map((t) => ({ ...t }));
@@ -136,6 +138,9 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
   }
 
   draft.tasks = tasks;
+  // Сделанная за день работа идёт в зачёт обещанного обновления.
+  const release = withReleaseWork(draft, workAtStart - work);
+  if (release) draft.release = release;
   return r;
 }
 
@@ -150,6 +155,7 @@ export function tick(state: GameState, content: GameContent): GameState {
   // 1. Разработка и качество
   const busy = founderBusy(s);
   rng = develop(s, content, rng);
+  stepRelease(s, content);
   s.energy = energyAfterDay(s, cfg.founder, busy);
   s.resting = false;
   // Сосредоточенность выветривается: чтобы держать темп, код нужно набирать снова.

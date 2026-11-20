@@ -386,7 +386,50 @@ export interface FounderConfig {
   typeBonusCap: number;
 }
 
+/** Размер обещанного обновления: сколько работы и что даёт выпуск в срок. */
+export interface ReleaseSizeDef {
+  id: 'small' | 'medium' | 'large';
+  /** Объём работы в днях команды при обычном темпе */
+  teamDays: number;
+  /** Во сколько раз и на сколько дней вырастет приток после выпуска в срок */
+  factor: number;
+  days: number;
+  /** Репутация за выпуск в срок и за сорванный срок */
+  reputation: number;
+  failReputation: number;
+}
+
+/** Каким срок обещан: с запасом, впритык или смело. */
+export interface ReleaseDeadlineDef {
+  id: 'safe' | 'exact' | 'bold';
+  /** Срок относительно объёма работы: 0.75 — на четверть быстрее обычного темпа */
+  time: number;
+  /** Множители награды и наказания: смелое обещание ценнее, а срыв — больнее */
+  reward: number;
+  penalty: number;
+}
+
+export interface ReleaseConfig {
+  sizes: ReleaseSizeDef[];
+  deadlines: ReleaseDeadlineDef[];
+  /** Сколько дней после исхода нельзя объявлять следующее обновление */
+  cooldownDays: number;
+  /** С таким числом ошибок выпуск считается сырым, и какая доля награды тогда остаётся */
+  buggyAt: number;
+  roughShare: number;
+}
+
+export type ReleaseOutcome = 'onTime' | 'rough' | 'missed';
+
+export interface ReleaseState {
+  active: { size: ReleaseSizeDef['id']; deadline: ReleaseDeadlineDef['id']; startDay: number; dueDay: number; need: number; done: number } | null;
+  last: { size: ReleaseSizeDef['id']; deadline: ReleaseDeadlineDef['id']; day: number; outcome: ReleaseOutcome } | null;
+  /** Сколько обновлений вышло в срок за партию */
+  shipped: number;
+}
+
 export interface GameConfig {
+  releases: ReleaseConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -480,7 +523,7 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release';
   /** Число, о котором новость: пользователей, платящих, долларов */
   value?: number;
   /** Для готовой функции — её id */
@@ -651,6 +694,8 @@ export interface GameState {
   polish: number;
   tasks: Task[];
   rush: boolean;
+  /** Обещанное обновление продукта: объявленное сейчас и последний исход. В старых сохранениях поля нет. */
+  release?: ReleaseState;
   /** Маркетинговые акции: идущая сейчас, когда какую запускали, последний исход. В старых сохранениях поля нет. */
   campaigns?: CampaignsState;
   /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
@@ -724,6 +769,7 @@ export type Command =
   /** Бюджет одного рекламного канала в день */
   | { type: 'setChannelSpend'; channel: ChannelId; perDay: number }
   | { type: 'runCampaign'; campaignId: string }
+  | { type: 'announceRelease'; size: ReleaseSizeDef['id']; deadline: ReleaseDeadlineDef['id'] }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -766,6 +812,7 @@ export type CommandError =
   | 'alreadyLaunched'
   | 'coffeeTooSoon'
   | 'campaignUnavailable'
+  | 'releaseUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'
