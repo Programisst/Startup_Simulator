@@ -27,6 +27,7 @@ import { stepCampaigns } from './campaigns';
 import { stepRelease, withReleaseWork } from './releases';
 import { stepHeadhunt } from './headhunt';
 import { stepFunding } from './funding';
+import { stepAcquisitions } from './acquisitions';
 import { officeOf } from './office';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
@@ -288,6 +289,8 @@ export function tick(state: GameState, content: GameContent): GameState {
   stepHeadhunt(s, content);
   // 5г. Инвесторы: срок предложения и обещание роста
   stepFunding(s, content);
+  // 5д. Купленная компания: пользователи переходят к нам
+  stepAcquisitions(s, content);
 
   // 6. Кассовый разрыв и банкротство
   s.negativeCashDays = s.cash < 0 ? s.negativeCashDays + 1 : 0;

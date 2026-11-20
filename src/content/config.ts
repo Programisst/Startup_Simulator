@@ -75,6 +75,30 @@ export const config: GameConfig = {
     typeBonusCap: 1,
   },
   bank: { loanRateYear: 0.18, loanTermDays: 360, minLoan: 1000, baseLimit: 3000, revenueMultiple: 4, depositRateYear: 0.06 },
+  acquisitions: {
+    sizes: [
+      { id: 'small', share: 0.05, weight: 50, trouble: 0.5 },
+      { id: 'medium', share: 0.15, weight: 35, trouble: 1 },
+      { id: 'large', share: 0.35, weight: 15, trouble: 1.5 },
+    ],
+    health: [
+      { id: 'solid', weight: 45, keep: 1, bugs: 2, debt: 3, reputation: 1, hiddenDebt: 0 },
+      { id: 'messy', weight: 35, keep: 0.5, bugs: 10, debt: 12, reputation: 0, hiddenDebt: 0 },
+      { id: 'hollow', weight: 20, keep: 0.1, bugs: 6, debt: 8, reputation: -5, hiddenDebt: 0.3 },
+    ],
+    periodDays: 60,
+    visibleDays: 30,
+    minRevenue30: 20_000,
+    priceMonths: 16,
+    checkCostShare: 0.04,
+    checkDays: 5,
+    integrationDays: 15,
+    lowOffer: 0.75,
+    lowChance: 0.4,
+    lowChanceWeak: 0.75,
+    marketPerUser: 2,
+    companies: 8,
+  },
   funding: {
     investors: [
       { id: 'angels', share: 0.06, price: 0.85, patience: 3, flexibility: 0.1 },

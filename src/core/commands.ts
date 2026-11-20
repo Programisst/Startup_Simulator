@@ -4,6 +4,7 @@ import { startCampaign } from './campaigns';
 import { announceRelease, withReleaseWork } from './releases';
 import { makeOffer } from './headhunt';
 import { buyBack, closeRound, counterOffer, leaveRound, openRound } from './funding';
+import { buyTarget, checkTarget } from './acquisitions';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -99,6 +100,12 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
                 ? leaveRound(state, content)
                 : buyBack(state, content, cmd.share);
       return next ? { ok: true, state: next } : fail('fundingUnavailable');
+    }
+
+    case 'checkTarget':
+    case 'buyTarget': {
+      const next = cmd.type === 'checkTarget' ? checkTarget(state, content) : buyTarget(state, content, cmd.offer);
+      return next ? { ok: true, state: next } : fail('acquisitionUnavailable');
     }
 
     case 'headhunt': {

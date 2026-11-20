@@ -269,6 +269,78 @@ export interface TeamConfig {
   starAuraCap: number;
 }
 
+/** Что на самом деле внутри компании, выставленной на продажу: здоровая, с проблемами, пустышка. */
+export type TargetHealth = 'solid' | 'messy' | 'hollow';
+
+export interface TargetSizeDef {
+  id: 'small' | 'medium' | 'large';
+  /** Сколько у неё пользователей — в долях от ваших */
+  share: number;
+  /** Как часто попадается (важны доли) */
+  weight: number;
+  /** Во сколько раз больше или меньше хлопот при присоединении */
+  trouble: number;
+}
+
+export interface TargetHealthDef {
+  id: TargetHealth;
+  weight: number;
+  /** Какая доля заявленных пользователей на самом деле перейдёт к вам */
+  keep: number;
+  /** Что приезжает вместе с ней: ошибки, технический долг, сдвиг репутации */
+  bugs: number;
+  debt: number;
+  reputation: number;
+  /** Скрытые долги купленной компании: доплата после присоединения, в долях от цены покупки */
+  hiddenDebt: number;
+}
+
+/** Покупка компаний: готовые пользователи и новый рынок за деньги — если внутри не пустышка. */
+export interface AcquisitionsConfig {
+  sizes: TargetSizeDef[];
+  health: TargetHealthDef[];
+  /** Раз во сколько дней появляется компания на продажу и сколько дней она ждёт */
+  periodDays: number;
+  visibleDays: number;
+  /** Доход за 30 дней, с которого вам начинают предлагать компании */
+  minRevenue30: number;
+  /** Цена: столько месяцев вашего дохода с такого числа пользователей */
+  priceMonths: number;
+  /** Проверка перед покупкой: доля от цены и сколько дней идёт */
+  checkCostShare: number;
+  checkDays: number;
+  /** Через сколько дней после покупки пользователи переходят к вам */
+  integrationDays: number;
+  /** Предложить меньше: доля от цены и шанс согласия — обычный и когда проверка нашла проблемы */
+  lowOffer: number;
+  lowChance: number;
+  lowChanceWeak: number;
+  /** На сколько человек расширяется рынок за каждого перешедшего пользователя */
+  marketPerUser: number;
+  /** Сколько выдуманных названий компаний в текстах */
+  companies: number;
+}
+
+/** Компания, выставленная на продажу. Что у неё внутри, игрок узнаёт проверкой или после покупки. */
+export interface TargetDef {
+  size: TargetSizeDef['id'];
+  health: TargetHealth;
+  companySeed: number;
+}
+
+export interface AcquisitionsState {
+  /** Отдельный генератор случайности: ответ продавца не сдвигает остальную партию */
+  rng: RngState;
+  /** Номер периода, с компанией которого уже всё решено */
+  window: number | null;
+  /** Проверка компании: какого периода и когда будет готова */
+  check: { window: number; readyDay: number } | null;
+  /** Купленная компания присоединяется */
+  integrating: { target: TargetDef; users: number; price: number; doneDay: number } | null;
+  last: { day: number; kind: 'joined' | 'refused'; health: TargetHealth | null; users: number; companySeed: number } | null;
+  bought: number;
+}
+
 /** Инвестор: сколько компании хочет, как платит и чего требует взамен. */
 export interface InvestorDef {
   id: string;
@@ -587,6 +659,7 @@ export interface GameConfig {
   releases: ReleaseConfig;
   headhunt: HeadhuntConfig;
   funding: FundingConfig;
+  acquisitions: AcquisitionsConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -680,7 +753,7 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding' | 'acquisition';
   /** Число, о котором новость: пользователей, платящих, долларов; для звезды — число, по которому подбирается имя */
   value?: number;
   /** Для готовой функции — её id */
@@ -860,6 +933,8 @@ export interface GameState {
   headhunt?: HeadhuntState;
   /** Раунды инвестиций: переговоры, обещание инвестору, история. Появляется с первыми переговорами. */
   funding?: FundingState;
+  /** Покупка компаний: проверка, идущее присоединение, последний исход. Появляется с первой проверкой или покупкой. */
+  acquisitions?: AcquisitionsState;
   /** Маркетинговые акции: идущая сейчас, когда какую запускали, последний исход. В старых сохранениях поля нет. */
   campaigns?: CampaignsState;
   /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
@@ -942,6 +1017,9 @@ export type Command =
   | { type: 'closeRound' }
   | { type: 'leaveRound' }
   | { type: 'buyBack'; share: number }
+  /** Покупка компании: заказать проверку; купить за полную цену или предложить меньше */
+  | { type: 'checkTarget' }
+  | { type: 'buyTarget'; offer: 'full' | 'low' }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -987,6 +1065,7 @@ export type CommandError =
   | 'releaseUnavailable'
   | 'headhuntUnavailable'
   | 'fundingUnavailable'
+  | 'acquisitionUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'
