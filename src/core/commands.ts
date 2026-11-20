@@ -3,6 +3,7 @@
 import { startCampaign } from './campaigns';
 import { announceRelease, withReleaseWork } from './releases';
 import { makeOffer } from './headhunt';
+import { buyBack, closeRound, counterOffer, leaveRound, openRound } from './funding';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -80,6 +81,24 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'announceRelease': {
       const announced = announceRelease(state, content, cmd.size, cmd.deadline);
       return announced ? { ok: true, state: announced } : fail('releaseUnavailable');
+    }
+
+    case 'openRound':
+    case 'counterOffer':
+    case 'closeRound':
+    case 'leaveRound':
+    case 'buyBack': {
+      const next =
+        cmd.type === 'openRound'
+          ? openRound(state, content, cmd.investorId)
+          : cmd.type === 'counterOffer'
+            ? counterOffer(state, content, cmd.stance)
+            : cmd.type === 'closeRound'
+              ? closeRound(state, content)
+              : cmd.type === 'leaveRound'
+                ? leaveRound(state, content)
+                : buyBack(state, content, cmd.share);
+      return next ? { ok: true, state: next } : fail('fundingUnavailable');
     }
 
     case 'headhunt': {

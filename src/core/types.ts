@@ -269,6 +269,79 @@ export interface TeamConfig {
   starAuraCap: number;
 }
 
+/** Инвестор: сколько компании хочет, как платит и чего требует взамен. */
+export interface InvestorDef {
+  id: string;
+  /** Какую долю компании покупает, 0.15 = 15% */
+  share: number;
+  /** Первое предложение: во сколько раз дешевле или дороже оценки компании */
+  price: number;
+  /** Сколько отказов выдержит, прежде чем уйти */
+  patience: number;
+  /** Поправка к шансу, что он уступит в торге: сговорчивый — плюс, жёсткий — минус */
+  flexibility: number;
+  /** Помощь с клиентами после сделки: множитель притока и на сколько дней */
+  perk?: { factor: number; days: number };
+  /** Обещание роста: во сколько раз должен вырасти доход за 30 дней и к какому сроку; что будет при успехе и при срыве */
+  promise?: { growth: number; days: number; penaltyShare: number; keptReputation: number; brokenReputation: number };
+}
+
+/** Как торговаться: попросить больше или давить. */
+export interface CounterDef {
+  id: 'ask' | 'press';
+  /** На сколько вырастет предложение, если инвестор уступит (0.15 = +15%) */
+  raise: number;
+  /** Шанс, что уступит, до поправок */
+  chance: number;
+}
+
+/** Раунды инвестиций с торгом за цену доли. */
+export interface FundingConfig {
+  investors: InvestorDef[];
+  counters: CounterDef[];
+  /** Оценка компании, с которой инвесторы готовы разговаривать */
+  minValuation: number;
+  /** Меньше этой доли основателю оставить нельзя */
+  minFounderShare: number;
+  /** Сколько сил стоит начать переговоры и сколько дней предложение в силе */
+  energyCost: number;
+  talkDays: number;
+  /** Насколько каждый пункт переговорной позиции сдвигает первое предложение и шанс уступки */
+  positionPrice: number;
+  positionChance: number;
+  /** Насколько каждая выторгованная уступка снижает шанс следующей */
+  raisePenalty: number;
+  chanceMin: number;
+  chanceMax: number;
+  /** Выше этой цены (в оценках компании) инвестор не заплатит */
+  maxPrice: number;
+  /** Перерыв до следующего раунда: после сделки, после ухода инвестора, после вашего ухода */
+  cooldownClosed: number;
+  cooldownWalked: number;
+  cooldownLeft: number;
+  /** Удар по репутации, когда инвестор уходит, хлопнув дверью */
+  walkedReputation: number;
+  /** Выкуп доли обратно: во сколько раз дороже оценки и какими частями */
+  buybackPrice: number;
+  buybackSteps: number[];
+}
+
+export interface FundingState {
+  /** Отдельный генератор случайности: торг не сдвигает остальную партию */
+  rng: RngState;
+  /** Идущие переговоры */
+  talks: { investor: string; share: number; offer: number; valuation: number; patience: number; raises: number; untilDay: number; lastCounter?: { stance: CounterDef['id']; ok: boolean } } | null;
+  /** С какого дня можно начать следующий раунд */
+  readyDay: number;
+  /** Обещание роста инвестору */
+  promise: { investor: string; from: number; target: number; dueDay: number; penaltyShare: number } | null;
+  last: { day: number; kind: 'closed' | 'walked' | 'left' | 'expired'; investor: string; amount: number; share: number } | null;
+  rounds: number;
+  /** Сдержанные и сорванные обещания: по ним инвесторы судят о вас */
+  kept: number;
+  broken: number;
+}
+
 /** Предложение звезде из чужой компании: скромное, щедрое, очень щедрое. */
 export type HeadhuntOfferId = 'modest' | 'generous' | 'lavish';
 
@@ -513,6 +586,7 @@ export interface ReleaseState {
 export interface GameConfig {
   releases: ReleaseConfig;
   headhunt: HeadhuntConfig;
+  funding: FundingConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -606,7 +680,7 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding';
   /** Число, о котором новость: пользователей, платящих, долларов; для звезды — число, по которому подбирается имя */
   value?: number;
   /** Для готовой функции — её id */
@@ -784,6 +858,8 @@ export interface GameState {
   release?: ReleaseState;
   /** Охота за звёздами: сделанное предложение и последний ответ. Появляется с первым предложением. */
   headhunt?: HeadhuntState;
+  /** Раунды инвестиций: переговоры, обещание инвестору, история. Появляется с первыми переговорами. */
+  funding?: FundingState;
   /** Маркетинговые акции: идущая сейчас, когда какую запускали, последний исход. В старых сохранениях поля нет. */
   campaigns?: CampaignsState;
   /** Бюджет в день по каналам, кроме поиска: поиск хранится в adSpendPerDay, как раньше */
@@ -860,6 +936,12 @@ export type Command =
   | { type: 'announceRelease'; size: ReleaseSizeDef['id']; deadline: ReleaseDeadlineDef['id'] }
   /** Сделать предложение звезде из чужой компании */
   | { type: 'headhunt'; offer: HeadhuntOfferId }
+  /** Раунд инвестиций: начать переговоры, торговаться, согласиться, уйти; выкупить долю обратно */
+  | { type: 'openRound'; investorId: string }
+  | { type: 'counterOffer'; stance: CounterDef['id'] }
+  | { type: 'closeRound' }
+  | { type: 'leaveRound' }
+  | { type: 'buyBack'; share: number }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -904,6 +986,7 @@ export type CommandError =
   | 'campaignUnavailable'
   | 'releaseUnavailable'
   | 'headhuntUnavailable'
+  | 'fundingUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'
