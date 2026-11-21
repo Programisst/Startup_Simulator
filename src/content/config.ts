@@ -238,6 +238,21 @@ export const config: GameConfig = {
   },
   // Партия про рост, а не про выживание впроголодь: рынок откликается быстрее, чем в «честной» модели.
   pace: { acquisition: 1.3, revenue: 1.5, launchBoost: 3, launchDays: 30 },
+  // Службы большой компании. Доли — как у частных софтверных компаний в жизни (docs/02-economy.md, раздел 33):
+  // поддержка 9%, продажи 15%, администрация 15%, сопровождение и разработка 26% дохода.
+  ops: {
+    steps: [
+      { from: 20_000, rate: 0.35 },
+      { from: 100_000, rate: 0.65 },
+    ],
+    lines: [
+      { id: 'support', weight: 9 },
+      { id: 'sales', weight: 15 },
+      { id: 'admin', weight: 15 },
+      { id: 'upkeep', weight: 26 },
+    ],
+    windowDays: 90,
+  },
   offices: [
     { id: 'home', seats: 3, moveCost: 0, rentPerMonth: 0 },
     { id: 'coworking', seats: 6, moveCost: 2000, rentPerMonth: 600 },

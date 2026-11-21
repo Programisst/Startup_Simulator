@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
 import { AcquisitionPanel } from '../components/AcquisitionPanel';
 import { FundingPanel } from '../components/FundingPanel';
+import { OpsPanel } from '../components/OpsPanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -15,6 +16,7 @@ export function Finance() {
     <div className="screen">
       <FundingPanel />
       <AcquisitionPanel />
+      <OpsPanel />
       <div className="two">
         <section className="panel">
           <h3>{t('finance.monthlyCosts')}</h3>
@@ -23,6 +25,7 @@ export function Finance() {
               <tr><td>{t('finance.living')}</td><td>{perMonth(b.livingCost)}</td></tr>
               <tr><td>{t('finance.rent')}</td><td>{perMonth(b.rentCost ?? 0)}</td></tr>
               <tr><td>{t('finance.salaries')}</td><td>{perMonth(b.salaryCost ?? 0)}</td></tr>
+              <tr><td>{t('finance.opsRow')}</td><td>{perMonth(b.opsCost ?? 0)}</td></tr>
               <tr><td>{t('finance.servers')}</td><td>{perMonth(b.serverCost)}</td></tr>
               <tr><td>{t('finance.ads')}</td><td>{perMonth(b.adCost)}</td></tr>
               <tr><td>{t('finance.tools')}</td><td>{perMonth(b.toolsCost)}</td></tr>

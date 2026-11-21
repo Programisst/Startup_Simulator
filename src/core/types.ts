@@ -673,6 +673,7 @@ export interface GameConfig {
   headhunt: HeadhuntConfig;
   funding: FundingConfig;
   acquisitions: AcquisitionsConfig;
+  ops: OpsConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -849,6 +850,19 @@ export interface TeamState {
   log: TeamLogEntry[];
 }
 
+/** Служба большой компании: поддержка пользователей, продажи, администрация, сопровождение продукта. */
+export type OpsLineId = 'support' | 'sales' | 'admin' | 'upkeep';
+
+/** Расходы, которые растут вместе с компанией. */
+export interface OpsConfig {
+  /** Ступени: с части устойчивого месячного дохода выше from на службы уходит доля rate. По возрастанию from. */
+  steps: { from: number; rate: number }[];
+  /** На что делится расход; weight — доля статьи (в жизни — процент от дохода) */
+  lines: { id: OpsLineId; weight: number }[];
+  /** За сколько последних дней усредняется доход: службы растут и сжимаются с этим опозданием */
+  windowDays: number;
+}
+
 /** Из чего сложился последний день — для объяснения показателей игроку. */
 export interface DayBreakdown {
   paid: number;
@@ -868,6 +882,8 @@ export interface DayBreakdown {
   rentCost: number;
   /** Зарплаты команды за день */
   salaryCost: number;
+  /** Службы компании за день: поддержка, продажи, администрация, сопровождение. В старых сохранениях поля нет. */
+  opsCost?: number;
   /** Доход от подработки основателя — не входит в доход продукта */
   sideIncome: number;
   expenses: number;

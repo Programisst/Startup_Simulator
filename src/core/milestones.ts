@@ -86,7 +86,7 @@ export function milestoneView(s: GameState, content: GameContent): MilestoneView
   };
 }
 
-export type BankruptcyCause = 'noProduct' | 'salaries' | 'ads' | 'servers' | 'loans' | 'rent' | 'slowGrowth';
+export type BankruptcyCause = 'noProduct' | 'salaries' | 'ads' | 'servers' | 'loans' | 'rent' | 'ops' | 'slowGrowth';
 
 /** Аренда записана в последнем дне партии: настройки игры здесь недоступны. */
 const rentOf = (s: GameState): number => (s.lastDay.rentCost ?? 0) * 30;
@@ -101,6 +101,8 @@ export function bankruptcyCause(s: GameState): BankruptcyCause {
     ads: totalAdSpend(s) * 30,
     servers: s.capacity * s.market.serverCostPerUser,
     rent: rentOf(s),
+    // Службы записаны в последнем дне партии: настройки игры здесь недоступны.
+    ops: (s.lastDay.opsCost ?? 0) * 30,
     loans: s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30,
   };
   const heaviest = (Object.keys(monthly) as (keyof typeof monthly)[]).reduce((a, b) => (monthly[b] > monthly[a] ? b : a));

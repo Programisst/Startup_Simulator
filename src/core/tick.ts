@@ -29,6 +29,7 @@ import { stepHeadhunt } from './headhunt';
 import { stepFunding } from './funding';
 import { stepAcquisitions } from './acquisitions';
 import { officeOf } from './office';
+import { opsCostPerMonth } from './ops';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -184,6 +185,7 @@ export function tick(state: GameState, content: GameContent): GameState {
     livingCost: 0,
     rentCost: 0,
     salaryCost: 0,
+    opsCost: 0,
     sideIncome: 0,
     expenses: 0,
   };
@@ -266,8 +268,10 @@ export function tick(state: GameState, content: GameContent): GameState {
   b.livingCost = s.livingCostPerMonth / DAYS_IN_MONTH;
   b.salaryCost = payrollPerMonth(team) / DAYS_IN_MONTH;
   b.rentCost = officeOf(s, cfg).rentPerMonth / DAYS_IN_MONTH;
+  // Службы большой компании: считаются по доходу прошлых дней, сегодняшний ещё не записан.
+  b.opsCost = opsCostPerMonth(s, cfg) / DAYS_IN_MONTH;
   b.sideIncome = (s.sideJobIncomePerMonth * s.sideJobShare) / DAYS_IN_MONTH;
-  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost + b.rentCost;
+  b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost + b.rentCost + b.opsCost;
 
   s.cash = cents(s.cash + b.revenue + b.sideIncome - b.expenses);
   s.lastDay = b;
