@@ -5,6 +5,7 @@ import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
 import { totalAdSpend } from './marketing';
 import { officeIndex, officeOf } from './office';
+import { opsCostPerMonth } from './ops';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
 import type { Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, StarDef, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
@@ -341,6 +342,7 @@ export function cashDaysAfterHire(s: GameState, salary: number, content: GameCon
     s.loans.reduce((sum, l) => sum + l.dailyPayment, 0) * 30 +
     payrollPerMonth(teamOf(s, content)) +
     officeOf(s, cfg).rentPerMonth +
+    opsCostPerMonth(s, cfg) +
     salary;
   const burn = expenses - income;
   if (burn <= 0) return null;

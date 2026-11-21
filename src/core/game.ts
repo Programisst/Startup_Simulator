@@ -22,6 +22,7 @@ export const EMPTY_DAY: DayBreakdown = {
   livingCost: 0,
   rentCost: 0,
   salaryCost: 0,
+  opsCost: 0,
   sideIncome: 0,
   expenses: 0,
 };

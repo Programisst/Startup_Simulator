@@ -88,6 +88,9 @@ function builder(launchAfter: number): Strategy {
       const paysOff = revenuePerUser * 6 > cac(s.market, s.users);
       let spend = 0;
       if (s.quality >= 40 && s.cash > 500 && paysOff) spend = Math.round((monthRevenue * 0.3) / 30 + s.cash * 0.004);
+      // У большой компании появились службы, и прежняя щедрость съедает всю прибыль:
+      // на рекламу идёт 8% дохода, как в среднем у софтверных компаний в жизни.
+      if ((s.lastDay.opsCost ?? 0) > 0) spend = Math.min(spend, Math.round((monthRevenue * 0.08) / 30));
       if (spend !== s.adSpendPerDay) cmds.push({ type: 'setAdSpend', perDay: spend });
       cmds.push(...scaleServers(s, content));
     }

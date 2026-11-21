@@ -46,7 +46,19 @@ describe('активный игрок', () => {
     expect(bold.every((r) => r.status === 'running')).toBe(true);
     expect(median(bold.map((r) => r.quality))).toBeGreaterThan(70);
     expect(median(bold.map((r) => r.reputation))).toBeGreaterThan(70);
-    expect(median(bold.map((r) => r.acquisitions?.bought ?? 0))).toBeGreaterThanOrEqual(3);
+    // Компании стоят четыре годовых дохода, а службы съедают две трети дохода: покупка — редкое событие.
+    expect(median(bold.map((r) => r.acquisitions?.bought ?? 0))).toBeGreaterThanOrEqual(1);
     expect(median(bold.map((r) => r.users))).toBeGreaterThan(median(calm.map((r) => r.users)) * 1.5);
+  });
+
+  it('большая компания — не печатный станок: прибыль около трети дохода, запас денег — месяцы, а не десятилетия', () => {
+    for (const results of [sandbox(carefulHirer, 4 * 360), sandbox(active, 4 * 360)]) {
+      const margin = median(results.map((r) => r.months[r.months.length - 1]!.profit / r.months[r.months.length - 1]!.revenue));
+      const reserve = median(results.map((r) => r.cash / r.months[r.months.length - 1]!.expenses));
+      // В жизни частные софтверные компании тратят 91–101% дохода; в игре оставлено около 30% прибыли.
+      expect(margin).toBeGreaterThan(0.15);
+      expect(margin).toBeLessThan(0.45);
+      expect(reserve).toBeLessThan(36);
+    }
   });
 });
