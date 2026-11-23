@@ -268,7 +268,26 @@
   box-shadow: inset 0 2px 0 #efe9df;
   font-variant-numeric: tabular-nums;
 }
-.company-app input[type='checkbox'] { width: 14px; height: 14px; padding: 0; border: 0; border-image: none; accent-color: var(--accent); box-shadow: none; }
+/* Флажок — пиксельный квадрат; отмечен — заливка цветом лампы и тёмная «галочка» из двух полосок. */
+.company-app input[type='checkbox'] {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: var(--panel) padding-box;
+  box-shadow: inset 0 2px 0 #efe9df;
+}
+.company-app input[type='checkbox']:checked {
+  background:
+    linear-gradient(var(--text) 0 0) 3px 6px / 3px 3px no-repeat,
+    linear-gradient(var(--text) 0 0) 5px 7px / 3px 3px no-repeat,
+    linear-gradient(var(--text) 0 0) 7px 3px / 2px 6px no-repeat,
+    var(--lamp) padding-box;
+  box-shadow: inset 0 -2px 0 #c9952a;
+}
 .company-app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .company-app .choices { gap: 6px; }
 
@@ -286,10 +305,48 @@
 .company-app .person { border-bottom: 1px solid var(--hair); }
 .company-app .person-head b { font-size: 14px; font-weight: 600; }
 .company-app .person-head div span { font-size: 12px; color: var(--muted); }
-.company-app .avatar { width: 38px; height: 38px; font-size: 13px; }
+.company-app .avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 0;
+  font: 700 13px/1 var(--font-game);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+/* Полоски сил и настроения — деления, как индикатор в игре. */
 .company-app .meter { font-size: 12px; }
-.company-app .meter-bar { height: 8px; border-radius: 0; background: #e6e1d9; }
+.company-app .meter-bar {
+  height: 10px;
+  border-radius: 0;
+  background: #e6e1d9;
+  -webkit-mask: repeating-linear-gradient(to right, #000 0 8px, #0000 8px 10px);
+  mask: repeating-linear-gradient(to right, #000 0 8px, #0000 8px 10px);
+}
 .company-app .meter-bar i { border-radius: 0; }
+/* Пустые места в офисе: пунктирная рамка и маленький пиксельный стол. */
+.company-app .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.company-app .seats > .muted { grid-column: 1 / -1; }
+/* Пока людей мало, блок не тянется на высоту списка кандидатов. */
+.company-app .two:has(.seats) { align-items: start; }
+.company-app .seat {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 8px 10px;
+  border: 2px dashed var(--oat-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+.company-app .seat-desk {
+  width: 36px;
+  height: 22px;
+  background:
+    linear-gradient(#8f887f 0 0) 0 0 / 36px 6px no-repeat,
+    linear-gradient(#8f887f 0 0) 3px 6px / 4px 16px no-repeat,
+    linear-gradient(#8f887f 0 0) 29px 6px / 4px 16px no-repeat,
+    linear-gradient(var(--oat-2) 0 0) 12px 9px / 12px 9px no-repeat;
+}
 .company-app .salary input { width: 96px; }
 
 /* ---------- Подсказка обучения: всплывающая подсказка системы ---------- */

@@ -133,7 +133,8 @@
 
 /* ───── Акции («Маркетинг») ───── */
 .company-app .mk-list { margin-top: 10px; }
-.company-app .mk-campaign { grid-template-rows: none; }
+.company-app .mk-campaign { display: flex; flex-direction: column; }
+.company-app .mk-campaign > button { margin-top: auto; }
 .company-app .mk-name { display: block; font: 600 15px/1.25 var(--font-game); }
 .company-app .mk-cost { margin-top: 3px; font-weight: 600; }
 .company-app .mk-list { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
