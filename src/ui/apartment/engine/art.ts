@@ -105,6 +105,8 @@ export interface HeroArt {
   walk: Spr[][];
   sit: Spr[];
   sleepHead: Spr;
+  /** Лицом к нам: оглядывается вправо и влево, когда стоит без дела. */
+  look: Spr[];
 }
 
 function paintRows(rows: readonly string[]): Spr {
@@ -119,6 +121,7 @@ function buildHero(): HeroArt {
     walk: f.walk.map((d) => d.map(paintRows)),
     sit: f.sit.map(paintRows),
     sleepHead: paintRows(f.sleepHead),
+    look: f.look.map(paintRows),
   };
 }
 
