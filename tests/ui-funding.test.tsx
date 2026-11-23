@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import '../src/ui/i18n';
 import { content } from '../src/content';
 import { applyCommand, type GameState, type NewsItem } from '../src/core';
+import { OwnershipCard } from '../src/ui/components/FinanceParts';
 import { FundingPanel } from '../src/ui/components/FundingPanel';
 import { useFeedText } from '../src/ui/components/Feed';
 import { useStore } from '../src/ui/store';
@@ -60,6 +61,7 @@ describe('панель «Раунд инвестиций»', () => {
     act(() =>
       root.render(
         <>
+          <OwnershipCard />
           <FundingPanel />
           <FeedLines />
         </>,
@@ -70,11 +72,14 @@ describe('панель «Раунд инвестиций»', () => {
     expect(container.textContent).toContain('Раунд инвестиций');
     expect(container.textContent).toContain('Ваша позиция на переговорах — обычная');
     expect(container.querySelectorAll('[data-funding-open]')).toHaveLength(3);
-    expect(container.textContent).toMatch(/Венчурный фонд: \$[\d\s ]+ за 20% компании — 100% от оценки\. У вас останется 80%\./);
+    // карточка инвестора: имя, сумма крупно, условия строкой
+    const fund = container.querySelector('[data-funding-investor="fund"]')!.textContent!;
+    expect(fund).toMatch(/Венчурный фонд\$[\d\s ]+за 20% компании · 100% от оценки · у вас останется 80%/);
+    expect(container.textContent).toContain('Вся компания ваша');
     expect(container.textContent).toMatch(/доход за 30 дней должен вырасти на 100% — до \$60[\s ]000/);
     expect(container.textContent).toContain('приток пользователей +30% на 120 дн.');
     expect(container.textContent).toMatch(/Встретиться · шанс 45%/);
-    expect(container.textContent).toContain('Шанс, что сделают предложение: 25%.');
+    expect(fund).toMatch(/Шанс предложения25%/);
     expect(container.querySelector('[data-funding-buyback]')).toBeNull();
     expect(container.querySelector('[data-feed]')!.textContent).toContain('фонд забрал 5% вашей доли');
     expect(missing(container.textContent)).toEqual([]);
@@ -83,6 +88,8 @@ describe('панель «Раунд инвестиций»', () => {
     expect(container.textContent).toContain('Переговоры: Бизнес-ангелы');
     expect(container.textContent).toMatch(/Попросить больше\s*\$[\d\s ]+ · шанс 60%/);
     expect(container.textContent).toContain('Отказов до ухода инвестора: 3.');
+    // во время торга полоса долей показывает, сколько уйдёт по сделке
+    expect(container.querySelector('[data-owners]')!.textContent).toContain('Сделка · 10%');
     expect(container.querySelectorAll('[data-funding-open]')).toHaveLength(0);
     expect(missing(container.textContent)).toEqual([]);
 
@@ -97,7 +104,7 @@ describe('панель «Раунд инвестиций»', () => {
     expect(after.founderShare).toBeCloseTo(0.9, 6);
     expect(container.textContent).toMatch(/Раунд закрыт: \$[\d\s ]+ за 10% компании\./);
     expect(container.textContent).toContain('Следующий раунд можно начать через 360 дн.');
-    expect(container.textContent).toContain('Ваша доля: 90%');
+    expect(container.querySelector('[data-owners]')!.textContent).toMatch(/Вы · 90%.*Инвесторы · 10%/);
     expect(container.querySelectorAll('[data-funding-buy]')).toHaveLength(2);
     expect(missing(container.textContent)).toEqual([]);
 
