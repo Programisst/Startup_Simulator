@@ -33,6 +33,8 @@ export interface HeroFrames {
   sit: Frame[];
   /** Голова на подушке с закрытыми глазами, 12×11. */
   sleepHead: Frame;
+  /** Лицом к нам: оглядывается — голова повёрнута вправо (0) и влево (1). */
+  look: Frame[];
 }
 
 // ───────── головы 12×11 (ставятся в столбец 2) ─────────
@@ -82,42 +84,47 @@ const HEAD_RIGHT = [
 
 // ───────── туловище 16×6 (строки 20–25) ─────────
 
-const BODY_FRONT = [
+/** Туловище лицом к нам без рук: плечи и верх рукавов, руки дорисовывает armsDown. */
+const TORSO_FRONT = [
   '..ooWwwccwwWoo..',
-  '.oWWwwwwwwwwWWo.',
-  '.oWWwwwwwwwwWWo.',
-  '.oWoWwwwwwwWoWo.',
-  '.osoWWWWWWWWoso.',
-  '..o.oppppppo.o..',
+  '.oWwwwwwwwwwwWo.',
+  '...owwwwwwwwo...',
+  '...oWwwwwwwWo...',
+  '...oWWWWWWWWo...',
+  '....oppppppo....',
 ];
 
-/** Шаг: правая рука вынесена вперёд — кисть выше. */
-const BODY_FRONT_SWING = [
-  '..ooWwwccwwWoo..',
-  '.oWWwwwwwwwwWWo.',
-  '.oWWwwwwwwwwWWo.',
-  '.oWoWwwwwwwWoso.',
-  '.osoWWWWWWWWooo.',
-  '..o.oppppppo....',
-];
-
-const BODY_BACK = [
+const TORSO_BACK = [
   '..ooWwwwwwwWoo..',
-  '.oWWwwwwwwwwWWo.',
-  '.oWWwwwwwwwwWWo.',
-  '.oWoWwwwwwwWoWo.',
-  '.osoWWWWWWWWoso.',
-  '..o.oPPPPPPo.o..',
+  '.oWwwwwwwwwwwWo.',
+  '...owwwwwwwwo...',
+  '...oWwwwwwwWo...',
+  '...oWWWWWWWWo...',
+  '....oPPPPPPo....',
 ];
 
-const BODY_BACK_SWING = [
-  '..ooWwwwwwwWoo..',
-  '.oWWwwwwwwwwWWo.',
-  '.oWWwwwwwwwwWWo.',
-  '.oWoWwwwwwwWoso.',
-  '.osoWWWWWWWWooo.',
-  '..o.oPPPPPPo....',
-];
+/**
+ * Руки прямо вниз от плеч, вплотную к телу, кисти у середины бедра — как у человека.
+ * left/right — строка кисти (26 — рука опущена; 25 — вынесена вперёд при шаге и кажется короче).
+ */
+function armsDown(left: number, right: number): { rows: string[]; y: number } {
+  const top = 22;
+  const rows = Array.from({ length: Math.max(left, right) + 2 - top }, () => new Array<string>(16).fill('.'));
+  const arm = (hand: number, outer: number, sleeve: number, inner: number) => {
+    for (let y = top; y < hand; y++) {
+      rows[y - top]![outer] = 'o';
+      rows[y - top]![sleeve] = y < top + 2 ? 'w' : 'W';
+      rows[y - top]![inner] = 'o';
+    }
+    rows[hand - top]![outer] = 'o';
+    rows[hand - top]![sleeve] = 's';
+    rows[hand - top]![inner] = 'o';
+    rows[hand + 1 - top]![sleeve] = 'o';
+  };
+  arm(left, 1, 2, 3);
+  arm(right, 14, 13, 12);
+  return { rows: rows.map((r) => r.join('')), y: top };
+}
 
 const BODY_RIGHT = [
   '.....oowwco.....',
@@ -211,7 +218,13 @@ const mirror = (rows: readonly string[]): string[] => rows.map((r) => r.split(''
 /** Переставляет p и P — на шаге «передняя» нога меняется. */
 const swapLegs = (rows: readonly string[]): string[] => rows.map((r) => r.replace(/[pP]/g, (ch) => (ch === 'p' ? 'P' : 'p')));
 
-function compose(head: readonly string[], headY: number, body: readonly string[], legs: readonly string[] | null): Frame {
+function compose(
+  head: readonly string[],
+  headY: number,
+  body: readonly string[],
+  legs: readonly string[] | null,
+  extra?: { rows: readonly string[]; y: number },
+): Frame {
   const px = Array.from({ length: HERO_FRAME_H }, () => new Array<string>(HERO_FRAME_W).fill('.'));
   const put = (rows: readonly string[], x: number, y: number) =>
     rows.forEach((row, j) => {
@@ -219,6 +232,7 @@ function compose(head: readonly string[], headY: number, body: readonly string[]
     });
   if (legs) put(legs, 0, 26);
   put(body, 0, 20);
+  if (extra) put(extra.rows, 0, extra.y);
   put(head, 2, headY);
   return px.map((r) => r.join(''));
 }
@@ -248,21 +262,21 @@ export function heroFrames(): HeroFrames {
     ],
   };
   const front = {
-    idle: [compose(HEAD_FRONT, 9, BODY_FRONT, LEGS_FRONT), compose(HEAD_FRONT, 10, BODY_FRONT, LEGS_FRONT)],
+    idle: [compose(HEAD_FRONT, 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26)), compose(HEAD_FRONT, 10, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26))],
     walk: [
-      compose(HEAD_FRONT, 10, BODY_FRONT_SWING, LEGS_FRONT_STEP),
-      compose(HEAD_FRONT, 9, BODY_FRONT, LEGS_FRONT),
-      compose(HEAD_FRONT, 10, mirror(BODY_FRONT_SWING), mirror(LEGS_FRONT_STEP)),
-      compose(HEAD_FRONT, 9, BODY_FRONT, LEGS_FRONT),
+      compose(HEAD_FRONT, 10, TORSO_FRONT, LEGS_FRONT_STEP, armsDown(26, 25)),
+      compose(HEAD_FRONT, 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26)),
+      compose(HEAD_FRONT, 10, TORSO_FRONT, mirror(LEGS_FRONT_STEP), armsDown(25, 26)),
+      compose(HEAD_FRONT, 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26)),
     ],
   };
   const back = {
-    idle: [compose(HEAD_BACK, 9, BODY_BACK, LEGS_FRONT), compose(HEAD_BACK, 10, BODY_BACK, LEGS_FRONT)],
+    idle: [compose(HEAD_BACK, 9, TORSO_BACK, LEGS_FRONT, armsDown(26, 26)), compose(HEAD_BACK, 10, TORSO_BACK, LEGS_FRONT, armsDown(26, 26))],
     walk: [
-      compose(HEAD_BACK, 10, BODY_BACK_SWING, mirror(LEGS_FRONT_STEP)),
-      compose(HEAD_BACK, 9, BODY_BACK, LEGS_FRONT),
-      compose(HEAD_BACK, 10, mirror(BODY_BACK_SWING), LEGS_FRONT_STEP),
-      compose(HEAD_BACK, 9, BODY_BACK, LEGS_FRONT),
+      compose(HEAD_BACK, 10, TORSO_BACK, mirror(LEGS_FRONT_STEP), armsDown(25, 26)),
+      compose(HEAD_BACK, 9, TORSO_BACK, LEGS_FRONT, armsDown(26, 26)),
+      compose(HEAD_BACK, 10, TORSO_BACK, LEGS_FRONT_STEP, armsDown(26, 25)),
+      compose(HEAD_BACK, 9, TORSO_BACK, LEGS_FRONT, armsDown(26, 26)),
     ],
   };
   return {
@@ -270,5 +284,30 @@ export function heroFrames(): HeroFrames {
     walk: [right.walk, back.walk, right.walk.map(mirror), front.walk],
     sit: [compose(HEAD_BACK, 9, BODY_SIT, null), compose(HEAD_BACK, 9, BODY_SIT_TYPE, null)],
     sleepHead: closeEyes(HEAD_FRONT),
+    // оглядывается: голова в профиль вправо и влево, тело стоит как стояло
+    look: [compose(HEAD_RIGHT, 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26)), compose(mirror(HEAD_RIGHT), 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26))],
   };
+}
+
+/** Через сколько секунд без дела герой впервые оглядывается, как часто и как долго. */
+const LOOK_AFTER = 4;
+const LOOK_EVERY = 9;
+const LOOK_SECONDS = 1.4;
+
+export interface IdlePose {
+  kind: 'idle' | 'look';
+  /** Номер кадра в своём наборе: idle — из стойки этого направления, look — 0 вправо, 1 влево. */
+  frame: number;
+}
+
+/**
+ * Что делает стоящий без дела герой через `seconds` секунд: дышит, а лицом к нам иногда
+ * оглядывается — то вправо, то влево. Чистая функция — проверяется тестами.
+ */
+export function idlePose(seconds: number, dir: number): IdlePose {
+  const breathing: IdlePose = { kind: 'idle', frame: Math.floor(seconds / 0.9) % 2 };
+  if (dir !== 3 || seconds < LOOK_AFTER) return breathing;
+  const since = seconds - LOOK_AFTER;
+  const cycle = Math.floor(since / LOOK_EVERY);
+  return since - cycle * LOOK_EVERY < LOOK_SECONDS ? { kind: 'look', frame: cycle % 2 } : breathing;
 }
