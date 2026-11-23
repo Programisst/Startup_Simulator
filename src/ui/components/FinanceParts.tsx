@@ -38,17 +38,17 @@ export function OwnershipCard() {
         </div>
       </div>
       <div className="fin-bar" role="img" aria-label={t('finance.owners.you', { pct: dec(you) })}>
-        <b className="fin-bar-you" style={{ flex: you }}>
-          {t('finance.owners.you', { pct: dec(you) })}
+        <b className="fin-bar-you" style={{ flex: you }} title={t('finance.owners.you', { pct: dec(you) })}>
+          <span>{t('finance.owners.you', { pct: dec(you) })}</span>
         </b>
         {deal > 0 && (
-          <b className="fin-bar-deal" style={{ flex: deal }}>
-            {t('finance.owners.deal', { pct: dec(deal) })}
+          <b className="fin-bar-deal" style={{ flex: deal }} title={t('finance.owners.deal', { pct: dec(deal) })}>
+            <span>{t('finance.owners.deal', { pct: dec(deal) })}</span>
           </b>
         )}
         {others > 0 && (
-          <b className="fin-bar-others" style={{ flex: others }}>
-            {t('finance.owners.others', { pct: dec(others) })}
+          <b className="fin-bar-others" style={{ flex: others }} title={t('finance.owners.others', { pct: dec(others) })}>
+            <span>{t('finance.owners.others', { pct: dec(others) })}</span>
           </b>
         )}
       </div>

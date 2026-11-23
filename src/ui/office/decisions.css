@@ -4,9 +4,9 @@
    полоса долей, закрытые функции короткой строкой, инвесторы карточками, торг перепиской,
    компания на продажу — объявлением с печатью, службы — полосой. Цвета — из company.css. */
 
-.company-app .fin-spread { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.company-app .fin-spread { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 16px; }
 .company-app .fin-spread > h3 { margin-bottom: 0; }
-.company-app .fin-right { text-align: right; }
+.company-app .fin-right { margin-left: auto; text-align: right; }
 .company-app .fin-row { display: flex; flex-wrap: wrap; gap: 8px; }
 .company-app .fin-small { font-size: 12px; line-height: 1.4; }
 .company-app .fin-eyebrow { font-size: 11.5px; font-weight: 600; color: var(--muted); }
@@ -26,6 +26,7 @@
 /* Чья компания */
 .company-app .fin-bar { display: flex; gap: 2px; height: 26px; margin-top: 12px; }
 .company-app .fin-bar b { display: flex; align-items: center; min-width: 0; padding: 0 9px; overflow: hidden; white-space: nowrap; font: 500 12px/1 var(--font-game); color: #f4f1ec; }
+.company-app .fin-bar b > span { overflow: hidden; text-overflow: ellipsis; }
 .company-app .fin-bar-you { background: var(--accent); box-shadow: inset 0 -3px 0 #9a4f31; }
 .company-app .fin-bar-others { background: var(--wood); box-shadow: inset 0 -3px 0 var(--wood-lo); }
 .company-app .fin-bar-deal { color: var(--text) !important; background: repeating-linear-gradient(-45deg, var(--lamp) 0 6px, #ffe08a 6px 12px); }

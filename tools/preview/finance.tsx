@@ -1,6 +1,6 @@
 // Пробная страница экранов с решениями в четырёх состояниях партии (только при `npm run dev`):
 // http://localhost:5173/tools/preview/finance.html?s=1 — первый день; 2 — инвесторы ждут; 3 — идёт торг; 4 — большая компания.
-// Раздел: &tab=finance (по умолчанию), team, marketing, product.
+// Раздел: &tab=finance (по умолчанию), team, marketing, product. Ширина окна программы: &w=560 (как в игре на маленьком экране), высота: &h=2000 (чтобы всё было видно без прокрутки).
 import { createRoot } from 'react-dom/client';
 import { content } from '../../src/content';
 import { acquisitionsView, applyCommand, createGame, tick, type Command, type GameState } from '../../src/core';
@@ -74,9 +74,10 @@ const state = new URLSearchParams(location.search).get('s') ?? '1';
 const game = state === '2' ? growing() : state === '3' ? inTalks() : state === '4' ? big() : fresh();
 const tab = (new URLSearchParams(location.search).get('tab') ?? 'finance') as ScreenId;
 useStore.setState({ game, screen: tab, speed: 0, lastError: null });
+const width = Number(new URLSearchParams(location.search).get('w')) || 1180;
 
 createRoot(document.getElementById('root')!).render(
-  <div style={{ width: 1180, height: 820, margin: '24px auto' }}>
+  <div style={{ width, height: Number(new URLSearchParams(location.search).get("h")) || (width === 1180 ? 820 : Math.round(width * 0.55)), margin: '24px auto' }}>
     <CompanyApp />
   </div>,
 );
