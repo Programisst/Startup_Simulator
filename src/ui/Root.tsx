@@ -32,7 +32,7 @@ export function Root() {
     if (game) setStage('intro');
   }, [game]);
 
-  // Для разработчиков: ссылка с ?skip — сразу утро первого дня с готовой компанией (один раз за загрузку).
+  // Для разработчиков (npm run dev): сразу утро первого дня с готовой компанией, один раз за загрузку. Заставка и переписка — по ссылке ?story.
   const skip = useRef(import.meta.env.DEV && wantsSkip(window.location.search));
   useEffect(() => {
     if (!skip.current || !showStart) return;
