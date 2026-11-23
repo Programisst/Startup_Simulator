@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Финансы — варианты оформления</title>
+<style>
+  /* Пробная страница: два варианта экрана «Финансы» в программе «Компания», в четырёх состояниях партии.
+     Цвета и шрифты — те же, что в src/ui/office/company.css. Числа — правдоподобные примеры. */
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #17151d; color: #f4efe6; font: 14px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  .pick { position: sticky; top: 0; z-index: 9; display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; align-items: center; padding: 14px; background: #17151df0; }
+  .pick .grp { display: flex; gap: 6px; align-items: center; }
+  .pick .grp > span { font-size: 12px; opacity: .55; margin-right: 4px; }
+  .pick button { font: 600 13px/1 inherit; padding: 10px 14px; border-radius: 9px; border: 1px solid #ffffff22; background: #24222d; color: #f4efe6; cursor: pointer; }
+  .pick button.on { background: #f6c34a; color: #1a1712; border-color: #f6c34a; }
+  .note { max-width: 1180px; margin: 0 auto 12px; padding: 0 16px; font-size: 13px; opacity: .7; text-align: center; }
+  .stage { display: flex; justify-content: center; padding: 4px 16px 48px; }
+
+  /* ---------- Окно программы «Компания» (как в игре) ---------- */
+  .company-app {
+    --bg: #f5f5f7; --panel: #fff; --panel-2: #f0f0f3; --text: #1d1d1f; --muted: #6e6e73; --hair: rgba(0,0,0,.09);
+    --accent: #0a7aff; --green: #1f8a3d; --red: #d42a1e; --amber: #b56a00; --violet: #af52de;
+    --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
+    --num: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    width: 1180px; min-height: 760px; border-radius: 12px; overflow: hidden; background: var(--bg); color: var(--text);
+    font: 13px/1.4 var(--ui); box-shadow: 0 30px 80px #000a, 0 0 0 .5px #0006; display: grid; grid-template-rows: 38px 1fr;
+  }
+  .titlebar { display: flex; align-items: center; justify-content: center; position: relative; background: #ececef; border-bottom: 1px solid var(--hair); font-weight: 600; }
+  .titlebar .dots { position: absolute; left: 14px; display: flex; gap: 8px; }
+  .titlebar .dots i { width: 12px; height: 12px; border-radius: 50%; background: #ff5f57; } .titlebar .dots i:nth-child(2) { background: #febc2e; } .titlebar .dots i:nth-child(3) { background: #28c840; }
+  .body { display: grid; grid-template-columns: 186px 1fr; min-height: 0; }
+  .sidebar { background: #e9e9ed; padding: 14px 8px; border-right: 1px solid var(--hair); }
+  .sidebar .co { font-size: 11px; color: var(--muted); padding: 0 8px 8px; }
+  .sidebar .nav { display: flex; gap: 9px; align-items: center; padding: 6px 8px; border-radius: 6px; }
+  .sidebar .nav.on { background: rgba(0,0,0,.1); font-weight: 600; }
+  .sidebar .nav i { width: 18px; height: 18px; border-radius: 5px; background: var(--c); }
+  .main { display: grid; grid-template-rows: 48px 1fr; min-width: 0; }
+  .topbar { display: flex; align-items: center; gap: 14px; padding: 0 18px; border-bottom: 1px solid var(--hair); background: #fafafc; }
+  .topbar .date { font-size: 12px; color: var(--muted); }
+  .topbar .cash { font: 600 17px/1 var(--num); color: var(--green); font-variant-numeric: tabular-nums; }
+  .page { padding: 18px; display: grid; gap: 14px; align-content: start; overflow: auto; }
+
+  /* ---------- Общие детали ---------- */
+  .panel { background: var(--panel); border-radius: 10px; padding: 16px 18px; box-shadow: 0 0 0 .5px var(--hair), 0 1px 2px rgba(0,0,0,.05); }
+  .eyebrow { font-size: 11px; font-weight: 600; color: var(--muted); letter-spacing: .02em; }
+  h3 { margin: 0; font-size: 15px; }
+  .muted { color: var(--muted); } .neg { color: var(--red); } .pos { color: var(--green); } .amb { color: var(--amber); }
+  .num { font-family: var(--num); font-variant-numeric: tabular-nums; }
+  .row { display: flex; align-items: center; gap: 10px; }
+  .spread { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .btn { font: 500 12.5px/1 var(--ui); padding: 7px 12px; border-radius: 7px; border: 0; background: #fff; box-shadow: 0 0 0 .5px rgba(0,0,0,.2), 0 1px 1px rgba(0,0,0,.06); color: var(--text); cursor: pointer; white-space: nowrap; }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: none; }
+  .btn.ghost { background: transparent; box-shadow: none; color: var(--muted); }
+  .btn small { opacity: .7; font-weight: 400; margin-left: 4px; }
+  .tag { display: inline-block; font-size: 11px; padding: 2px 7px; border-radius: 20px; background: var(--panel-2); color: var(--muted); }
+  .tag.plus { background: #e7f5ea; color: var(--green); } .tag.minus { background: #fdeceb; color: var(--red); }
+  .lock { width: 12px; height: 12px; flex: none; }
+  .pips { display: inline-flex; gap: 4px; vertical-align: middle; } .pips i { width: 8px; height: 8px; border-radius: 50%; background: var(--text); } .pips i.off { background: #d6d6db; }
+
+  /* Подпись экрана: чья компания — полоса долей */
+  .owners .bar { display: flex; height: 26px; border-radius: 7px; overflow: hidden; margin: 10px 0 8px; gap: 2px; }
+  .owners .bar b { display: flex; align-items: center; padding: 0 9px; font: 600 11.5px/1 var(--ui); color: #fff; white-space: nowrap; overflow: hidden; min-width: 0; }
+  .owners .bar .you { background: var(--violet); } .owners .bar .angels { background: #e39b2e; } .owners .bar .fund { background: #3d6fd8; } .owners .bar .corp { background: #5c6270; } .owners .bar .future { background: repeating-linear-gradient(-45deg, #c9b4e3 0 6px, #d9c9ee 6px 12px); color: #5b3b80; }
+  .owners .legend { display: flex; gap: 16px; font-size: 12px; color: var(--muted); }
+  .owners .legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; background: var(--c); }
+  .owners .big { font: 600 26px/1.1 var(--num); font-variant-numeric: tabular-nums; }
+
+  /* Закрытые функции — короткие строки с полоской */
+  .locked { display: grid; gap: 0; padding: 4px 18px; }
+  .locked .item { display: grid; grid-template-columns: 1fr 300px; gap: 18px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--hair); }
+  .locked .item:last-child { border-bottom: 0; }
+  .locked .item .t { display: flex; gap: 8px; align-items: center; font-weight: 600; }
+  .locked .item .d { font-size: 12px; color: var(--muted); margin-top: 2px; padding-left: 20px; }
+  .meter { height: 6px; border-radius: 3px; background: var(--panel-2); overflow: hidden; } .meter i { display: block; height: 100%; background: var(--violet); border-radius: 3px; }
+  .meter-l { display: flex; justify-content: space-between; white-space: nowrap; gap: 8px; font-size: 11.5px; color: var(--muted); margin-top: 5px; }
+
+  /* ===== Вариант А: деловая программа ===== */
+  .a-investors { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .term { border-radius: 9px; padding: 14px; background: var(--panel-2); display: grid; gap: 8px; align-content: start; }
+  .term .amount { font: 600 22px/1 var(--num); font-variant-numeric: tabular-nums; }
+  .term .terms { font-size: 12px; color: var(--muted); }
+  .term .cond { font-size: 12px; padding: 7px 9px; border-radius: 7px; background: #fff; }
+  .chance { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+  .chance .meter { flex: 1; } .chance .meter i { background: var(--text); }
+  .position { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; font-size: 12.5px; }
+  .scale { display: inline-flex; gap: 3px; margin: 0 4px; } .scale i { width: 22px; height: 6px; border-radius: 3px; background: #d6d6db; } .scale i.on { background: var(--text); }
+
+  .a-talks { display: grid; grid-template-columns: 1.1fr 1fr; gap: 18px; margin-top: 12px; }
+  .offer-now { border-radius: 9px; background: var(--panel-2); padding: 16px; }
+  .offer-now .amount { font: 600 34px/1 var(--num); font-variant-numeric: tabular-nums; margin: 6px 0; }
+  .ladder { display: grid; gap: 8px; }
+  .rung { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: center; padding: 11px 12px; border-radius: 9px; box-shadow: 0 0 0 .5px var(--hair); }
+  .rung .amount { font: 600 17px/1 var(--num); }
+  .rung .chance { grid-column: 1 / -1; }
+
+  .a-target { display: grid; grid-template-columns: 1fr 300px; gap: 18px; margin-top: 12px; }
+  .odds { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; margin: 8px 0; }
+  .odds i:nth-child(1) { background: #34a853; } .odds i:nth-child(2) { background: #e3a21a; } .odds i:nth-child(3) { background: #d9534a; }
+  .outcomes { display: grid; gap: 6px; font-size: 12px; }
+  .outcomes div { display: grid; grid-template-columns: 10px 110px 1fr; gap: 8px; align-items: baseline; }
+  .outcomes div::before { content: ''; width: 8px; height: 8px; border-radius: 2px; background: var(--c); transform: translateY(1px); }
+
+  .ops-bar { display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px; margin: 10px 0; }
+  .ops-lines { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; font-size: 12px; }
+  .ops-lines div::before { content: ''; display: block; width: 18px; height: 4px; border-radius: 2px; background: var(--c); margin-bottom: 6px; }
+  .ops-lines b { display: block; font: 600 15px/1.2 var(--num); }
+
+  .promise { display: grid; grid-template-columns: 1fr 260px; gap: 18px; align-items: center; padding: 12px 14px; border-radius: 9px; background: #fff8ec; box-shadow: 0 0 0 .5px #e8c98c; }
+
+  .rest { opacity: .55; font-size: 12px; text-align: center; padding: 10px; border: 1px dashed #c8c8cf; border-radius: 10px; color: var(--muted); }
+
+  /* ===== Вариант Б: живые сцены ===== */
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px; }
+  .contact { display: grid; grid-template-columns: 44px 1fr; gap: 6px 12px; padding: 14px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 .5px var(--hair), 0 2px 6px rgba(0,0,0,.05); }
+  .ava { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font: 700 15px/1 var(--ui); color: #fff; background: var(--c); image-rendering: pixelated; }
+  .contact .say { grid-column: 1 / -1; font-size: 12.5px; padding: 9px 11px; border-radius: 12px 12px 12px 4px; background: var(--panel-2); }
+  .contact .foot { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: center; }
+
+  .meeting { display: grid; grid-template-columns: 1fr 250px; min-height: 420px; border-radius: 10px; overflow: hidden; box-shadow: 0 0 0 .5px var(--hair), 0 1px 2px rgba(0,0,0,.05); background: #fff; }
+  .chat { display: grid; grid-template-rows: auto 1fr auto; }
+  .chat header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--hair); }
+  .chat .log { padding: 16px; display: grid; gap: 8px; align-content: end; background: #fbfbfd; }
+  .msg { max-width: 72%; padding: 9px 12px; border-radius: 16px; font-size: 13px; }
+  .msg.them { background: #e9e9ee; border-bottom-left-radius: 5px; }
+  .msg.me { justify-self: end; background: var(--accent); color: #fff; border-bottom-right-radius: 5px; }
+  .msg.sys { justify-self: center; max-width: none; background: none; font-size: 11.5px; color: var(--muted); padding: 2px; }
+  .msg b.num { font-weight: 700; }
+  .replies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 12px 16px; border-top: 1px solid var(--hair); }
+  .reply { text-align: left; padding: 10px 12px; border-radius: 12px; border: 0; background: #fff; box-shadow: 0 0 0 1px #c9d8f5; font: 13px/1.3 var(--ui); cursor: pointer; color: var(--text); }
+  .reply b { display: block; color: var(--accent); }
+  .reply span { font-size: 12px; color: var(--muted); }
+  .reply.go { background: var(--accent); box-shadow: none; } .reply.go b, .reply.go span { color: #fff; }
+  .reply.quiet { box-shadow: 0 0 0 1px var(--hair); } .reply.quiet b { color: var(--muted); }
+  .deal-side { padding: 16px; border-left: 1px solid var(--hair); display: grid; gap: 14px; align-content: start; background: #fff; }
+  .deal-side .k { font-size: 11.5px; color: var(--muted); }
+  .deal-side .v { font: 600 15px/1.25 var(--num); }
+
+  .listing { display: grid; grid-template-columns: 120px 1fr 260px; gap: 18px; padding: 16px; border-radius: 12px; background: #fff; box-shadow: 0 0 0 .5px var(--hair), 0 2px 6px rgba(0,0,0,.05); }
+  .listing .logo { width: 120px; height: 120px; border-radius: 12px; background: #f1ede4; display: grid; place-items: center; }
+  .listing .logo svg { width: 72px; height: 72px; shape-rendering: crispEdges; }
+  .listing .price { font: 600 24px/1 var(--num); }
+  .quote { font-size: 13px; padding: 8px 11px; border-left: 3px solid #d6d6db; color: #3a3a3f; margin: 8px 0; }
+  .stamp { display: inline-block; transform: rotate(-4deg); border: 2px solid var(--c); color: var(--c); font: 800 12px/1 var(--ui); letter-spacing: .08em; padding: 6px 9px; border-radius: 6px; text-transform: uppercase; }
+  .stamp.unknown { --c: #9a9aa2; border-style: dashed; }
+</style>
+</head>
+<body>
+  <div class="pick">
+    <div class="grp" id="variant"><span>Стиль</span><button data-v="a" class="on">А · Деловая программа</button><button data-v="b">Б · Живые сцены</button></div>
+    <div class="grp" id="state"><span>Когда</span><button data-s="1" class="on">1 · Первый день</button><button data-s="2">2 · Инвесторы ждут</button><button data-s="3">3 · Идёт торг</button><button data-s="4">4 · Большая компания</button></div>
+  </div>
+  <p class="note" id="note"></p>
+  <div class="stage"><div class="company-app" id="app"></div></div>
+
+<script>
+const LOCK = '<svg class="lock" viewBox="0 0 12 12"><rect x="2" y="5" width="8" height="6" rx="1.5" fill="#8e8e93"/><path d="M4 5V3.6a2 2 0 0 1 4 0V5" stroke="#8e8e93" stroke-width="1.4" fill="none"/></svg>';
+const NOTES = {
+  1: 'Продукт ещё не запущен: все три функции закрыты. Вместо трёх больших карточек — по одной строке и полоска до открытия.',
+  2: 'Продукт запущен, оценка $420 000. Можно позвать одного из трёх инвесторов.',
+  3: 'Игрок позвал фонд и один раз попросил больше — фонд уступил. Теперь решает: согласиться, просить ещё, давить или уйти.',
+  4: 'Поздняя партия: доля уже продана, идёт обещание фонду, на продажу выставлена компания, работают службы.',
+};
+
+const shell = (page, cash) => `
+  <div class="titlebar"><div class="dots"><i></i><i></i><i></i></div>Компания — Соседская кухня</div>
+  <div class="body">
+    <div class="sidebar"><div class="co">Соседская кухня</div>
+      ${[['Сводка','#8e8e93'],['Продукт','#0a7aff'],['Команда','#30b158'],['Маркетинг','#ff6b35'],['Финансы','#af52de']].map(([n,c]) => `<div class="nav ${n==='Финансы'?'on':''}"><i style="--c:${c}"></i>${n}</div>`).join('')}
+    </div>
+    <div class="main">
+      <div class="topbar"><span class="date">Год 1, месяц ${cash[1]}, день 14</span><span class="cash">${cash[0]}</span><span style="flex:1"></span><button class="btn">Пауза</button><button class="btn">Сохранить</button></div>
+      <div class="page">${page}</div>
+    </div>
+  </div>`;
+
+/* Полоса долей — общая для обоих вариантов */
+function owners({ valuation, stake, parts, note }) {
+  return `<section class="panel owners">
+    <div class="spread"><div><div class="eyebrow">Чья компания</div><div class="big">${valuation}</div><div class="muted" style="font-size:12px">оценка компании</div></div>
+    <div style="text-align:right"><div class="eyebrow">Ваша доля стоит</div><div class="big" style="color:var(--violet)">${stake}</div><div class="muted" style="font-size:12px">${note}</div></div></div>
+    <div class="bar">${parts.map(p => `<b class="${p.k}" style="flex:${p.pct}">${p.label}</b>`).join('')}</div>
+  </section>`;
+}
+const youOnly = { k: 'you', pct: 100, label: 'Вы · 100%' };
+
+function lockedList(items) {
+  return `<section class="panel locked">${items.map(it => `
+    <div class="item"><div><div class="t">${LOCK}${it.t}</div><div class="d">${it.d}</div></div>
+      <div>${it.pct === null ? `<div class="meter-l" style="margin:0"><span>${it.when}</span></div>` : `<div class="meter"><i style="width:${it.pct}%"></i></div><div class="meter-l"><span>${it.now}</span><span>${it.goal}</span></div>`}</div></div>`).join('')}
+  </section>`;
+}
+
+const REST = '<div class="rest">Ниже — расходы за месяц и история по месяцам, как сейчас (их не трогаем в этом шаге)</div>';
+
+const INV = [
+  { id: 'angels', name: 'Бизнес-ангелы', c: '#e39b2e', ini: 'БА', amount: '$21 400', terms: 'за 6% · 85% от оценки · останется 94%', cond: 'Без условий. Сговорчивые: уступают чаще других.', chance: 35, patience: 3 },
+  { id: 'fund', name: 'Венчурный фонд', c: '#3d6fd8', ini: 'ВФ', amount: '$63 000', terms: 'за 15% · 100% от оценки · останется 85%', cond: '<b>Условие:</b> за 180 дн. удвоить доход за 30 дней — до $56 000. Не выйдет — заберут ещё 5%.', chance: 25, patience: 2 },
+  { id: 'corp', name: 'Крупная корпорация', c: '#5c6270', ini: 'КК', amount: '$67 200', terms: 'за 20% · 80% от оценки · останется 80%', cond: '<b>Бонус:</b> приведут своих клиентов — приток +30% на 120 дн.', chance: 15, patience: 2 },
+];
+const position = `<div class="position"><span>Позиция на переговорах:</span><span class="scale"><i class="on"></i><i class="on"></i><i></i></span><b>обычная</b><span class="tag plus">+ пользователей становится больше</span><span class="tag minus">− плохая репутация</span></div>`;
+
+/* ---------- Вариант А ---------- */
+const A = {
+  1: () => owners({ valuation: '$0', stake: '$0', parts: [youOnly], note: 'компания пока ничего не стоит: продукта нет' }) +
+    lockedList([
+      { t: 'Раунд инвестиций', d: 'Продать часть компании за деньги на рост', pct: null, when: 'Откроется после запуска продукта' },
+      { t: 'Покупка компаний', d: 'Купить компанию поменьше вместе с её пользователями', pct: 0, now: 'доход за 30 дней $0', goal: 'нужно $20 000' },
+      { t: 'Службы компании', d: 'Поддержка, продажи, бухгалтерия — появятся, когда вы перестанете справляться сами', pct: 0, now: 'доход в месяц $0', goal: 'с $20 000' },
+    ]) + REST,
+
+  2: () => owners({ valuation: '$420 000', stake: '$420 000', parts: [youOnly], note: 'вся компания ваша' }) +
+    `<section class="panel"><div class="spread"><h3>Раунд инвестиций</h3><span class="muted" style="font-size:12px">Встреча стоит 20 сил, даже если откажут</span></div>
+      ${position}
+      <div class="a-investors">${INV.map(i => `<div class="term">
+        <div class="row"><span class="ava" style="--c:${i.c};width:28px;height:28px;font-size:11px">${i.ini}</span><b>${i.name}</b></div>
+        <div><div class="amount">${i.amount}</div><div class="terms">${i.terms}</div></div>
+        <div class="cond">${i.cond}</div>
+        <div class="chance">Шанс предложения<div class="meter"><i style="width:${i.chance}%"></i></div><b class="num" style="color:var(--text)">${i.chance}%</b></div>
+        <button class="btn primary">Позвать на встречу</button></div>`).join('')}</div>
+    </section>` +
+    lockedList([
+      { t: 'Покупка компаний', d: 'Купить компанию поменьше вместе с её пользователями', pct: 62, now: 'доход за 30 дней $12 400', goal: 'нужно $20 000' },
+      { t: 'Службы компании', d: 'Появятся, когда вы перестанете справляться сами', pct: 62, now: 'доход в месяц $12 400', goal: 'с $20 000' },
+    ]) + REST,
+
+  3: () => owners({ valuation: '$420 000', stake: '$420 000', parts: [{ k: 'you', pct: 85, label: 'Вы · 85% после сделки' }, { k: 'future', pct: 15, label: 'Фонд · 15%' }], note: 'полоска показывает, что будет после сделки' }) +
+    `<section class="panel"><div class="spread"><h3>Переговоры: Венчурный фонд</h3><span class="muted" style="font-size:12px">Предложение в силе ещё 11 дн.</span></div>
+      <div class="a-talks">
+        <div class="offer-now"><div class="eyebrow">Сейчас на столе</div><div class="amount">$72 450</div>
+          <div class="muted">за 15% компании · 115% от оценки</div>
+          <p class="pos" style="margin:10px 0 0">Фонд уступил: было $63 000.</p>
+          <p style="margin:6px 0 0;font-size:12px"><b>Условие:</b> за 180 дн. удвоить доход за 30 дней — до $56 000.</p>
+          <div class="row" style="margin-top:14px"><button class="btn primary">Согласиться на $72 450</button><button class="btn ghost">Уйти с переговоров</button></div>
+        </div>
+        <div><div class="spread" style="margin-bottom:8px"><div class="eyebrow">Торговаться дальше</div><span style="font-size:12px">Терпение фонда <span class="pips"><i></i><i></i></span></span></div>
+          <div class="ladder">
+            <div class="rung"><div><b>Попросить больше</b><div class="muted" style="font-size:12px">Откажет — терпение −1</div></div><div class="amount">$83 300</div>
+              <div class="chance">Шанс, что уступит<div class="meter"><i style="width:48%"></i></div><b class="num" style="color:var(--text)">48%</b></div></div>
+            <div class="rung"><div><b>Давить</b><div class="muted" style="font-size:12px">Рискованно: можно спугнуть</div></div><div class="amount">$97 800</div>
+              <div class="chance">Шанс, что уступит<div class="meter"><i style="width:18%"></i></div><b class="num" style="color:var(--text)">18%</b></div></div>
+          </div>
+          <p class="muted" style="font-size:12px;margin:10px 0 0">Кончится терпение — фонд уйдёт, репутация −2. Больше $94 500 за 15% всё равно не дадут — «Давить» упрётся в потолок.</p>
+        </div>
+      </div></section>` +
+    lockedList([{ t: 'Покупка компаний', d: 'Купить компанию поменьше вместе с её пользователями', pct: 62, now: 'доход за 30 дней $12 400', goal: 'нужно $20 000' }]) + REST,
+
+  4: () => owners({ valuation: '$6 800 000', stake: '$5 372 000', parts: [{ k: 'you', pct: 79, label: 'Вы · 79%' }, { k: 'angels', pct: 6, label: 'Ангелы 6%' }, { k: 'fund', pct: 15, label: 'Фонд · 15%' }], note: '79% компании' }) +
+    `<section class="panel"><div class="spread"><h3>Раунд инвестиций</h3><span class="muted" style="font-size:12px">Следующий раунд — через 38 дн.</span></div>
+      <div class="promise" style="margin-top:12px"><div><b>Обещание фонду</b><div style="font-size:12px;margin-top:2px">Доход за 30 дней — до $280 000. Осталось 64 дн. Сорвёте — фонд заберёт ещё 5% вашей доли.</div></div>
+        <div><div class="meter"><i style="width:76%;background:var(--amber)"></i></div><div class="meter-l"><span>$212 000</span><span>$280 000</span></div></div></div>
+      <div class="row" style="margin-top:12px;justify-content:space-between"><span class="muted" style="font-size:12px">Выкупить долю обратно можно за 150% её оценки</span><div class="row"><button class="btn">Выкупить 1% <small>$102 000</small></button><button class="btn">Выкупить 5% <small>$510 000</small></button></div></div>
+    </section>
+    <section class="panel"><div class="spread"><h3>Продаётся компания</h3><span class="muted" style="font-size:12px">Следующая появится примерно через 60 дн.</span></div>
+      <div class="a-target">
+        <div><div style="font-size:17px;font-weight:600;margin-top:4px">«Румбик» <span class="tag">средняя</span></div>
+          <div class="muted" style="margin-top:2px">По её словам, 6 300 пользователей · продаётся ещё 19 дн.</div>
+          <div class="eyebrow" style="margin-top:14px">Что может оказаться внутри — без проверки не узнать</div>
+          <div class="odds"><i style="flex:45"></i><i style="flex:35"></i><i style="flex:20"></i></div>
+          <div class="outcomes">
+            <div style="--c:#34a853"><b>Здоровая · 45%</b><span>+6 300 пользователей, рынок шире на 12 600</span></div>
+            <div style="--c:#e3a21a"><b>С проблемами · 35%</b><span>+3 150 пользователей, ошибок +10, долг +12</span></div>
+            <div style="--c:#d9534a"><b>Пустышка · 20%</b><span>+630 пользователей, репутация −5, её долги ещё $152 400</span></div>
+          </div></div>
+        <div style="display:grid;gap:8px;align-content:start;padding:14px;border-radius:9px;background:var(--panel-2)">
+          <div class="eyebrow">Цена</div><div class="num" style="font:600 26px/1 var(--num)">$508 000</div>
+          <button class="btn">Проверить <small>$20 300 · 5 дн.</small></button>
+          <button class="btn primary">Купить за $508 000</button>
+          <button class="btn">Предложить $381 000 <small>шанс 40%</small></button>
+          <div class="muted" style="font-size:11.5px">На меньшую цену владельцы могут обидеться и снять компанию с продажи.</div>
+        </div>
+      </div></section>
+    <section class="panel"><div class="spread"><h3>Службы компании</h3><span class="num" style="font-weight:600">−$61 500 в месяц <span class="muted" style="font-weight:400">· 29% дохода</span></span></div>
+      <div class="ops-bar"><i style="flex:21500;background:#7d5bd0"></i><i style="flex:17800;background:#a98be6"></i><i style="flex:12400;background:#c8b6f0"></i><i style="flex:9800;background:#e2d8f8"></i><i style="flex:150500;background:var(--panel-2)"></i></div>
+      <div class="ops-lines">
+        <div style="--c:#7d5bd0">Поддержка пользователей<b>$21 500</b></div><div style="--c:#a98be6">Продажи<b>$17 800</b></div>
+        <div style="--c:#c8b6f0">Бухгалтерия, юристы, кадры<b>$12 400</b></div><div style="--c:#e2d8f8">Сопровождение продукта<b>$9 800</b></div>
+      </div>
+      <p class="muted" style="font-size:12px;margin:12px 0 0">С каждого следующего доллара дохода на службы уйдёт 38 центов. Если доход упадёт, платить по-старому придётся ещё около трёх месяцев.</p>
+    </section>` + REST,
+};
+
+/* ---------- Вариант Б ---------- */
+function pixelLogo() {
+  const px = ['..XXXX..', '.XXXXXX.', 'XX.XX.XX', 'XXXXXXXX', 'XX.XX.XX', 'X.XXXX.X', '.X....X.', '..XXXX..'];
+  return `<svg viewBox="0 0 8 8">${px.flatMap((r, y) => [...r].map((ch, x) => ch === 'X' ? `<rect x="${x}" y="${y}" width="1" height="1" fill="${y < 4 ? '#e2683c' : '#b4472a'}"/>` : '')).join('')}</svg>`;
+}
+const SAY = {
+  angels: '«Возьмём 6%, дадим $21 400. Без условий, честно.»',
+  fund: '«$63 000 за 15%. Но за полгода доход должен удвоиться.»',
+  corp: '«$67 200 за 20%. Взамен приведём наших клиентов.»',
+};
+const B = {
+  1: A[1],
+
+  2: () => owners({ valuation: '$420 000', stake: '$420 000', parts: [youOnly], note: 'вся компания ваша' }) +
+    `<section class="panel"><div class="spread"><h3>Кому позвонить</h3><span class="muted" style="font-size:12px">Встреча стоит 20 сил, даже если откажут</span></div>
+      ${position}
+      <div class="cards">${INV.map(i => `<div class="contact">
+        <span class="ava" style="--c:${i.c}">${i.ini}</span>
+        <div><b>${i.name}</b><div class="muted" style="font-size:12px">Ответят «да» примерно ${i.chance} раз из 100</div></div>
+        <div class="say">${SAY[i.id]}</div>
+        <div class="foot"><span class="muted" style="font-size:12px">Терпение <span class="pips">${'<i></i>'.repeat(i.patience)}</span></span><button class="btn primary">Позвонить</button></div>
+      </div>`).join('')}</div></section>` +
+    lockedList([{ t: 'Покупка компаний', d: 'Купить компанию поменьше вместе с её пользователями', pct: 62, now: 'доход за 30 дней $12 400', goal: 'нужно $20 000' }]) + REST,
+
+  3: () => `<section class="meeting">
+      <div class="chat">
+        <header><span class="ava" style="--c:#3d6fd8">ВФ</span><div><b>Венчурный фонд</b><div class="muted" style="font-size:12px">Встреча · предложение в силе ещё 11 дн.</div></div></header>
+        <div class="log">
+          <div class="msg sys">Понедельник, 14:00</div>
+          <div class="msg them">Посмотрели ваши цифры. Готовы дать <b class="num">$63 000</b> за 15% компании.</div>
+          <div class="msg them">Условие одно: за полгода доход за 30 дней должен удвоиться — до $56 000.</div>
+          <div class="msg me">Компания стоит больше. Попросим побольше.</div>
+          <div class="msg them">Хорошо. <b class="num">$72 450</b> — за те же 15%.</div>
+          <div class="msg sys">Фонд уступил · терпение не потрачено</div>
+        </div>
+        <div class="replies">
+          <button class="reply go"><b>Согласиться</b><span>$72 450 за 15%</span></button>
+          <button class="reply"><b>Попросить больше</b><span>$83 300 · уступит с шансом 48%</span></button>
+          <button class="reply"><b>Давить</b><span>$97 800 · уступит с шансом 18%</span></button>
+          <button class="reply quiet"><b>Уйти</b><span>Без сделки, без потерь</span></button>
+        </div>
+      </div>
+      <aside class="deal-side">
+        <div><div class="k">На столе</div><div class="v" style="font-size:26px">$72 450</div><div class="k">115% от оценки</div></div>
+        <div><div class="k">Терпение фонда</div><div class="v"><span class="pips"><i></i><i></i></span></div><div class="k">Два отказа — и фонд уйдёт, репутация −2</div></div>
+        <div class="owners"><div class="k">После сделки</div><div class="bar" style="margin:6px 0 0;height:20px"><b class="you" style="flex:85">Вы 85%</b><b class="future" style="flex:15">15%</b></div></div>
+      </aside>
+    </section>` +
+    lockedList([{ t: 'Покупка компаний', d: 'Купить компанию поменьше вместе с её пользователями', pct: 62, now: 'доход за 30 дней $12 400', goal: 'нужно $20 000' }]) + REST,
+
+  4: () => owners({ valuation: '$6 800 000', stake: '$5 372 000', parts: [{ k: 'you', pct: 79, label: 'Вы · 79%' }, { k: 'angels', pct: 6, label: 'Ангелы 6%' }, { k: 'fund', pct: 15, label: 'Фонд · 15%' }], note: '79% компании' }) +
+    `<section class="panel"><div class="promise"><div><b>Вы обещали фонду</b> довести доход за 30 дней до $280 000.<div style="font-size:12px;margin-top:2px">Осталось 64 дн. Сорвёте — фонд заберёт ещё 5% вашей доли.</div></div>
+      <div><div class="meter"><i style="width:76%;background:var(--amber)"></i></div><div class="meter-l"><span>$212 000</span><span>$280 000</span></div></div></div></section>
+    <div class="eyebrow" style="margin:4px 2px -6px">Объявления о продаже</div>
+    <section class="listing">
+      <div class="logo">${pixelLogo()}</div>
+      <div><div class="row" style="justify-content:space-between"><div style="font-size:18px;font-weight:700">Румбик</div><span class="stamp unknown">не проверена</span></div>
+        <div class="muted">Средняя компания · продаётся ещё 19 дн.</div>
+        <div class="quote">«У нас 6 300 довольных пользователей и чистый код.» — владельцы</div>
+        <div class="eyebrow" style="margin-top:6px">Как бывает с такими компаниями</div>
+        <div class="odds"><i style="flex:45"></i><i style="flex:35"></i><i style="flex:20"></i></div>
+        <div class="outcomes">
+          <div style="--c:#34a853"><b>45 из 100</b><span>всё правда: +6 300 пользователей</span></div>
+          <div style="--c:#e3a21a"><b>35 из 100</b><span>с проблемами: дойдёт половина, ошибок прибавится</span></div>
+          <div style="--c:#d9534a"><b>20 из 100</b><span>пустышка: дойдёт десятая часть, а её долги станут вашими</span></div>
+        </div></div>
+      <div style="display:grid;gap:8px;align-content:start">
+        <div class="price">$508 000</div>
+        <button class="btn">Нанять проверку <small>$20 300 · 5 дн.</small></button>
+        <button class="btn primary">Купить</button>
+        <button class="btn">Сбить цену до $381 000 <small>шанс 40%</small></button>
+        <div class="muted" style="font-size:11.5px">После проверки здесь появится печать: «здоровая», «с проблемами» или «пустышка».</div>
+      </div>
+    </section>
+    <section class="panel"><div class="spread"><h3>Службы компании</h3><span class="num" style="font-weight:600">−$61 500 в месяц <span class="muted" style="font-weight:400">· 29% дохода</span></span></div>
+      <div class="ops-bar"><i style="flex:21500;background:#7d5bd0"></i><i style="flex:17800;background:#a98be6"></i><i style="flex:12400;background:#c8b6f0"></i><i style="flex:9800;background:#e2d8f8"></i><i style="flex:150500;background:var(--panel-2)"></i></div>
+      <div class="ops-lines">
+        <div style="--c:#7d5bd0">Поддержка пользователей<b>$21 500</b></div><div style="--c:#a98be6">Продажи<b>$17 800</b></div>
+        <div style="--c:#c8b6f0">Бухгалтерия, юристы, кадры<b>$12 400</b></div><div style="--c:#e2d8f8">Сопровождение продукта<b>$9 800</b></div>
+      </div></section>` + REST,
+};
+
+let v = 'a', s = '1';
+const CASH = { 1: ['$3 000', 1], 2: ['$18 600', 5], 3: ['$16 900', 5], 4: ['$1 240 000', 22] };
+function render() {
+  document.getElementById('app').innerHTML = shell((v === 'a' ? A : B)[s](), CASH[s]);
+  document.getElementById('note').textContent = NOTES[s] + (s === '1' ? ' В первый день оба стиля выглядят одинаково.' : '');
+  document.querySelectorAll('#variant button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+  document.querySelectorAll('#state button').forEach(b => b.classList.toggle('on', b.dataset.s === s));
+}
+document.getElementById('variant').onclick = e => { if (e.target.dataset.v) { v = e.target.dataset.v; render(); } };
+document.getElementById('state').onclick = e => { if (e.target.dataset.s) { s = e.target.dataset.s; render(); } };
+const q = new URLSearchParams(location.search); v = q.get('v') || v; s = q.get('s') || s;
+render();
+</script>
+</body>
+</html>

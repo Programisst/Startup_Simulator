@@ -167,33 +167,46 @@
 }
 
 /* Подсказка «Esc» — в правом верхнем углу: внизу теперь стол с клавиатурой. */
-.lp-hint {
+/* Угол экрана за компьютером: пауза, скорость, сохранение и «Esc — отойти» — плашками квартиры. */
+.lp-corner {
   position: absolute;
   top: 14px;
   right: 16px;
-  padding: 6px 10px 6px 7px;
-  border-radius: 8px;
-  background: rgba(20, 16, 24, 0.62);
-  color: rgba(255, 255, 255, 0.85);
-  font: 13px/1 system-ui, sans-serif;
+  z-index: 10;
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
   opacity: 0;
   transition: opacity 0.4s ease 0.5s;
 }
-.lp-overlay.open .lp-hint {
+.lp-overlay.open .lp-corner {
   opacity: 1;
+}
+.lp-hint {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px 7px 8px;
+  border: 3px solid;
+  border-image: var(--px-frame) 1 / 3px / 0 stretch;
+  background: #24222d padding-box;
+  color: #cfc8be;
+  font: 500 13px/1 var(--font-game);
+  box-shadow:
+    inset 0 3px 0 #3b3a48,
+    inset 0 -3px 0 #17151d;
+  filter: drop-shadow(0 4px 0 rgba(10, 8, 16, 0.45));
 }
 .lp-hint kbd,
 .room-keys kbd {
   display: inline-block;
   min-width: 22px;
-  padding: 3px 6px;
-  margin-right: 4px;
-  border-radius: 5px;
-  background: #f1ece2;
-  color: #2b1f2c;
-  font: 600 11px/1.2 system-ui, sans-serif;
+  padding: 3px 6px 4px;
+  margin-right: 6px;
+  background: #f4f1ec;
+  color: #3a3a50;
+  font: 700 11px/1.2 var(--font-game);
   text-align: center;
-  box-shadow: 0 2px 0 #b9ac98;
+  box-shadow: inset 0 -2px 0 #cdbfab;
 }
 
 .landscape {

@@ -7,6 +7,7 @@ import { loadArt } from './engine/art';
 import { daylightAt, realMinutes } from './engine/daylight';
 import { SPOTS, type LampId, type Spot } from './engine/scene';
 import { World } from './engine/world';
+import { PixelIcon } from '../pixelIcons';
 import { Laptop } from './laptop/Laptop';
 import { AUTOPILOT_IDLE_SECONDS, frameSeconds, LINKED_CLOCK_RATE, worksAtDesk, type RoomLink } from './link';
 import './apartment.css';
@@ -453,7 +454,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
       {opening ? null : link ? (
         <div className="lm-hud-row">
           <div className="lm-card">
-            <span className={`lm-sun${night ? ' moon' : ''}`} />
+            <PixelIcon name={night ? 'moon' : 'sun'} className={`lm-sun${night ? ' moon' : ''}`} />
             <div>
               <div className="lm-date">{t('top.date', link.date)}</div>
               <div className="lm-sub">
@@ -552,6 +553,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
           onTyped={link?.onTyped}
           onDockApp={link?.onDockApp}
           focusText={link?.focusText}
+          controls={link?.controls}
         />
       )}
     </div>

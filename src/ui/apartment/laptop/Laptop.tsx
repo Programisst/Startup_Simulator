@@ -102,9 +102,11 @@ interface Props {
   appTitle?: string;
   /** Можно ли отойти от экрана по Esc (в начале игры — нельзя, пока не договорили с другом). */
   canLeave?: boolean;
+  /** Пауза, скорость и сохранение — те же плашки, что в квартире; стоят в углу рядом с подсказкой «Esc». */
+  controls?: ReactNode;
 }
 
-export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText, appTitle, canLeave = true }: Props) {
+export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText, appTitle, canLeave = true, controls }: Props) {
   const typedRef = useRef(onTyped);
   typedRef.current = onTyped;
   const { t } = useTranslation();
@@ -355,8 +357,11 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
           <i />
         </div>
       </div>
-      <div className="lp-hint" hidden={!canLeave}>
-        <kbd>Esc</kbd> {t('laptop.autopilot.leave')}
+      <div className="lp-corner">
+        {controls}
+        <div className="lp-hint" hidden={!canLeave}>
+          <kbd>Esc</kbd> {t('laptop.autopilot.leave')}
+        </div>
       </div>
     </div>
   );
