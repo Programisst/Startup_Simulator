@@ -1,11 +1,12 @@
-// Пробная страница экрана «Финансы» в четырёх состояниях партии (только при `npm run dev`):
+// Пробная страница экранов с решениями в четырёх состояниях партии (только при `npm run dev`):
 // http://localhost:5173/tools/preview/finance.html?s=1 — первый день; 2 — инвесторы ждут; 3 — идёт торг; 4 — большая компания.
+// Раздел: &tab=finance (по умолчанию), team, marketing, product.
 import { createRoot } from 'react-dom/client';
 import { content } from '../../src/content';
 import { acquisitionsView, applyCommand, createGame, tick, type Command, type GameState } from '../../src/core';
 import '../../src/ui/i18n';
 import { CompanyApp } from '../../src/ui/office/CompanyApp';
-import { useStore } from '../../src/ui/store';
+import { useStore, type ScreenId } from '../../src/ui/store';
 import '../../src/ui/styles.css';
 
 const run = (s: GameState, cmd: Command) => {
@@ -71,7 +72,8 @@ function big(): GameState {
 
 const state = new URLSearchParams(location.search).get('s') ?? '1';
 const game = state === '2' ? growing() : state === '3' ? inTalks() : state === '4' ? big() : fresh();
-useStore.setState({ game, screen: 'finance', speed: 0, lastError: null });
+const tab = (new URLSearchParams(location.search).get('tab') ?? 'finance') as ScreenId;
+useStore.setState({ game, screen: tab, speed: 0, lastError: null });
 
 createRoot(document.getElementById('root')!).render(
   <div style={{ width: 1180, height: 820, margin: '24px auto' }}>

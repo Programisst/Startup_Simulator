@@ -6,7 +6,6 @@ import { FundingPanel } from '../components/FundingPanel';
 import { OpsPanel } from '../components/OpsPanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
-import './finance.css';
 
 export function Finance() {
   const { t } = useTranslation();

@@ -13,6 +13,8 @@ import { Team } from '../screens/Team';
 import { PixelIcon, type PixelIconName } from '../pixelIcons';
 import { useStore, type ScreenId } from '../store';
 import './company.css';
+// После company.css: экраны с решениями (финансы, команда, маркетинг, продукт) уточняют общий вид.
+import './decisions.css';
 
 export const COMPANY_TABS: ScreenId[] = ['overview', 'product', 'team', 'marketing', 'finance'];
 

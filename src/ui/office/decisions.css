@@ -1,4 +1,6 @@
-/* Экран «Финансы» в стиле «Орех и бумага» (макет: docs/design/mockups/finance.html, смесь вариантов А и Б):
+/* Экраны с решениями в стиле «Орех и бумага»: «Финансы» (макет: docs/design/mockups/finance.html, смесь А и Б),
+   охота за звёздами («Команда»), акции («Маркетинг»), большое обновление («Продукт»).
+   «Финансы»:
    полоса долей, закрытые функции короткой строкой, инвесторы карточками, торг перепиской,
    компания на продажу — объявлением с печатью, службы — полосой. Цвета — из company.css. */
 
@@ -110,3 +112,30 @@
   .company-app .fin-meeting { grid-template-columns: 1fr; }
   .company-app .fin-locked { grid-template-columns: 1fr; }
 }
+
+/* ───── Охота за звёздами («Команда») ───── */
+.company-app .hh-star { display: grid; gap: 10px; margin-top: 10px; }
+.company-app .hh-card { display: grid; grid-template-columns: 52px 1fr; gap: 12px; align-items: start; padding: 12px; background: var(--panel-2); box-shadow: inset 0 -3px 0 #e2dace; }
+.company-app .hh-card p { margin: 4px 0 0; }
+.company-app .hh-ava { width: 52px; height: 52px; font-size: 16px; background: var(--wood); }
+.company-app .hh-offers { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.company-app .hh-offer { grid-template-rows: none; }
+
+/* ───── Большое обновление («Продукт») ───── */
+.company-app .rl-active p { margin: 0; }
+.company-app .rl-active.behind { background: #fde4df; box-shadow: inset 0 -3px 0 #f3c3b9; }
+.company-app .rl-sizes { margin-top: 10px; }
+.company-app .rl-size { grid-template-rows: none; }
+.company-app .rl-size-name { font-size: 13px; }
+.company-app .rl-option { display: grid; gap: 4px; }
+.company-app .rl-option button { width: 100%; }
+
+/* ───── Акции («Маркетинг») ───── */
+.company-app .mk-list { margin-top: 10px; }
+.company-app .mk-campaign { grid-template-rows: none; }
+.company-app .mk-name { display: block; font: 600 15px/1.25 var(--font-game); }
+.company-app .mk-cost { margin-top: 3px; font-weight: 600; }
+.company-app .mk-list { grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); }
+.company-app .fin-term { min-width: 0; }
+.company-app .mk-odds { margin: 0 0 4px; }
+.company-app .hh-chance { grid-template-columns: 1fr auto; }
