@@ -107,6 +107,9 @@ export interface HeroArt {
   sleepHead: Spr;
   /** Лицом к нам: оглядывается вправо и влево, когда стоит без дела. */
   look: Spr[];
+  /** Переходы: сидит на краю кровати, туловище лёжа (пока одеяло не натянуто). */
+  edge: Spr;
+  sleepBody: Spr;
 }
 
 function paintRows(rows: readonly string[]): Spr {
@@ -122,6 +125,8 @@ function buildHero(): HeroArt {
     sit: f.sit.map(paintRows),
     sleepHead: paintRows(f.sleepHead),
     look: f.look.map(paintRows),
+    edge: paintRows(f.edge),
+    sleepBody: paintRows(f.sleepBody),
   };
 }
 

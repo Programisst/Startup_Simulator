@@ -5,6 +5,7 @@ import { idlePose } from './heroPixels';
 import { drawEditorScreen, TOKEN_COLORS } from './editorScreen';
 import { MonitorTyping, textAmount } from './monitor';
 import { findPath } from './nav';
+import { CHAIR_OUT, SLEEP_BLANKET, moveStep, type MoveKind, type MoveStep } from './moves';
 import { COFFEE_LED, FLOOR_LAMP_SHADE, MONITOR_SCREEN, hash, make, type Art, type Spr } from './art';
 import { City } from './city';
 import { zoomLimits, zoomStep } from './zoom';
@@ -54,6 +55,31 @@ const SPEED = 56;
 const LAMP_COLOR: RGB = [255, 194, 116];
 const MONITOR_COLOR: RGB = [120, 160, 255];
 
+/** Высота отворота одеяла (светлая полоса и складка сверху), пиксели. */
+const BLANKET_FOLD = 6;
+
+/** За сколько секунд кресло само подъезжает к столу, когда герой отошёл. */
+const CHAIR_RETURN_SECONDS = 0.22;
+
+/** Глубина кровати среди предметов: сидящий на краю рисуется поверх неё. */
+const BED_SORT = PROPS.find((p) => p.key === 'bed')!.sort!;
+
+/** Мягкая тень предмета на полу. */
+function shadow(c: CanvasRenderingContext2D, s: Rect): void {
+  c.fillStyle = 'rgba(50,36,40,0.10)';
+  c.fillRect(s.x + 1, s.y, s.w - 2, s.h);
+  c.fillRect(s.x, s.y + 1, s.w, s.h - 2);
+  c.fillStyle = 'rgba(50,36,40,0.08)';
+  c.fillRect(s.x + 2, s.y + 1, s.w - 4, s.h - 2);
+}
+
+/** Тень под ногами героя. */
+function footShadow(b: CanvasRenderingContext2D, x: number, y: number): void {
+  b.fillStyle = 'rgba(40,28,36,0.22)';
+  b.fillRect(x - 5, y - 1, 10, 2);
+  b.fillRect(x - 4, y - 2, 8, 4);
+}
+
 const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
 
 export class World {
@@ -73,6 +99,10 @@ export class World {
   monitorText = true;
   readonly hero = { x: HERO_START.x, y: HERO_START.y, dir: 3 as Dir, moving: false, anim: 0, mode: 'free' as Mode };
   onArrive: ((spot: Spot) => void) | null = null;
+  /** Герой садится, встаёт или ложится: несколько кадров, управление ждёт. */
+  private move: { kind: MoveKind; t: number } | null = null;
+  /** Кресло ещё не вернулось к столу после того, как герой встал (пиксели, плавно к 0). */
+  private chairBack = 0;
   onCoffeeReady: (() => void) | null = null;
 
   private readonly ctx: CanvasRenderingContext2D;
@@ -199,7 +229,7 @@ export class World {
   // ───────────── действия ─────────────
 
   nearby(): Spot | null {
-    if (this.hero.mode !== 'free' || this.path.length) return null;
+    if (this.hero.mode !== 'free' || this.move || this.path.length) return null;
     let best: Spot | null = null;
     let bestD = 15;
     for (const s of SPOTS) {
@@ -223,7 +253,8 @@ export class World {
     return { target: spot ? spot.at : p, spot };
   }
 
-  /** Идти к точке или к предмету. false — идти некуда (герой занят или пути нет). */
+  /** Идти к точке или к предмету. false — идти некуда (герой занят или пути нет).
+   *  Пока герой встаёт, маршрут запоминается и начнётся, когда он встанет. */
   walkTo(target: { x: number; y: number }, spot: Spot | null): boolean {
     if (this.hero.mode !== 'free') return false;
     const U = NAV_UNIT;
@@ -244,7 +275,17 @@ export class World {
 
   /** Герой свободен: стоит или идёт, не сидит и не спит. */
   get idle(): boolean {
-    return this.hero.mode === 'free';
+    return this.hero.mode === 'free' && !this.move;
+  }
+
+  /** Герой сидит в кресле и работает: на мониторе код (пока садится — ещё заставка). */
+  private get working(): boolean {
+    return this.hero.mode === 'sit' && (!this.move || this.moveNow()?.pose === 'sit');
+  }
+
+  /** Какой кадр перехода рисовать сейчас; null — перехода нет. */
+  private moveNow(): MoveStep | null {
+    return this.move ? moveStep(this.move.kind, this.move.t) : null;
   }
 
   isLampOn(id: LampId): boolean {
@@ -255,13 +296,17 @@ export class World {
     this.lamps[id].on = !this.lamps[id].on;
   }
 
-  sit(): void {
+  /** Садится за компьютер; instant — сразу сидит (начало игры). */
+  sit(instant = false): void {
+    this.move = instant ? null : { kind: 'sit', t: 0 };
     this.hero.mode = 'sit';
     this.hero.dir = 1;
     this.path = [];
   }
 
   stand(): void {
+    // Встаёт, только если сидел; тогда — через кадры.
+    this.move = this.hero.mode === 'sit' ? { kind: 'stand', t: 0 } : null;
     this.hero.mode = 'free';
     this.hero.x = SPOTS[0]!.at.x;
     this.hero.y = SPOTS[0]!.at.y;
@@ -279,6 +324,7 @@ export class World {
   }
 
   sleep(): void {
+    this.move = { kind: 'lie', t: 0 };
     this.hero.mode = 'sleep';
     this.path = [];
   }
@@ -290,20 +336,32 @@ export class World {
     this.hero.x = SPOTS[2]!.at.x;
     this.hero.y = SPOTS[2]!.at.y;
     this.hero.dir = 3;
+    this.move = { kind: 'rise', t: 0 };
   }
 
   // ───────────── обновление ─────────────
 
   update(dt: number, input: { x: number; y: number }): void {
     this.time += dt;
-    if (this.hero.mode === 'sit') this.monitor.advance(dt);
+    if (this.working) this.monitor.advance(dt);
     this.minutes = this.realClock
       ? realMinutes(new Date())
       : advanceClock(this.minutes, dt, { rate: this.clockRate, paused: this.clockPaused, sleeping: this.hero.mode === 'sleep' });
     const h = this.hero;
     let moving = false;
+    if (this.move) {
+      const before = this.moveNow();
+      this.move.t += dt;
+      if (!this.moveNow()) {
+        // Герой встал и отошёл — кресло само подъезжает к столу.
+        this.chairBack = before?.chair ?? 0;
+        this.move = null;
+      }
+    } else if (this.chairBack > 0) {
+      this.chairBack = Math.max(0, this.chairBack - (dt * CHAIR_OUT) / CHAIR_RETURN_SECONDS);
+    }
 
-    if (h.mode === 'free') {
+    if (h.mode === 'free' && !this.move) {
       const len = Math.hypot(input.x, input.y);
       if (len > 0) {
         // Клавиши отменяют маршрут мышью.
@@ -444,14 +502,8 @@ export class World {
       for (const w of WALL_ITEMS) g.c.drawImage(this.art[w.key], w.x, w.y);
       // ковры
       for (const p of PROPS) if (p.flat) g.c.drawImage(this.art[p.key], p.x, p.y);
-      // тени предметов
-      for (const p of PROPS) {
-        if (!p.shadow) continue;
-        const s = p.shadow;
-        g.r(s.x + 1, s.y, s.w - 2, s.h, 'rgba(50,36,40,0.10)');
-        g.r(s.x, s.y + 1, s.w, s.h - 2, 'rgba(50,36,40,0.10)');
-        g.r(s.x + 2, s.y + 1, s.w - 4, s.h - 2, 'rgba(50,36,40,0.08)');
-      }
+      // тени предметов (тень кресла рисуется вместе с ним: кресло ездит)
+      for (const p of PROPS) if (p.shadow && p.key !== 'chair') shadow(g.c, p.shadow);
     });
   }
 
@@ -465,8 +517,14 @@ export class World {
 
     // Предметы и герой по глубине.
     const items: { sort: number; draw: () => void }[] = [];
-    for (const p of PROPS) if (!p.flat) items.push({ sort: p.sort ?? p.y + this.art[p.key].height, draw: () => this.drawProp(p) });
-    if (this.hero.mode !== 'sleep') items.push({ sort: this.hero.mode === 'sit' ? SEAT.y : this.hero.y, draw: () => this.drawHero() });
+    const step = this.moveNow();
+    const chair = this.chairShift(step);
+    for (const p of PROPS) {
+      if (p.flat) continue;
+      const sort = (p.sort ?? p.y + this.art[p.key].height) + (p.key === 'chair' ? chair : 0);
+      items.push({ sort, draw: () => this.drawProp(p, p.key === 'chair' ? chair : 0) });
+    }
+    if (!this.lying(step)) items.push({ sort: this.heroSort(step), draw: () => this.drawHero(step) });
     items.sort((a, c) => a.sort - c.sort);
     for (const it of items) it.draw();
     this.drawSteam();
@@ -480,12 +538,14 @@ export class World {
     c.fillRect(0, 0, this.canvas.width, this.canvas.height);
     c.drawImage(this.base, o.x, o.y, MAP_W * this.scale, MAP_H * this.scale);
     this.drawLight(day, o);
-    if (this.hero.mode === 'sit') this.drawScreenText(o);
+    if (this.working) this.drawScreenText(o);
   }
 
-  private drawProp(p: Prop): void {
+  /** Кресло отъезжает от стола (к нам) на dy пикселей; его тень едет с ним. */
+  private drawProp(p: Prop, dy = 0): void {
     const b = this.bctx;
-    b.drawImage(this.art[p.key], p.x, p.y);
+    if (p.key === 'chair' && p.shadow) shadow(b, { ...p.shadow, y: p.shadow.y + dy });
+    b.drawImage(this.art[p.key], p.x, p.y + dy);
     if (p.key === 'monitor') this.drawScreen(p.x + MONITOR_SCREEN.x, p.y + MONITOR_SCREEN.y);
     if (p.key === 'deskLamp' && this.lamps.lampDesk.level < 0.5) {
       b.fillStyle = '#6d675c';
@@ -496,10 +556,33 @@ export class World {
       b.fillStyle = ready ? '#7be0a0' : Math.sin(this.time * 12) > 0 ? '#ffb347' : '#6b4a2a';
       b.fillRect(p.x + COFFEE_LED.x, p.y + COFFEE_LED.y, 1, 1);
     }
-    if (p.key === 'bed' && this.hero.mode === 'sleep') {
-      // голова на подушке, сверху одеяло
+    const step = this.moveNow();
+    if (p.key === 'bed' && this.lying(step)) {
+      // Голова на подушке, одеяло по грудь. Пока герой укрывается, одеяло ниже — по пояс.
+      const low = step?.blanket ?? SLEEP_BLANKET;
+      const blanket = this.art.blanketTop;
+      if (low > 0) {
+        b.fillStyle = '#f3efe8';
+        b.fillRect(p.x + 2, p.y + 22, 38, low);
+        b.fillStyle = '#d9d2c7';
+        b.fillRect(p.x + 2, p.y + 22, 38, 1);
+      }
+      if (low > 0) {
+        // лёгкая тень от тела на простыне справа
+        b.fillStyle = 'rgba(60,44,40,0.14)';
+        b.fillRect(PILLOW.x + 8, PILLOW.y + 13, 1, low + 1);
+      }
+      b.drawImage(this.art.hero.sleepBody, PILLOW.x - 8, PILLOW.y + 11);
       b.drawImage(this.art.hero.sleepHead, PILLOW.x - 6, PILLOW.y + 1);
-      b.drawImage(this.art.blanketTop, p.x, p.y + 22);
+      // Опускается только верх одеяла с отворотом; низ с пледом лежит, где лежал.
+      const top = p.y + 22;
+      const fold = BLANKET_FOLD;
+      const rest = blanket.height - low - fold;
+      b.drawImage(blanket, 0, low + fold, blanket.width, rest, p.x, top + low + fold, blanket.width, rest);
+      b.drawImage(blanket, 0, 0, blanket.width, fold, p.x, top + low, blanket.width, fold);
+      // край одеяла: на светлой простыне иначе не видно, где оно кончается
+      b.fillStyle = '#9a8f82';
+      b.fillRect(p.x + 1, p.y + 22 + low, blanket.width - 2, 1);
     }
     if (p.key === 'floorLamp' && this.lamps.lampFloor.level > 0.5) {
       b.fillStyle = 'rgba(255,248,226,0.9)';
@@ -511,7 +594,7 @@ export class World {
   private drawScreen(x: number, y: number): void {
     const b = this.bctx;
     const { w, h } = MONITOR_SCREEN;
-    if (this.hero.mode === 'sit') {
+    if (this.working) {
       // Тот же код, что печатается в компьютере: одна буква — один пиксель, строка через строку.
       b.fillStyle = '#1f1f1f';
       b.fillRect(x, y, w, h);
@@ -574,25 +657,40 @@ export class World {
     );
   }
 
-  private drawHero(): void {
+  /** Лежит в кровати: спит или как раз ложится/встаёт. */
+  private lying(step: MoveStep | null): boolean {
+    return step ? step.pose === 'bed' : this.hero.mode === 'sleep';
+  }
+
+  /** На сколько пикселей кресло сейчас отъехало от стола. */
+  private chairShift(step: MoveStep | null): number {
+    return step ? step.chair : Math.round(this.chairBack);
+  }
+
+  /** Глубина героя среди предметов: у стола — за спинкой кресла, на краю кровати — перед кроватью. */
+  private heroSort(step: MoveStep | null): number {
+    if (step?.pose === 'edge') return BED_SORT + 1;
+    if (step?.pose === 'sit') return SEAT.y + step.chair;
+    if (step) return step.y;
+    return this.hero.mode === 'sit' ? SEAT.y : this.hero.y;
+  }
+
+  private drawHero(step: MoveStep | null): void {
+    const art = this.art.hero;
+    if (step) return this.drawMove(step);
     const b = this.bctx;
     const h = this.hero;
-    const sitting = h.mode === 'sit';
-    const x = Math.round(sitting ? SEAT.x : h.x);
-    const y = Math.round(sitting ? SEAT.y : h.y);
-    // тень под ногами
-    if (!sitting) {
-      b.fillStyle = 'rgba(40,28,36,0.22)';
-      b.fillRect(x - 5, y - 1, 10, 2);
-      b.fillRect(x - 4, y - 2, 8, 4);
-    }
-    const art = this.art.hero;
-    let frame: Spr;
-    if (sitting) {
+    if (h.mode === 'sit') {
       // Печатает: руки то и дело двигаются, иногда пауза — думает.
       const beat = Math.floor(this.time * 6);
-      frame = art.sit[hash(beat, 7) > 0.35 ? beat % 2 : 0]!;
-    } else if (h.moving) {
+      b.drawImage(art.sit[hash(beat, 7) > 0.35 ? beat % 2 : 0]!, SEAT.x - 8, SEAT.y - 35);
+      return;
+    }
+    const x = Math.round(h.x);
+    const y = Math.round(h.y);
+    footShadow(b, x, y);
+    let frame: Spr;
+    if (h.moving) {
       frame = art.walk[h.dir]![Math.floor(h.anim * 7.5) % 4]!;
     } else {
       // Дышит, раз в несколько секунд моргает; лицом к нам иногда оглядывается.
@@ -600,7 +698,25 @@ export class World {
       if (pose.kind === 'look') frame = art.look[pose.frame]!;
       else frame = this.time % 3.7 < 0.14 ? art.blink[h.dir]! : art.idle[h.dir]![pose.frame]!;
     }
-    b.drawImage(frame, x - 8, y - 31 - (sitting ? 4 : 0));
+    b.drawImage(frame, x - 8, y - 31);
+  }
+
+  /** Кадр перехода: садится, встаёт, садится на край кровати. */
+  private drawMove(step: MoveStep): void {
+    const b = this.bctx;
+    const art = this.art.hero;
+    if (step.pose === 'sit') {
+      b.drawImage(art.sit[0]!, step.x - 8, step.y + step.chair - 35);
+      return;
+    }
+    if (step.pose === 'walk' || step.pose === 'stand') footShadow(b, step.x, step.y);
+    const frame =
+      step.pose === 'edge'
+        ? art.edge
+        : step.pose === 'walk'
+          ? art.walk[step.dir]![Math.floor(this.move!.t * 9) % 4]!
+          : art.idle[step.dir]![0]!;
+    b.drawImage(frame, step.x - 8, step.y - 31 + step.lift);
   }
 
   private drawSteam(): void {
@@ -679,7 +795,7 @@ export class World {
     const lx = (x: number) => x * k + o.x / LIGHT_STEP;
     const ly = (y: number) => y * k + o.y / LIGHT_STEP;
     const dark = day.dark;
-    const monitor = (this.hero.mode === 'sit' ? 1 : 0.65) * (0.97 + 0.03 * Math.sin(this.time * 31) * Math.sin(this.time * 7));
+    const monitor = (this.working ? 1 : 0.65) * (0.97 + 0.03 * Math.sin(this.time * 31) * Math.sin(this.time * 7));
 
     L.globalCompositeOperation = 'source-over';
     L.fillStyle = css(day.ambient);

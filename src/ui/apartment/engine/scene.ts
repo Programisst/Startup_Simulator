@@ -115,7 +115,7 @@ export interface Spot {
 }
 
 export const SPOTS: Spot[] = [
-  { id: 'computer', at: { x: 144, y: 92 }, face: 1, pick: { x: 130, y: 32, w: 30, h: 54 }, anchor: { x: 144, y: 30 } },
+  { id: 'computer', at: { x: 126, y: 84 }, face: 0, pick: { x: 130, y: 32, w: 30, h: 54 }, anchor: { x: 144, y: 30 } },
   { id: 'coffee', at: { x: 337, y: 84 }, face: 1, pick: { x: 328, y: 36, w: 18, h: 40 }, anchor: { x: 337, y: 34 } },
   { id: 'bed', at: { x: 72, y: 86 }, face: 2, pick: { x: 22, y: 44, w: 42, h: 58 }, anchor: { x: 43, y: 42 } },
   { id: 'window', at: { x: 248, y: 80 }, face: 1, pick: { x: 214, y: 14, w: 68, h: 34 }, anchor: { x: 248, y: 12 } },
