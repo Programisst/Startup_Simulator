@@ -1,6 +1,6 @@
 // Пробная страница экранов с решениями в четырёх состояниях партии (только при `npm run dev`):
 // http://localhost:5173/tools/preview/finance.html?s=1 — первый день; 2 — инвесторы ждут; 3 — идёт торг; 4 — большая компания.
-// Раздел: &tab=finance (по умолчанию), team, marketing, product. Ширина окна программы: &w=560 (как в игре на маленьком экране), высота: &h=2000 (чтобы всё было видно без прокрутки).
+// Раздел: &tab=finance (по умолчанию), overview, team, marketing, product. Ширина окна программы: &w=560 (как в игре на маленьком экране), высота: &h=2000 (чтобы всё было видно без прокрутки).
 import { createRoot } from 'react-dom/client';
 import { content } from '../../src/content';
 import { acquisitionsView, applyCommand, createGame, tick, type Command, type GameState } from '../../src/core';
@@ -36,7 +36,7 @@ function growing(seed = 42): GameState {
     energy: 100,
     reputation: 55,
     months: [m(0), m(1)],
-    recentDays: Array.from({ length: 30 }, (_, i) => ({ day: base.day - 30 + i, cash: 22_000, users: 1200, paying: 180, revenue: 600, expenses: 0 })),
+    recentDays: Array.from({ length: 30 }, (_, i) => ({ day: base.day - 30 + i, cash: Math.round(9000 + 13_000 * (i / 29) ** 1.4), users: Math.round(300 + 900 * (i / 29) ** 1.2), paying: 180, revenue: 600, expenses: 0 })),
   };
 }
 

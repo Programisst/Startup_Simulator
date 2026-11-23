@@ -3,9 +3,11 @@ interface Props {
   values: number[];
   color: string;
   height?: number;
+  /** Залить место под линией тем же цветом. */
+  area?: boolean;
 }
 
-export function LineChart({ values, color, height = 120 }: Props) {
+export function LineChart({ values, color, height = 120, area = false }: Props) {
   const width = 600;
   if (values.length < 2) return <div className="chart-empty" style={{ height }} />;
 
@@ -19,6 +21,7 @@ export function LineChart({ values, color, height = 120 }: Props) {
   return (
     <svg className="chart" viewBox={`0 0 ${width} ${height}`} preserveAspectRatio="none" style={{ height }}>
       {min < 0 && <line x1={0} x2={width} y1={y(0)} y2={y(0)} className="chart-zero" />}
+      {area && <polygon points={`0,${height} ${points} ${width},${height}`} fill={color} opacity={0.14} />}
       <polyline points={points} fill="none" stroke={color} strokeWidth={2} vectorEffect="non-scaling-stroke" />
     </svg>
   );

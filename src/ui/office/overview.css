@@ -1,0 +1,94 @@
+/* «Сводка»: деньги крупно, плитки 2×2, графики, чек за вчера. Подключается после company.css. */
+.company-app .ov { container-type: inline-size; }
+
+/* Деньги: крупная сумма, запас дней полоской, график прижат к низу карточки. */
+.company-app .ov-cash { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.company-app .ov-cash-big { font: 700 38px/1.1 var(--font-game); color: var(--green); font-variant-numeric: tabular-nums; }
+.company-app .ov-cash-big.minus { color: var(--red); }
+.company-app .ov-cash-sub { margin-bottom: 4px; font-size: 12.5px; color: var(--muted); }
+.company-app .ov-cash.low .ov-cash-sub { font-weight: 600; color: var(--red); }
+.company-app .ov-cash.low .fin-meter i { background: var(--red); }
+.company-app .ov-spark { margin: auto -15px -13px; padding-top: 6px; }
+.company-app .ov-spark .chart { height: 44px; }
+
+/* Плитки */
+.company-app .ov-tile {
+  display: grid;
+  align-content: start;
+  gap: 2px;
+  min-width: 0;
+  padding: 10px 13px 11px;
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
+  background: var(--panel) padding-box;
+  box-shadow: inset 0 -3px 0 var(--panel-2);
+}
+.company-app .ov-tile b { font: 700 24px/1.15 var(--font-game); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.company-app .ov-tile small { font-size: 11.5px; line-height: 1.35; color: var(--muted); }
+
+/* Деньги слева, плитки 2×2 справа; в узком окне — друг под другом. */
+.company-app .ov-top { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.35fr); gap: 12px; }
+.company-app .ov-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@container (max-width: 640px) {
+  .company-app .ov-top { grid-template-columns: 1fr; }
+}
+
+/* Графики за 90 дней: бумага в линейку, сплошная ось снизу. */
+.company-app .ov-chart-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 8px; }
+.company-app .ov-chart-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 4px; font-size: 12px; color: var(--muted); }
+.company-app .ov-chart-head b { font: 700 15px/1 var(--font-game); font-variant-numeric: tabular-nums; }
+.company-app .ov-green { color: var(--green); }
+.company-app .ov-blue { color: var(--blue); }
+.company-app .ov-charts .chart {
+  background: repeating-linear-gradient(to bottom, transparent 0 21px, var(--hair) 21px 22px);
+  border-bottom: 2px solid var(--text);
+}
+@container (max-width: 520px) {
+  .company-app .ov-chart-pair { grid-template-columns: 1fr; }
+}
+
+/* Нижний ряд: чек и лента. */
+.company-app .ov-bottom { display: grid; grid-template-columns: minmax(250px, 300px) minmax(0, 1fr); gap: 18px; align-items: start; }
+@container (max-width: 600px) {
+  .company-app .ov-bottom { grid-template-columns: 1fr; }
+}
+
+/* Чек: белая бумажная лента с зубчатым низом, строки с точками до суммы, двойная черта перед итогом. */
+.company-app .ov-receipt-wrap { filter: drop-shadow(0 2px 0 rgba(58, 58, 80, 0.28)) drop-shadow(0 6px 8px rgba(58, 58, 80, 0.12)); }
+.company-app .ov-receipt {
+  --tooth: 7px;
+  padding: 14px 16px calc(14px + var(--tooth));
+  background: #fffefb;
+  color: var(--text);
+  -webkit-mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+  mask: conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) 50% / calc(var(--tooth) * 2) 100%;
+}
+.company-app .ov-receipt h3 { margin: 0; text-align: center; font: 700 15px/1.2 var(--font-game); }
+.company-app .ov-receipt-date { margin-top: 2px; text-align: center; font-size: 11.5px; color: var(--muted); }
+.company-app .ov-receipt-head {
+  margin: 12px 0 4px;
+  padding-top: 8px;
+  border-top: 2px dashed var(--oat-2);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.company-app .ov-line { display: flex; align-items: baseline; gap: 6px; padding: 2px 0; font-size: 12.5px; }
+.company-app .ov-line i { flex: 1; min-width: 12px; border-bottom: 2px dotted var(--oat-2); transform: translateY(-3px); }
+.company-app .ov-line b { font: 500 13px/1.2 var(--font-game); font-variant-numeric: tabular-nums; }
+.company-app .ov-line b.minus { color: var(--red); }
+.company-app .ov-receipt-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 3px double var(--text);
+  font-size: 13px;
+  font-weight: 600;
+}
+.company-app .ov-receipt-total b { font: 700 18px/1 var(--font-game); color: var(--green); font-variant-numeric: tabular-nums; }
+.company-app .ov-receipt-total.minus b { color: var(--red); }
+.company-app .ov-receipt-total.zero b { color: var(--text); }
