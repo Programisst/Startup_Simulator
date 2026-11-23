@@ -6,11 +6,16 @@ import { useEffect, useRef, type RefObject } from 'react';
 import { C, G, hash, make, type Spr } from '../engine/art';
 import { City, CITY_H } from '../engine/city';
 import { css, daylightAt, type Daylight, type RGB } from '../engine/daylight';
+import { KEYBOARD_H, keyAt, keyboardKeys, type KeyRect } from './keyboardLayout';
 
 /** Высота сцены в пикселях-«клетках»; ширина подбирается под экран. */
 const H = 144;
 /** Вблизи город крупнее: каждая его клетка — 2×2 клетки сцены. */
 const CITY_ZOOM = 2;
+/** Передний край стола; ниже — его торец. */
+const FRONT = H - 3;
+/** Сколько длится нажатие клавиши на рисунке, мс. */
+const PRESS_MS = 160;
 
 interface Rect {
   x: number;
@@ -21,12 +26,14 @@ interface Rect {
 
 interface Layout {
   W: number;
-  /** Где стоит монитор (в клетках сцены) — вещи на столе расставляются вокруг него. */
+  /** Где стоит монитор (в клетках сцены) — вещи на столе расставляются вокруг него. y1 — низ подставки. */
   mon: { x0: number; x1: number; y0: number; y1: number };
   deskTop: number;
   /** Стекло окна: здесь видно небо и город. */
   glass: Rect;
   keyboard: Rect;
+  /** Клавиши нарисованной клавиатуры — чтобы показать нажатую. */
+  keys: KeyRect[];
   pad: Rect;
   mug: { x: number; y: number };
   lamp: { baseX: number; baseY: number; elbowX: number; elbowY: number; headX: number; headY: number };
@@ -40,7 +47,7 @@ const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
  * Клавиатура ≈ 2/3 монитора и стоит перед ним, мышь ≈ 6 см, лампа — до середины монитора.
  */
 function layoutFor(W: number, mon: Layout['mon']): Layout {
-  const front = H - 6;
+  const front = FRONT;
   // Нога монитора стоит у дальнего края стола.
   const deskTop = clamp(Math.round(mon.y1 - 6), 80, H - 30);
   const monW = mon.x1 - mon.x0;
@@ -49,12 +56,15 @@ function layoutFor(W: number, mon: Layout['mon']): Layout {
   const left = Math.round(mon.x0);
   const margin = Math.round(W * 0.05);
   const glass = { x: margin, y: 8, w: W - margin * 2, h: deskTop - 22 };
-  const kw = clamp(Math.round(monW * 0.62), 60, 130);
-  const kh = 12;
-  const ky = clamp(Math.round(mon.y1 + (front - mon.y1 - kh) * 0.55), Math.round(mon.y1) + 2, front - kh - 1);
+  const kw = clamp(Math.round(monW * 0.66), 100, 150);
+  const kh = KEYBOARD_H;
+  // Клавиатура стоит на столе перед подставкой монитора и не свисает с переднего края.
+  const ky = Math.min(Math.ceil(mon.y1) + 1, front - kh - 1);
   const keyboard = { x: cx - Math.round(kw / 2) - 6, y: ky, w: kw, h: kh };
   const pad = { x: keyboard.x + kw + 8, y: ky - 1, w: 34, h: 13 };
-  const baseX = Math.min(W - 16, right + 44);
+  // Кружка — правее коврика с мышью; лампа — ещё правее кружки, а не за ней.
+  const mugX = Math.max(right + 6, pad.x + pad.w + 6);
+  const baseX = Math.min(W - 16, Math.max(right + 44, mugX + 34));
   const baseY = deskTop + 8;
   return {
     W,
@@ -62,8 +72,9 @@ function layoutFor(W: number, mon: Layout['mon']): Layout {
     deskTop,
     glass,
     keyboard,
+    keys: keyboardKeys(keyboard),
     pad,
-    mug: { x: right + 6, y: deskTop - 4 },
+    mug: { x: mugX, y: deskTop - 4 },
     lamp: { baseX, baseY, elbowX: baseX + 8, elbowY: deskTop - 48, headX: baseX - 24, headY: deskTop - 54 },
     books: { x: Math.max(4, left - 58), y: deskTop + 10 },
   };
@@ -97,7 +108,7 @@ function windowFrame(g: G, L: Layout): void {
 
 function desk(g: G, L: Layout): void {
   const top = L.deskTop;
-  const front = H - 6;
+  const front = FRONT;
   g.r(0, top - 1, L.W, 1, C.out);
   g.r(0, top, L.W, front - top, C.woodHi);
   // волокна ореха — длинными полосами вдоль стола
@@ -109,31 +120,32 @@ function desk(g: G, L: Layout): void {
   }
   g.r(0, top, L.W, 1, C.wood);
   g.r(0, front, L.W, 1, C.out);
-  g.r(0, front + 1, L.W, 2, C.wood);
-  g.r(0, front + 3, L.W, 3, C.woodDk);
+  g.r(0, front + 1, L.W, 1, C.wood);
+  g.r(0, front + 2, L.W, H - front - 2, C.woodDk);
 }
 
-/** Клавиатура чуть сверху: светлый алюминий, пять рядов клавиш, у ближнего края — тень толщины. */
-function keyboard(g: G, k: Rect): void {
-  g.r(k.x + 2, k.y + k.h, k.w - 2, 2, 'rgba(40,24,16,0.35)');
-  g.box(k.x, k.y, k.w, k.h, C.white3);
-  g.r(k.x + 1, k.y + 1, k.w - 2, k.h - 3, C.white2);
-  g.r(k.x + 1, k.y + k.h - 2, k.w - 2, 1, C.white4);
-  const rows = 5;
-  for (let r = 0; r < rows; r++) {
-    const y = k.y + 2 + r * 2;
-    const shift = [0, 2, 3, 4, 0][r]!;
-    const keyW = 4;
-    for (let x = k.x + 3 + shift; x + keyW <= k.x + k.w - 3; x += keyW + 1) {
-      // нижний ряд: длинный пробел посередине
-      if (r === rows - 1 && x > k.x + k.w * 0.3 && x < k.x + k.w * 0.66) continue;
-      g.r(x, y, keyW, 1, C.white);
-      g.r(x, y + 1, keyW, 1, C.white4);
-    }
+/** Клавиатура чуть сверху: светлый алюминиевый корпус, утопленные клавиши с передней гранью, у ближнего края — толщина. */
+function keyboard(g: G, k: Rect, keys: KeyRect[]): void {
+  // тень на столе и корпус; между клавишами — тёмная подложка, чтобы каждая клавиша читалась отдельно
+  g.r(k.x + 2, k.y + k.h, k.w - 2, 2, 'rgba(40,24,16,0.4)');
+  g.box(k.x, k.y, k.w, k.h, '#8f887f');
+  g.r(k.x + 1, k.y + 1, k.w - 2, 1, C.white2);
+  // передний край корпуса — толщина алюминия
+  g.r(k.x + 1, k.y + k.h - 2, k.w - 2, 1, C.white3);
+  for (const key of keys) {
+    // верх клавиши светлый, с бликом по верхнему краю; передняя грань темнее
+    g.r(key.x, key.y, key.w, key.h - 1, C.white2);
+    g.r(key.x, key.y, key.w, 1, '#fbf9f6');
+    g.r(key.x, key.y + key.h - 1, key.w, 1, C.white4);
   }
-  const sx = Math.round(k.x + k.w * 0.31);
-  g.r(sx, k.y + 2 + (rows - 1) * 2, Math.round(k.w * 0.34), 1, C.white);
-  g.r(sx, k.y + 3 + (rows - 1) * 2, Math.round(k.w * 0.34), 1, C.white4);
+}
+
+/** Нажатая клавиша: верх уходит вниз и темнеет, передней грани почти не видно. */
+function pressedKey(c: CanvasRenderingContext2D, key: KeyRect, strength: number): void {
+  c.fillStyle = `rgba(28,24,40,${0.34 * strength})`;
+  c.fillRect(key.x, key.y, key.w, key.h);
+  c.fillStyle = `rgba(28,24,40,${0.3 * strength})`;
+  c.fillRect(key.x, key.y, key.w, 1);
 }
 
 /** Мышь на тёмном коврике: овальная, с разрезом между кнопками и тенью снизу. */
@@ -254,7 +266,7 @@ function roomLayer(L: Layout): Spr {
     windowFrame(g, L);
     desk(g, L);
     books(g, L.books);
-    keyboard(g, L.keyboard);
+    keyboard(g, L.keyboard, L.keys);
     mouse(g, L.pad);
     mug(g, L.mug);
     lamp(g, L);
@@ -369,6 +381,10 @@ export function DeskView({ minutes, device }: { minutes: number; device: RefObje
     let tint: { key: string; img: Spr } | null = null;
     const cityCv = document.createElement('canvas');
     let raf = 0;
+    /** Когда игрок нажал клавишу (код → время, мс): нарисованная клавиша на миг уходит вниз. */
+    const pressed = new Map<string, number>();
+    const onKey = (e: KeyboardEvent) => pressed.set(e.code, performance.now());
+    window.addEventListener('keydown', onKey);
 
     const measure = () => {
       const box = canvas.parentElement;
@@ -377,7 +393,10 @@ export function DeskView({ minutes, device }: { minutes: number; device: RefObje
       const k = H / box.clientHeight;
       const W = Math.max(160, Math.round(box.clientWidth * k));
       // offsetLeft/offsetWidth не зависят от анимации выезда монитора (transform).
-      const mon = { x0: dev.offsetLeft * k, x1: (dev.offsetLeft + dev.offsetWidth) * k, y0: dev.offsetTop * k, y1: (dev.offsetTop + dev.offsetHeight) * k };
+      // Низ подставки монитора: она выступает из-под корпуса, клавиатура стоит перед ней.
+      const stand = dev.querySelector<HTMLElement>('.lp-stand');
+      const bottom = Math.max(dev.offsetTop + dev.offsetHeight, stand ? dev.offsetTop + stand.offsetTop + stand.offsetHeight : 0);
+      const mon = { x0: dev.offsetLeft * k, x1: (dev.offsetLeft + dev.offsetWidth) * k, y0: dev.offsetTop * k, y1: bottom * k };
       canvas.width = W;
       canvas.height = H;
       L = layoutFor(W, mon);
@@ -399,6 +418,15 @@ export function DeskView({ minutes, device }: { minutes: number; device: RefObje
       tint = tinted(base, ambient, tint);
       ctx.drawImage(tint.img, 0, 0);
       lights(ctx, L, day);
+      for (const [code, at] of pressed) {
+        const age = now - at;
+        const key = keyAt(L.keys, code);
+        if (age > PRESS_MS || !key) {
+          pressed.delete(code);
+          continue;
+        }
+        pressedKey(ctx, key, 1 - age / PRESS_MS);
+      }
       steam(ctx, L.mug, time);
     };
 
@@ -409,6 +437,7 @@ export function DeskView({ minutes, device }: { minutes: number; device: RefObje
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      window.removeEventListener('keydown', onKey);
     };
   }, [device]);
 
