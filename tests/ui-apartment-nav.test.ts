@@ -38,3 +38,12 @@ describe('поиск пути в квартире', () => {
     });
   }
 });
+
+describe('коврик у кровати', () => {
+  it('лежит ровно по центру кровати', () => {
+    // Ширина кровати — 42, коврика — 30 (art.ts: drawBed, drawBedRug).
+    const bed = PROPS.find((p) => p.key === 'bed')!;
+    const rug = PROPS.find((p) => p.key === 'rugBed')!;
+    expect(rug.x + 30 / 2).toBe(bed.x + 42 / 2);
+  });
+});
