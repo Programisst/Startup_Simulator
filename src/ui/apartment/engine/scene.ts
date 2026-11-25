@@ -36,7 +36,7 @@ export interface Prop {
 
 export const PROPS: Prop[] = [
   // ── спальня
-  { key: 'rugBed', x: 26, y: 96, flat: true },
+  { key: 'rugBed', x: 28, y: 96, flat: true },
   { key: 'bed', x: 22, y: 44, sort: 101, shadow: { x: 21, y: 98, w: 45, h: 5 }, solid: { x: 22, y: 52, w: 42, h: 48 } },
   { key: 'nightstand', x: 66, y: 48, sort: 62, shadow: { x: 65, y: 60, w: 18, h: 4 }, solid: { x: 66, y: 52, w: 15, h: 9 } },
   { key: 'tableLamp', x: 67, y: 37, sort: 62.5 },

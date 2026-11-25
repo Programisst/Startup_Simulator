@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Общий стиль: плашки квартиры и программа «Компания»</title>
+<!-- Только для макета. В игру шрифт положим файлом в проект (лицензия OFL), без загрузки из интернета. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&display=swap" />
+<style>
+  /* Три варианта общего стиля. Цвета взяты из рисунков квартиры (src/ui/apartment/engine/art.ts):
+     контур #3a3a50, орех #7b5a43, белая мебель #f4f1ec, овёс #ddd2c1, терракота #b8643f, лампа #f6c34a. */
+  * { box-sizing: border-box; }
+  body { margin: 0; font-synthesis: none; background: #141219; color: #f4efe6; font: 14px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; }
+  .pick { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 18px; justify-content: center; align-items: center; padding: 14px; background: #141219f0; }
+  .pick .grp { display: flex; gap: 6px; align-items: center; } .pick .grp > span { font-size: 12px; opacity: .55; margin-right: 4px; }
+  .pick button { font: 600 13px/1 inherit; padding: 10px 14px; border-radius: 9px; border: 1px solid #ffffff22; background: #24222d; color: #f4efe6; cursor: pointer; }
+  .pick button.on { background: #f6c34a; color: #1a1712; border-color: #f6c34a; }
+  .note { max-width: 1100px; margin: 0 auto 14px; padding: 0 16px; font-size: 13px; opacity: .7; text-align: center; }
+  .frame-title { width: 1280px; margin: 26px auto 8px; font-size: 12px; letter-spacing: .06em; text-transform: uppercase; opacity: .5; }
+  .stage { display: flex; justify-content: center; padding: 0 16px; }
+
+  /* ---------- Токены ---------- */
+  :root {
+    --ink: #3a3a50; --ink-2: #46465e; --night: #24222d; --night-2: #2f2d3a; --night-3: #3b3a48;
+    --paper: #f4f1ec; --paper-2: #e6e1d9; --oat: #ddd2c1; --oat-2: #cdbfab;
+    --wood: #7b5a43; --wood-hi: #957159; --wood-lo: #664836; --wood-dk: #523a2c;
+    --terra: #b8643f; --lamp: #f6c34a; --lamp-lo: #c9952a; --lamp-hi: #ffe08a;
+    --cash-dk: #7fd17a; --cash-lt: #2f7d3a;
+    --px: 'Rubik', system-ui, sans-serif;
+    --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  }
+  .pxf { font-family: var(--px); letter-spacing: .01em; }
+  svg.pi { width: 1em; height: 1em; shape-rendering: crispEdges; flex: none; }
+
+  /* Пиксельная коробка — как g.box в art.ts: контур, углы срезаны на «пиксель» (P). */
+  .box { --P: 3px; --bw: 3px; border: var(--bw) solid var(--ink);
+    clip-path: polygon(0 var(--P), var(--P) var(--P), var(--P) 0, calc(100% - var(--P)) 0, calc(100% - var(--P)) var(--P), 100% var(--P), 100% calc(100% - var(--P)), calc(100% - var(--P)) calc(100% - var(--P)), calc(100% - var(--P)) 100%, var(--P) 100%, var(--P) calc(100% - var(--P)), 0 calc(100% - var(--P))); }
+  .lift { filter: drop-shadow(0 4px 0 rgba(10, 8, 16, .45)); }
+
+  /* ================= ПЛАШКИ КВАРТИРЫ ================= */
+  .room { position: relative; width: 1280px; height: 636px; background: url(img/room-bg.jpg) center / cover; border-radius: 10px; overflow: hidden; box-shadow: 0 30px 80px #000a; }
+  .hud { position: absolute; inset: 16px 18px auto; display: flex; justify-content: space-between; align-items: flex-start; }
+  .hud .row { display: flex; gap: 10px; align-items: stretch; }
+  .chip { display: flex; align-items: center; gap: 10px; padding: 8px 14px 9px; }
+  .chip .k { font-size: 11px; opacity: .65; }
+  .chip .date { font: 600 15px/1.1 var(--px); }
+  .chip .cash { font: 700 22px/1 var(--px); }
+  .chip .stat { font: 500 14px/1 var(--px); }
+  .speed { display: flex; padding: 0; }
+  .speed button { width: 46px; height: 42px; border: 0; display: grid; place-items: center; font-size: 18px; cursor: pointer; background: transparent; color: inherit; }
+  .save { font: 600 14px/1 var(--px); gap: 8px; cursor: pointer; }
+  .keys { position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%); display: flex; gap: 14px; align-items: center; padding: 7px 14px; font-size: 12.5px; white-space: nowrap; }
+  .kc { display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 4px; font: 600 11px/1 var(--px); }
+
+  /* Вариант 1 и 2: тёмные плашки с пиксельной фаской */
+  .v-wood .chip, .v-night .chip, .v-wood .keys, .v-night .keys { background: var(--night); color: var(--paper); box-shadow: inset 0 3px 0 var(--night-3), inset 0 -3px 0 #17151d; }
+  .v-wood .chip .cash, .v-night .chip .cash { color: var(--cash-dk); }
+  .v-wood .speed button.on, .v-night .speed button.on { background: var(--lamp); color: var(--ink); box-shadow: inset 0 3px 0 var(--lamp-hi), inset 0 -3px 0 var(--lamp-lo); }
+  .v-wood .speed button:not(.on):hover, .v-night .speed button:not(.on):hover { background: var(--night-3); }
+  .v-wood .kc, .v-night .kc { background: var(--paper); color: var(--ink); box-shadow: inset 0 -2px 0 var(--oat-2); }
+  .v-wood .sun, .v-night .sun { color: var(--lamp); }
+
+  /* Вариант 3: светлые плашки — как записки на стене */
+  .v-notes .chip, .v-notes .keys { background: var(--paper); color: var(--ink); box-shadow: inset 0 -3px 0 var(--oat); }
+  .v-notes .chip .k { opacity: .7; }
+  .v-notes .chip .cash { color: var(--cash-lt); }
+  .v-notes .speed button.on { background: var(--lamp); color: var(--ink); box-shadow: inset 0 3px 0 var(--lamp-hi), inset 0 -3px 0 var(--lamp-lo); }
+  .v-notes .speed button:not(.on):hover { background: var(--paper-2); }
+  .v-notes .kc { background: var(--ink); color: var(--paper); }
+  .v-notes .sun { color: var(--terra); }
+  .v-notes .status-dot { color: var(--terra); }
+
+  /* ================= ПРОГРАММА «КОМПАНИЯ» ================= */
+  .app { width: 1180px; height: 720px; display: grid; grid-template-columns: 206px 1fr; grid-template-rows: 40px 1fr; border-radius: 10px; overflow: hidden; box-shadow: 0 30px 80px #000a; font: 13px/1.4 var(--ui); }
+  .app .title { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; position: relative; font: 600 14px/1 var(--px); }
+  .app .lights { position: absolute; left: 14px; display: flex; gap: 7px; } .app .lights i { width: 12px; height: 12px; background: #ff5f57; clip-path: polygon(0 3px,3px 3px,3px 0,9px 0,9px 3px,100% 3px,100% 9px,9px 9px,9px 100%,3px 100%,3px 9px,0 9px); } .app .lights i:nth-child(2) { background: #febc2e; } .app .lights i:nth-child(3) { background: #28c840; }
+  .app nav { display: flex; flex-direction: column; gap: 3px; padding: 14px 10px; }
+  .app nav .co { font: 600 15px/1.2 var(--px); padding: 2px 8px 12px; }
+  .app nav .it { display: flex; align-items: center; gap: 10px; padding: 8px 10px; font-size: 13.5px; cursor: pointer; }
+  .app nav .it .ic { width: 26px; height: 26px; display: grid; place-items: center; font-size: 18px; }
+  .app nav .fill { flex: 1; }
+  .goal { padding: 11px 12px; font-size: 12px; }
+  .goal b { display: block; font: 600 14px/1.25 var(--px); margin: 4px 0 8px; }
+  .goal .meter { height: 8px; }
+  .app .main { display: grid; grid-template-rows: 54px 1fr; min-width: 0; }
+  .app .top { display: flex; align-items: center; gap: 16px; padding: 0 18px; }
+  .app .top .date { font: 500 13px/1 var(--px); opacity: .75; }
+  .app .top .cash { font: 700 22px/1 var(--px); }
+  .app .top .sp { flex: 1; }
+  .mini-speed { display: flex; }
+  .mini-speed button { width: 38px; height: 32px; border: 0; display: grid; place-items: center; font-size: 15px; background: transparent; color: inherit; cursor: pointer; }
+  .btn { font: 600 13px/1 var(--px); padding: 9px 14px; border: 0; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+  .page { padding: 18px; display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; align-content: start; overflow: hidden; }
+  .card { padding: 13px 15px 14px; grid-column: span 4; }
+  .card .lab { display: flex; align-items: center; gap: 7px; font-size: 12px; }
+  .card .lab svg { font-size: 15px; }
+  .card .big { font: 700 30px/1.15 var(--px); margin: 6px 0 2px; }
+  .card small { font-size: 12px; }
+  .panel { padding: 14px 16px; }
+  .panel h3 { margin: 0 0 10px; font: 600 15px/1.2 var(--px); }
+  .span7 { grid-column: span 7; } .span5 { grid-column: span 5; } .span12 { grid-column: span 12; }
+  svg.chart { width: 100%; height: 120px; display: block; shape-rendering: crispEdges; }
+  .yday { display: grid; grid-template-columns: 1fr auto; gap: 7px 12px; font-size: 13px; }
+  .yday b { font: 600 14px/1 var(--px); text-align: right; }
+  .feed { display: grid; gap: 9px; }
+  .feed .f { display: grid; grid-template-columns: 26px 1fr; gap: 10px; font-size: 12.5px; align-items: start; }
+  .feed .f .av { width: 26px; height: 26px; display: grid; place-items: center; font-size: 16px; }
+  .meter { height: 8px; overflow: hidden; } .meter i { display: block; height: 100%; }
+
+  /* --- 1 · Орех и бумага --- */
+  .v-wood .app { background: var(--paper); color: var(--ink); }
+  .v-wood .app .title { background: var(--oat); color: var(--ink); box-shadow: inset 0 -3px 0 var(--oat-2); }
+  .v-wood .app nav { background: var(--wood); color: var(--paper); box-shadow: inset -3px 0 0 var(--wood-lo); background-image: repeating-linear-gradient(180deg, transparent 0 22px, rgba(0,0,0,.06) 22px 24px); }
+  .v-wood .app nav .co { color: var(--oat); }
+  .v-wood .app nav .it .ic { background: var(--wood-dk); color: var(--oat); }
+  .v-wood .app nav .it.on { background: var(--paper); color: var(--ink); font-weight: 600; box-shadow: inset 0 -3px 0 var(--oat); }
+  .v-wood .app nav .it.on .ic { background: var(--terra); color: var(--paper); }
+  .v-wood .goal { background: var(--wood-dk); color: var(--oat); }
+  .v-wood .goal b { color: var(--paper); }
+  .v-wood .goal .meter { background: var(--wood-lo); } .v-wood .goal .meter i { background: var(--lamp); }
+  .v-wood .app .top { border-bottom: 3px solid var(--paper-2); }
+  .v-wood .app .top .cash { color: var(--cash-lt); }
+  .v-wood .mini-speed { background: #fff; } .v-wood .mini-speed button.on { background: var(--lamp); box-shadow: inset 0 3px 0 var(--lamp-hi), inset 0 -3px 0 var(--lamp-lo); color: var(--ink); }
+  .v-wood .btn { background: #fff; color: var(--ink); box-shadow: inset 0 -3px 0 var(--paper-2); }
+  .v-wood .card, .v-wood .panel { background: #fffdf9; --bw: 2px; --P: 2px; border-color: var(--ink); }
+  .v-wood .card .lab, .v-wood .card small, .v-wood .muted { color: #6d6a78; }
+  .v-wood .card .big.cash { color: var(--cash-lt); }
+  .v-wood .feed .f .av { background: var(--paper-2); }
+
+  /* --- 2 · Ночная смена --- */
+  .v-night .app { background: var(--night); color: var(--paper); }
+  .v-night .app .title { background: #1c1a23; color: var(--oat); box-shadow: inset 0 -3px 0 #121016; }
+  .v-night .app nav { background: #1f1d27; box-shadow: inset -3px 0 0 #17151d; }
+  .v-night .app nav .co { color: var(--lamp); }
+  .v-night .app nav .it { color: #cfc8be; }
+  .v-night .app nav .it .ic { background: var(--night-3); color: var(--oat); }
+  .v-night .app nav .it.on { background: var(--night-2); color: var(--paper); font-weight: 600; box-shadow: inset 3px 0 0 var(--lamp); }
+  .v-night .app nav .it.on .ic { background: var(--lamp); color: var(--ink); }
+  .v-night .goal { background: var(--night-2); color: #a9a2b5; }
+  .v-night .goal .meter { background: #17151d; } .v-night .goal .meter i { background: var(--lamp); }
+  .v-night .app .top { border-bottom: 3px solid #1c1a23; }
+  .v-night .app .top .cash { color: var(--cash-dk); }
+  .v-night .mini-speed { background: var(--night-2); } .v-night .mini-speed button.on { background: var(--lamp); box-shadow: inset 0 3px 0 var(--lamp-hi), inset 0 -3px 0 var(--lamp-lo); color: var(--ink); }
+  .v-night .btn { background: var(--night-3); color: var(--paper); box-shadow: inset 0 3px 0 #4a495a, inset 0 -3px 0 #2a2934; }
+  .v-night .card, .v-night .panel { background: var(--night-2); --bw: 2px; --P: 2px; border-color: #17151d; }
+  .v-night .card .lab, .v-night .card small, .v-night .muted { color: #a9a2b5; }
+  .v-night .card .big.cash { color: var(--cash-dk); }
+  .v-night .feed .f .av { background: var(--night-3); }
+
+  /* --- 3 · Записки --- */
+  .v-notes .app { background: var(--oat); color: var(--ink); }
+  .v-notes .app .title { background: var(--paper); color: var(--ink); box-shadow: inset 0 -3px 0 var(--paper-2); }
+  .v-notes .app nav { background: var(--paper-2); }
+  .v-notes .app nav .co { color: var(--ink); }
+  .v-notes .app nav .it .ic { color: var(--c); }
+  .v-notes .app nav .it.on { background: var(--paper); font-weight: 600; box-shadow: inset 0 -3px 0 var(--oat-2), inset 3px 0 0 var(--c); }
+  .v-notes .goal { background: var(--lamp-hi); color: var(--ink); box-shadow: inset 0 -3px 0 #e8c45f; transform: rotate(-1.2deg); }
+  .v-notes .goal .meter { background: #f3d06a; } .v-notes .goal .meter i { background: var(--ink); }
+  .v-notes .app .top { background: var(--paper); border-bottom: 3px solid var(--oat-2); }
+  .v-notes .app .top .cash { color: var(--cash-lt); }
+  .v-notes .mini-speed { background: var(--paper-2); } .v-notes .mini-speed button.on { background: var(--lamp); box-shadow: inset 0 3px 0 var(--lamp-hi), inset 0 -3px 0 var(--lamp-lo); }
+  .v-notes .btn { background: var(--paper-2); color: var(--ink); box-shadow: inset 0 -3px 0 var(--oat-2); }
+  .v-notes .card, .v-notes .panel { background: var(--paper); --bw: 2px; --P: 2px; border-color: var(--ink); }
+  .v-notes .card .lab, .v-notes .card small, .v-notes .muted { color: #6d6a78; }
+  .v-notes .card .big.cash { color: var(--cash-lt); }
+  .v-notes .feed .f .av { background: var(--oat); }
+</style>
+</head>
+<body>
+  <div class="pick"><div class="grp" id="variant"><span>Вариант</span>
+    <button data-v="wood" class="on">1 · Орех и бумага</button><button data-v="night">2 · Ночная смена</button><button data-v="notes">3 · Записки</button></div></div>
+  <p class="note" id="note"></p>
+  <div id="root"></div>
+
+<script>
+/* Пиксельные значки 12×12: «#» — закрашено. */
+const ICONS = {
+  moon:   ['....####....','..######....','.#####......','.####.......','#####.......','####........','####........','#####.......','.#####....#.','.##########.','..########..','....####....'],
+  sun:    ['.....##.....','.#...##...#.','..#......#..','....####....','...######...','##.######.##','##.######.##','...######...','....####....','..#......#..','.#...##...#.','.....##.....'],
+  coin:   ['...######...','..########..','.###....###.','.##..##..##.','.##.####.##.','.##..##..##.','.##..##..##.','.##.####.##.','.##..##..##.','.###....###.','..########..','...######...'],
+  pause:  ['............','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','..###..###..','............'],
+  play:   ['............','...##.......','...####.....','...######...','...#######..','...########.','...########.','...#######..','...######...','...####.....','...##.......','............'],
+  ff:     ['............','............','.#....#.....','.##...##....','.###..###...','.####.####..','.####.####..','.###..###...','.##...##....','.#....#.....','............','............'],
+  fff:    ['............','............','#...#...#...','##..##..##..','###.###.###.','############','############','###.###.###.','##..##..##..','#...#...#...','............','............'],
+  disk:   ['##########..','#.######.##.','#.######.###','#.######.###','#........###','############','#..........#','#.########.#','#.########.#','#.########.#','#.########.#','############'],
+  code:   ['............','...#....#...','..#......#..','.#...##...#.','#...#..#...#','#....##....#','.#........#.','..#......#..','...#....#...','............','............','............'],
+  chart:  ['............','.........##.','.........##.','.....##..##.','.....##..##.','.##..##..##.','.##..##..##.','.##..##..##.','.##..##..##.','.##..##..##.','############','............'],
+  box:    ['....####....','..########..','.####..####.','#####..#####','#.########.#','#...####...#','#.....#....#','#.....#....#','#.....#....#','.#....#...#.','..##..#.##..','....####....'],
+  people: ['...##.......','..####..##..','..####.####.','...##..####.','........##..','.######.....','########.##.','########.###','########.###','........####','............','............'],
+  horn:   ['.........##.','.......####.','.....######.','###.#######.','############','############','############','###.#######.','.##..######.','.##....####.','.##......##.','............'],
+  money:  ['.....##.....','...######...','..##.##.##..','..##.##.....','...#####....','.....#####..','.....##.##..','..##.##.##..','...######...','.....##.....','............','............'],
+  user:   ['....####....','...######...','...######...','...######...','....####....','............','..########..','.##########.','.##########.','.##########.','............','............'],
+  star:   ['.....##.....','.....##.....','....####....','############','.##########.','..########..','...######...','...##..##...','..##....##..','..#......#..','............','............'],
+  news:   ['############','#..........#','#.####.###.#','#.####.....#','#.####.###.#','#..........#','#.########.#','#..........#','#.########.#','#..........#','############','............'],
+  bug:    ['..#......#..','...#....#...','....####....','..########..','#.###..###.#','.####..####.','..###..###..','#.###..###.#','.####..####.','..########..','.#..####..#.','#..........#'],
+};
+const icon = (n) => `<svg class="pi" viewBox="0 0 12 12" fill="currentColor">${ICONS[n].flatMap((r, y) => [...r].map((c, x) => c === '#' ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : '')).join('')}</svg>`;
+
+const NOTES = {
+  wood: 'Тёмные плашки с объёмом, как кнопки в старых играх. Программа — светлая бумага, меню слева из ореха, как стол в квартире.',
+  night: 'Всё в цветах ночной квартиры: тёмная программа, жёлтый свет лампы — главный цвет кнопок и выделения.',
+  notes: 'Светлые плашки, как записки на стене. Программа — овёс и бумага, у каждого раздела свой цветной пиксельный значок, цель — жёлтый стикер.',
+};
+
+function hud() {
+  return `<div class="hud">
+    <div class="row">
+      <div class="chip box lift"><span class="sun" style="font-size:22px;display:flex">${icon('moon')}</span><div><div class="date">Год 1, месяц 5, день 14</div><div class="k">Пн · 19:21</div></div></div>
+      <div class="chip box lift"><div><div class="cash">$18 600</div><div class="k">на счету</div></div></div>
+      <div class="chip box lift"><span class="status-dot" style="font-size:18px;display:flex">${icon('code')}</span><div class="stat">Пишет код</div></div>
+    </div>
+    <div class="row">
+      <div class="chip speed box lift">${['pause','play','ff','fff'].map((n, i) => `<button class="${i===1?'on':''}" title="${['Пауза','×1','×2','×5'][i]}">${icon(n)}</button>`).join('')}</div>
+      <button class="chip save box lift" style="border-color:var(--ink)">${icon('disk')} Сохранить</button>
+    </div>
+  </div>
+  <div class="keys box lift"><span><span class="kc">W</span> <span class="kc">A</span> <span class="kc">S</span> <span class="kc">D</span> идти</span><span><span class="kc">E</span> действие</span><span>клик — идти или использовать</span><span>колёсико — ближе или дальше</span></div>`;
+}
+
+/* Деньги за 90 дней — ступенчатая пиксельная линия */
+function chart(color) {
+  const pts = [3000,2900,2700,2650,2500,2300,2600,3100,3000,3600,4100,4000,4800,5600,6100,6000,7200,8300,8100,9400,10200,11800,12100,13300,14900,15600,16200,17400,18100,18600];
+  const W = 300, H = 60, max = 20000, step = W / pts.length;
+  let bars = '';
+  pts.forEach((v, i) => { const h = Math.max(2, Math.round(v / max * H / 2) * 2); bars += `<rect x="${(i*step).toFixed(1)}" y="${H-h}" width="${(step-2).toFixed(1)}" height="${h}" fill="${color}" opacity="${0.35 + 0.65*i/pts.length}"/>`; });
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${bars}</svg>`;
+}
+
+function app(v) {
+  const tabs = [['chart','Сводка','#8e8e93'],['box','Продукт','#0a7aff'],['people','Команда','#30b158'],['horn','Маркетинг','#ff6b35'],['money','Финансы','#af52de']];
+  const cashColor = v === 'night' ? '#7fd17a' : '#2f7d3a';
+  return `<div class="app">
+    <div class="title"><span class="lights"><i></i><i></i><i></i></span>Компания — Соседская кухня</div>
+    <nav><div class="co">Соседская кухня</div>
+      ${tabs.map(([ic, n, c], i) => `<div class="it ${i===0?'on':''}" style="--c:${c}"><span class="ic box" style="--bw:0px;--P:2px">${icon(ic)}</span>${n}</div>`).join('')}
+      <div class="fill"></div>
+      <div class="goal box" style="--bw:0px;--P:3px"><span>Глава 1 из 6 · Гараж</span><b>Набрать 2 000 пользователей</b><div class="meter"><i style="width:62%"></i></div><div style="margin-top:6px">1 240 из 2 000 · награда: известность</div></div>
+    </nav>
+    <div class="main">
+      <div class="top"><span class="date">Год 1, месяц 5, день 14</span><span class="cash">$18 600</span><span class="sp"></span>
+        <div class="mini-speed box" style="--bw:2px;--P:2px">${['pause','play','ff','fff'].map((n, i) => `<button class="${i===1?'on':''}">${icon(n)}</button>`).join('')}</div>
+        <button class="btn box" style="--bw:2px;--P:2px">${icon('disk')} Сохранить</button></div>
+      <div class="page">
+        <div class="card box"><div class="lab">${icon('coin')} Деньги</div><div class="big cash">$18 600</div><small>+$420 в день с учётом расходов</small></div>
+        <div class="card box"><div class="lab">${icon('user')} Пользователи</div><div class="big">1 240</div><small>+38 за вчера · платят 186</small></div>
+        <div class="card box"><div class="lab">${icon('star')} Оценка компании</div><div class="big">$420 000</div><small>Качество 64 · репутация 52</small></div>
+        <div class="panel box span7"><h3>Деньги, последние 90 дней</h3>${chart(cashColor)}</div>
+        <div class="panel box span5"><h3>Вчерашний день</h3><div class="yday">
+          <span>Пришли с рекламы</span><b>+24</b><span>Нашли сами</span><b>+11</b><span>Пришли по совету</span><b>+9</b><span>Ушли</span><b>−6</b><span>Доход продукта</span><b style="color:${cashColor}">$413</b><span>Расходы</span><b>−$190</b></div></div>
+        <div class="panel box span12"><h3>Лента</h3><div class="feed">
+          <div class="f"><span class="av box" style="--bw:0px;--P:2px">${icon('news')}</span><div><b>Обзор в «Техно-неделе»:</b> «Соседская кухня» — тихий хит месяца. <span class="muted">· вчера</span></div></div>
+          <div class="f"><span class="av box" style="--bw:0px;--P:2px">${icon('bug')}</span><div><b>Отзыв:</b> «Удобно, но заказ иногда зависает». <span class="muted">· 2 дн. назад</span></div></div>
+        </div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+let v = new URLSearchParams(location.search).get('v') || 'wood';
+function render() {
+  document.getElementById('root').className = 'v-' + v;
+  document.getElementById('root').innerHTML =
+    `<div class="frame-title">В квартире — плашки сверху и подсказка снизу</div><div class="stage"><div class="room">${hud()}</div></div>
+     <div class="frame-title" style="width:1180px">В компьютере — программа «Компания», раздел «Сводка»</div><div class="stage" style="padding-bottom:48px">${app(v)}</div>`;
+  document.getElementById('note').textContent = NOTES[v];
+  document.querySelectorAll('#variant button').forEach(b => b.classList.toggle('on', b.dataset.v === v));
+}
+document.getElementById('variant').onclick = e => { if (e.target.dataset.v) { v = e.target.dataset.v; render(); } };
+render();
+</script>
+</body>
+</html>

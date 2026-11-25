@@ -60,7 +60,11 @@ describe('панель «Покупка компаний»', () => {
     const click = (selector: string) => act(() => container.querySelector<HTMLButtonElement>(selector)!.click());
 
     expect(container.textContent).toContain('Покупка компаний');
-    expect(container.textContent).toMatch(/«.+» — (небольшая|средняя|крупная) компания\. По её словам, [\d\s ]+ пользователей\. Цена \$[\d\s ]+\. Продаётся ещё 60 дн\./);
+    // объявление: название, размер, печать «не проверена», что заявляет компания, цена
+    const listing = container.querySelector('[data-acquire-target]')!.textContent!;
+    expect(listing).toMatch(/«.+» (небольшая|средняя|крупная)не проверена/);
+    expect(listing).toMatch(/По её словам — [\d\s ]+ пользователей · продаётся ещё 60 дн\./);
+    expect(listing).toMatch(/Цена\$[\d\s ]+/);
     expect(container.textContent).toContain('Что внутри — неизвестно');
     expect(container.textContent).toMatch(/Здоровая \(30 из 100\)/);
     expect(container.textContent).toMatch(/Пустышка \(25 из 100\).+Репутация -5\. Всплывут её долги: ещё \$[\d\s ]+\./);

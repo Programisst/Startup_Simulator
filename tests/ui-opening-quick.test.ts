@@ -1,5 +1,7 @@
-// Быстрый вход для разработчиков: ссылка ?skip сразу ведёт в квартиру, а в переписке подставлены прошлые ответы.
-// Без своих ответов ?skip берёт простой образец. Обычный игрок этого не видит (только при разработке).
+// Быстрый вход для разработчиков: при `npm run dev` игра сразу ведёт в квартиру (переписка — по ссылке ?story),
+// а в переписке подставлены прошлые ответы. Без своих ответов берётся простой образец. Обычный игрок этого не видит.
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
 import { createGame } from '../src/core';
@@ -30,11 +32,17 @@ const broken = {
 } as unknown as Storage;
 
 describe('быстрый вход для тестов', () => {
-  it('?skip в ссылке — пропустить заставку и переписку', () => {
+  it('при разработке заставка и переписка пропускаются всегда; ?story — показать их', () => {
+    expect(wantsSkip('')).toBe(true);
     expect(wantsSkip('?skip')).toBe(true);
-    expect(wantsSkip('?skip=1')).toBe(true);
-    expect(wantsSkip('')).toBe(false);
-    expect(wantsSkip('?lang=ru')).toBe(false);
+    expect(wantsSkip('?lang=ru')).toBe(true);
+    expect(wantsSkip('?story')).toBe(false);
+    expect(wantsSkip('?story=1&lang=ru')).toBe(false);
+  });
+
+  it('пропуск — только в режиме разработки: в собранной игре переписка на месте', () => {
+    const root = readFileSync(join(__dirname, '../src/ui/Root.tsx'), 'utf-8');
+    expect(root).toContain('import.meta.env.DEV && wantsSkip(');
   });
 
   it('ответы в переписке запоминаются и подставляются в следующий раз', () => {

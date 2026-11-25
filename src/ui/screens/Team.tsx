@@ -29,6 +29,9 @@ function Avatar({ seed, name }: { seed: number; name: string }) {
   );
 }
 
+/** Сколько пустых мест рисовать; остальные — строкой «и ещё …». */
+const SEATS_SHOWN = 6;
+
 export function Team() {
   const { t } = useTranslation();
   const game = useStore((s) => s.game)!;
@@ -50,6 +53,7 @@ export function Team() {
   const view = teamView(game, content);
   const cfg = content.config.team;
   const office = officeView(game, content.config);
+  const free = Math.max(0, office.current.seats - view.members.length);
 
   const nameOf = usePersonName();
   const bios = t('team.bios', { returnObjects: true }) as string[];
@@ -217,6 +221,17 @@ export function Team() {
               </div>
             </article>
           ))}
+          {free > 0 && (
+            <div className="seats">
+              {Array.from({ length: Math.min(free, SEATS_SHOWN) }, (_, i) => (
+                <div key={i} className="seat" data-free-seat>
+                  <span className="seat-desk" aria-hidden="true" />
+                  {t('team.freeSeat')}
+                </div>
+              ))}
+              {free > SEATS_SHOWN && <span className="muted fin-small">{t('team.freeSeatsMore', { count: free - SEATS_SHOWN })}</span>}
+            </div>
+          )}
         </section>
 
         <section className="panel">

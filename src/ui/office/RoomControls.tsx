@@ -2,11 +2,12 @@
 // Выглядит как остальные плашки квартиры, а не как строка меню.
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { PixelIcon, type PixelIconName } from '../pixelIcons';
 import { useStore, type Speed } from '../store';
 
 const SPEEDS: Speed[] = [0, 1, 2, 5];
-/** Значки вместо надписей: пауза и одна, две, три стрелки. */
-const GLYPH: Record<Speed, string> = { 0: '❚❚', 1: '▶', 2: '▶▶', 5: '▶▶▶' };
+/** Пиксельные значки вместо надписей: пауза и одна, две, три стрелки. */
+const GLYPH: Record<Speed, PixelIconName> = { 0: 'pause', 1: 'play', 2: 'fast', 5: 'fastest' };
 
 export function RoomControls() {
   const { t } = useTranslation();
@@ -29,7 +30,7 @@ export function RoomControls() {
             title={sp === 0 ? t('top.pause') : `×${sp}`}
             onClick={() => setSpeed(sp)}
           >
-            {GLYPH[sp]}
+            <PixelIcon name={GLYPH[sp]} />
           </button>
         ))}
       </div>
@@ -42,6 +43,7 @@ export function RoomControls() {
           window.setTimeout(() => setSaved(false), 1600);
         }}
       >
+        <PixelIcon name="disk" />
         {saved ? t('top.saved') : t('top.save')}
       </button>
     </>

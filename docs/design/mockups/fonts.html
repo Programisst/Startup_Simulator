@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>Шрифт для дат, денег и заголовков — варианты</title>
+<!-- Только для сравнения. Выбранный шрифт положим файлом в проект. -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tiny5&family=Handjet:wght@500;700&family=Rubik:wght@500;700&family=Unbounded:wght@500;700&family=JetBrains+Mono:wght@600;800&display=swap" />
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 24px 32px; background: #141219; color: #f4efe6; font: 14px/1.4 -apple-system, BlinkMacSystemFont, system-ui, sans-serif; font-synthesis: none; }
+  .row { display: grid; grid-template-columns: 200px auto 1fr; gap: 22px; align-items: center; padding: 18px 0; border-bottom: 1px solid #ffffff14; }
+  .name b { display: block; font-size: 16px; } .name span { font-size: 12px; opacity: .6; }
+  .hud { display: flex; gap: 10px; }
+  .chip { display: flex; align-items: center; gap: 10px; padding: 8px 14px 9px; background: #24222d; border: 3px solid #3a3a50; box-shadow: inset 0 3px 0 #3b3a48, inset 0 -3px 0 #17151d; }
+  .chip .k { font-size: 11px; opacity: .65; }
+  .chip .date { font-size: 15px; } .chip .cash { font-size: 22px; color: #7fd17a; }
+  .app { display: flex; gap: 12px; padding: 14px; background: #f4f1ec; border-radius: 6px; color: #3a3a50; }
+  .card { padding: 11px 14px; background: #fffdf9; border: 2px solid #3a3a50; min-width: 190px; }
+  .card .lab { font-size: 12px; color: #6d6a78; }
+  .card .big { font-size: 28px; line-height: 1.15; margin: 4px 0 0; }
+  .card .big.cash { color: #1f7a34; }
+  .card h3 { margin: 0; font-size: 15px; }
+  .f-tiny5 .fx { font-family: 'Tiny5'; font-weight: 400; }
+  .f-handjet .fx { font-family: 'Handjet'; font-weight: 700; letter-spacing: .02em; } .f-handjet .big, .f-handjet .cash { font-size: 32px !important; } .f-handjet .date { font-size: 18px !important; } .f-handjet h3 { font-size: 18px !important; }
+  .f-rubik .fx { font-family: 'Rubik'; font-weight: 700; }
+  .f-unbounded .fx { font-family: 'Unbounded'; font-weight: 700; } .f-unbounded .big { font-size: 24px !important; } .f-unbounded .date { font-size: 13px !important; } .f-unbounded h3 { font-size: 13px !important; }
+  .f-jet .fx { font-family: 'JetBrains Mono'; font-weight: 800; } .f-jet .big { font-size: 25px !important; } .f-jet .date { font-size: 14px !important; }
+</style>
+</head>
+<body>
+<script>
+const V = [
+  ['tiny5', 'Сейчас: Tiny5', 'пиксельный — плохо читается'],
+  ['handjet', 'А · Handjet', 'собран из «пикселей», но гладкий и узкий'],
+  ['rubik', 'Б · Rubik', 'мягкий, округлый, очень читаемый'],
+  ['unbounded', 'В · Unbounded', 'широкий, плотный, «игровой»'],
+  ['jet', 'Г · JetBrains Mono', 'шрифт программистов — «стартап, код»'],
+];
+document.write(V.map(([k, n, d]) => `<div class="row f-${k}">
+  <div class="name"><b>${n}</b><span>${d}</span></div>
+  <div class="hud"><div class="chip"><div><div class="date fx">Год 1, месяц 5, день 14</div><div class="k">Пн · 19:21</div></div></div><div class="chip"><div><div class="cash fx">$18 600</div><div class="k">на счету</div></div></div></div>
+  <div class="app"><div class="card"><div class="lab">Деньги</div><div class="big cash fx">$18 600</div></div><div class="card"><div class="lab">Пользователи</div><div class="big fx">1 240</div></div><div class="card"><h3 class="fx">Вчерашний день</h3><div class="lab" style="margin-top:6px">Пришли с рекламы +24</div></div></div>
+</div>`).join(''));
+</script>
+</body>
+</html>

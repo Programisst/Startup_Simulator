@@ -26,46 +26,52 @@ export function Marketing() {
         <p>{t('marketing.total', { day: money(view.totalPerDay), month: money(view.totalPerMonth) })}</p>
       </section>
 
-      {/* Акции: простой рабочий вид. Нужно оформление. */}
-      <section className="panel" data-campaigns>
+      {/* Акции: карточки с полосой «провал / сработает / выстрелит» — как решения на экране «Финансы». */}
+      <section className="panel mk-campaigns" data-campaigns>
         <h3>{t('marketing.campaigns.title')}</h3>
-        <p className="muted">{t('marketing.campaigns.lead')}</p>
+        <p className="muted fin-small">{t('marketing.campaigns.lead')}</p>
         {campaigns.active && <p className="notice">{t('marketing.campaigns.active', { name: campaignName(campaigns.active.id), days: campaigns.active.daysLeft })}</p>}
         {!campaigns.active && campaigns.last && (
-          <p className={campaigns.last.outcome === 'fail' ? 'negative' : ''}>{t(`marketing.campaigns.last.${campaigns.last.outcome}`, { name: campaignName(campaigns.last.id) })}</p>
+          <p className={`fin-last ${campaigns.last.outcome === 'fail' ? 'negative' : 'positive'}`}>{t(`marketing.campaigns.last.${campaigns.last.outcome}`, { name: campaignName(campaigns.last.id) })}</p>
         )}
+        <div className="fin-investors mk-list">
+          {campaigns.list.map((c) => (
+            <div className="fin-term mk-campaign" key={c.id} data-campaign={c.id}>
+              <div>
+                <b className="mk-name">{campaignName(c.id)}</b>
+                <div className="fin-small mk-cost">
+                  {c.cost > 0 ? t('marketing.campaigns.cost', { cost: money(c.cost) }) : t('marketing.campaigns.free', { energy: c.energyCost })} · {t('marketing.campaigns.days', { days: c.days })}
+                </div>
+              </div>
+              <span className="muted fin-small">{t(`marketing.campaigns.items.${c.id}.hint`)}</span>
+              <div>
+                <div className="fin-odds mk-odds" aria-hidden="true">
+                  <i style={{ flex: c.odds.fail, background: '#c9483d' }} />
+                  <i style={{ flex: c.odds.ok, background: '#d49a1f' }} />
+                  <i style={{ flex: c.odds.hit, background: '#3f9a4f' }} />
+                </div>
+                <b className="fin-small">{t('marketing.campaigns.odds', c.odds)}</b>
+              </div>
+              <span className="muted fin-small">
+                {t('marketing.campaigns.okLine', { pct: c.results.ok.boostPct, days: c.results.ok.days })}
+                <br />
+                {t('marketing.campaigns.hitLine', { pct: c.results.hit.boostPct, days: c.results.hit.days })}
+                {c.results.fail.reputation < 0 && (
+                  <>
+                    <br />
+                    {t('marketing.campaigns.failLine', { rep: c.results.fail.reputation })}
+                  </>
+                )}
+              </span>
+              {c.fit !== 'ok' && <span className={`fin-small ${c.fit === 'poor' ? 'negative' : 'positive'}`}>{t(`marketing.campaigns.fit.${c.fit}`)}</span>}
+              <button className="primary" disabled={c.blocked !== null} onClick={() => dispatch({ type: 'runCampaign', campaignId: c.id })}>
+                {t('marketing.campaigns.run')}
+              </button>
+              {c.blocked && <span className="muted fin-small">{t(`marketing.campaigns.blocked.${c.blocked}`, { days: c.cooldownDaysLeft, value: c.minQuality })}</span>}
+            </div>
+          ))}
+        </div>
       </section>
-
-      <div className="two">
-        {campaigns.list.map((c) => (
-          <section className="panel" key={c.id} data-campaign={c.id}>
-            <h3>{campaignName(c.id)}</h3>
-            <p className="muted">{t(`marketing.campaigns.items.${c.id}.hint`)}</p>
-            <p>
-              {c.cost > 0 ? t('marketing.campaigns.cost', { cost: money(c.cost) }) : t('marketing.campaigns.free', { energy: c.energyCost })} · {t('marketing.campaigns.days', { days: c.days })}
-            </p>
-            <p>
-              <b>{t('marketing.campaigns.odds', c.odds)}</b>
-            </p>
-            <p className="muted">
-              {t('marketing.campaigns.okLine', { pct: c.results.ok.boostPct, days: c.results.ok.days })}
-              <br />
-              {t('marketing.campaigns.hitLine', { pct: c.results.hit.boostPct, days: c.results.hit.days })}
-              {c.results.fail.reputation < 0 && (
-                <>
-                  <br />
-                  {t('marketing.campaigns.failLine', { rep: c.results.fail.reputation })}
-                </>
-              )}
-            </p>
-            {c.fit !== 'ok' && <p className={c.fit === 'poor' ? 'negative' : 'muted'}>{t(`marketing.campaigns.fit.${c.fit}`)}</p>}
-            <button disabled={c.blocked !== null} onClick={() => dispatch({ type: 'runCampaign', campaignId: c.id })}>
-              {t('marketing.campaigns.run')}
-            </button>
-            {c.blocked && <p className="muted">{t(`marketing.campaigns.blocked.${c.blocked}`, { days: c.cooldownDaysLeft, value: c.minQuality })}</p>}
-          </section>
-        ))}
-      </div>
 
       <div className="two">
         {view.channels.map((c) => (

@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { valuation } from '../../core';
 import { AcquisitionPanel } from '../components/AcquisitionPanel';
+import { OwnershipCard } from '../components/FinanceParts';
 import { FundingPanel } from '../components/FundingPanel';
 import { OpsPanel } from '../components/OpsPanel';
 import { money, num } from '../format';
@@ -14,6 +15,7 @@ export function Finance() {
 
   return (
     <div className="screen">
+      <OwnershipCard />
       <FundingPanel />
       <AcquisitionPanel />
       <OpsPanel />

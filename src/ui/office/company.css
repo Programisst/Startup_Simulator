@@ -1,28 +1,34 @@
-/* Программа «Компания» на компьютере основателя.
-   Выглядит как обычная программа той же системы, что нарисована на экране компьютера:
-   окно с заголовком, боковой список со значками, светлые сгруппированные блоки.
+/* Программа «Компания» на компьютере основателя — стиль «Орех и бумага»
+   (макет: docs/design/mockups/computer-style.html, вариант 1): меню слева цвета орехового стола,
+   справа светлая бумага, блоки в пиксельных рамках как мебель в квартире, цифры и заголовки — Rubik.
    Все правила начинаются с .company-app: у экрана компьютера свой сброс вида кнопок,
    он подключается позже общих стилей, и перебить его можно только большим весом. */
 
 .company-app {
   /* Общие экраны берут цвета из этих переменных — здесь они переопределены под светлое окно. */
-  --bg: #f5f5f7;
-  --panel: #ffffff;
-  --panel-2: #f0f0f3;
-  --border: rgba(0, 0, 0, 0.1);
-  --text: #1d1d1f;
-  --muted: #6e6e73;
-  --accent: #0a7aff;
-  --green: #1f8a3d;
-  --blue: #0a7aff;
-  --red: #d42a1e;
+  --bg: #f4f1ec;
+  --panel: #fffdf9;
+  --panel-2: #efe9df;
+  --border: rgba(58, 58, 80, 0.2);
+  --text: #3a3a50;
+  --muted: #6d6a78;
+  --accent: #b8643f;
+  --green: #1f7a34;
+  --blue: #3d6fd8;
+  --red: #c0392b;
   --yellow: #b56a00;
-  --hair: rgba(0, 0, 0, 0.09);
+  --hair: rgba(58, 58, 80, 0.13);
+  --wood: #7b5a43;
+  --wood-lo: #664836;
+  --wood-dk: #523a2c;
+  --oat: #ddd2c1;
+  --oat-2: #cdbfab;
+  --lamp: #f6c34a;
   --ui: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, system-ui, sans-serif;
-  --num: ui-rounded, 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --num: var(--font-game);
 
   display: grid;
-  grid-template: 'title title' 30px 'side top' auto 'side main' 1fr / 168px 1fr;
+  grid-template: 'title title' 32px 'side top' auto 'side main' 1fr / 184px 1fr;
   height: 100%;
   background: var(--bg);
   color: var(--text);
@@ -39,14 +45,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(#ececee, #e2e2e5);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.16);
-  font-weight: 600;
-  font-size: 12.5px;
-  color: #3a3a3c;
+  background: var(--oat);
+  box-shadow: inset 0 -3px 0 var(--oat-2);
+  font: 500 13px/1 var(--font-game);
+  color: var(--text);
 }
 .ca-lights { position: absolute; left: 11px; top: 50%; display: flex; gap: 6px; transform: translateY(-50%); }
-.ca-lights i { width: 9px; height: 9px; border-radius: 50%; box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.25); }
+.ca-lights i { width: 9px; height: 9px; clip-path: polygon(0 3px, 3px 3px, 3px 0, 6px 0, 6px 3px, 100% 3px, 100% 6px, 6px 6px, 6px 100%, 3px 100%, 3px 6px, 0 6px); }
 .ca-lights i:nth-child(1) { background: #ff5f57; }
 .ca-lights i:nth-child(2) { background: #febc2e; }
 .ca-lights i:nth-child(3) { background: #28c840; }
@@ -54,57 +59,55 @@
 /* ---------- Боковой список разделов ---------- */
 .company-app .sidebar {
   grid-area: side;
-  gap: 1px;
-  padding: 10px 8px;
+  gap: 3px;
+  padding: 12px 9px;
   min-height: 0;
-  background: #e8e8ec;
-  border-right: 1px solid rgba(0, 0, 0, 0.12);
+  /* ореховая доска: тонкие стыки досок и тёмная кромка справа */
+  background: repeating-linear-gradient(180deg, transparent 0 26px, rgba(0, 0, 0, 0.07) 26px 28px), var(--wood);
+  box-shadow: inset -3px 0 0 var(--wood-lo);
+  color: #f4f1ec;
 }
-.ca-side-label { padding: 2px 8px 5px; font-size: 10.5px; font-weight: 600; color: #8a8a8f; }
+.ca-side-label { padding: 2px 8px 9px; font: 500 14px/1.2 var(--font-game); color: var(--oat); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .company-app .sidebar button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 5px 8px;
+  gap: 9px;
+  padding: 6px 8px;
   text-align: left;
-  font: 13px/1.3 var(--ui);
-  color: var(--text);
+  font: 500 13.5px/1.3 var(--ui);
+  color: #f4f1ec;
   background: none;
   border: 0;
-  border-radius: 6px;
+  border-image: none;
+  border-radius: 0;
   box-shadow: none;
 }
-.company-app .sidebar button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.05); }
-.company-app .sidebar button.active { color: var(--text); background: rgba(0, 0, 0, 0.1); font-weight: 600; }
-/* Цветной значок раздела, как в настройках системы. */
+.company-app .sidebar button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.12); }
+.company-app .sidebar button.active { color: var(--text); background: var(--bg); font-weight: 600; box-shadow: inset 0 -3px 0 var(--oat); }
+/* Значок раздела — пиксельный, на тёмной дощечке; у открытого раздела — терракотовый. */
 .ca-ico {
   flex: none;
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
-  border-radius: 5px;
-  background: var(--ico, #8e8e93);
-  box-shadow: inset 0 0 0 0.5px rgba(0, 0, 0, 0.18);
+  width: 24px;
+  height: 24px;
+  background: var(--wood-dk);
+  color: var(--oat);
+  font-size: 15px;
 }
-.ca-ico svg { width: 13px; height: 13px; fill: none; stroke: #fff; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
-.company-app [data-nav='overview'] .ca-ico { --ico: #8e8e93; }
-.company-app [data-nav='product'] .ca-ico { --ico: #0a7aff; }
-.company-app [data-nav='team'] .ca-ico { --ico: #30b158; }
-.company-app [data-nav='marketing'] .ca-ico { --ico: #ff6b35; }
-.company-app [data-nav='finance'] .ca-ico { --ico: #af52de; }
+.company-app .sidebar button.active .ca-ico { background: var(--accent); color: #f4f1ec; }
 
 /* ---------- Панель инструментов: дата, деньги, ход времени ---------- */
 .company-app .topbar {
   grid-area: top;
-  gap: 4px 14px;
-  padding: 8px 16px;
-  background: #fbfbfd;
-  border-bottom: 1px solid var(--hair);
+  gap: 4px 16px;
+  padding: 11px 18px;
+  background: #f9f6f0;
+  box-shadow: inset 0 -3px 0 #e6e1d9;
 }
 .company-app .topbar .company { display: none; }
-.company-app .topbar .date { font-size: 12px; color: var(--muted); }
-.company-app .topbar .cash { font: 600 17px/1 var(--num); color: var(--green); font-variant-numeric: tabular-nums; }
+.company-app .topbar .date { font: 500 13px/1 var(--font-game); color: var(--muted); }
+.company-app .topbar .cash { font: 700 20px/1 var(--font-game); color: var(--green); font-variant-numeric: tabular-nums; }
 .company-app .topbar .cash.negative { color: var(--red); }
 .company-app .topbar .warning { font-size: 12px; font-weight: 600; color: var(--red); }
 
@@ -115,36 +118,37 @@
   width: fit-content;
   margin: 6px 0;
   padding: 2px;
-  background: rgba(0, 0, 0, 0.07);
-  border-radius: 7px;
+  background: #e6e1d9;
+  border-radius: 0;
 }
 .company-app .topbar .speeds { margin: 0 0 0 auto; }
 .company-app .speeds button {
   min-width: 38px;
-  padding: 3px 10px;
-  font: 500 12px/1.4 var(--ui);
+  padding: 4px 10px;
+  font: 500 12.5px/1.4 var(--ui);
   color: var(--text);
   background: none;
   border: 0;
-  border-radius: 5px;
+  border-image: none;
+  border-radius: 0;
   box-shadow: none;
 }
-.company-app .speeds button:hover:not(:disabled) { background: rgba(0, 0, 0, 0.05); }
+.company-app .speeds button:hover:not(:disabled) { background: rgba(58, 58, 80, 0.08); }
 .company-app .speeds button.active {
   color: var(--text);
-  background: #fff;
+  background: var(--lamp);
   box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.1),
-    0 1px 2px rgba(0, 0, 0, 0.16);
+    inset 0 2px 0 #ffe08a,
+    inset 0 -2px 0 #c9952a;
 }
 
 /* ---------- Страница ---------- */
 .company-app .content { grid-area: main; overflow: auto; min-height: 0; padding: 16px 18px 24px; }
 .company-app .screen { gap: 18px; }
 .company-app h3 {
-  margin: 0 0 7px;
+  margin: 0 0 9px;
   padding: 0 2px;
-  font: 600 13px/1.3 var(--ui);
+  font: 500 15px/1.3 var(--font-game);
   letter-spacing: 0;
   text-transform: none;
   color: var(--text);
@@ -154,36 +158,33 @@
 .company-app .positive { color: var(--green); }
 .company-app p { margin: 6px 0; }
 
-/* Показатели: одна белая группа со столбцами, а не отдельные плитки. */
+/* Показатели: отдельные плитки в пиксельных рамках, крупные цифры. */
 .company-app .cards {
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
-  gap: 0;
-  background: var(--panel);
-  border-radius: 10px;
-  box-shadow: 0 0 0 0.5px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.05);
-  overflow: hidden;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
 }
 .company-app .card {
-  gap: 0;
+  gap: 2px;
   padding: 11px 14px 12px;
-  background: none;
-  border: 0;
-  border-left: 1px solid var(--hair);
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
   border-radius: 0;
-  margin-left: -1px;
+  background: var(--panel) padding-box;
+  box-shadow: inset 0 -3px 0 var(--panel-2);
 }
-.company-app .card span { font-size: 11.5px; color: var(--muted); }
-.company-app .card b { font: 600 23px/1.25 var(--num); font-variant-numeric: tabular-nums; }
+.company-app .card span { font-size: 12px; color: var(--muted); }
+.company-app .card b { font: 700 25px/1.2 var(--font-game); font-variant-numeric: tabular-nums; }
 .company-app .card small { font-size: 11.5px; color: var(--muted); }
 
 /* Блок раздела: заголовок над белой группой. */
 .company-app .two { gap: 18px; }
 .company-app .panel {
-  padding: 12px 14px;
-  background: var(--panel);
-  border: 0;
-  border-radius: 10px;
-  box-shadow: 0 0 0 0.5px var(--hair), 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 13px 15px;
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
+  border-radius: 0;
+  background: var(--panel) padding-box;
+  box-shadow: inset 0 -3px 0 var(--panel-2);
 }
 .company-app .panel h3 { padding: 0; }
 .company-app .panel h3:not(:first-child) { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--hair); }
@@ -206,10 +207,11 @@
   padding: 10px 14px 10px 40px;
   font-size: 13px;
   color: var(--text);
-  background: #fff8e6;
-  border: 0;
-  border-radius: 10px;
-  box-shadow: 0 0 0 0.5px rgba(181, 106, 0, 0.35);
+  background: #fff3d6 padding-box;
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
+  border-radius: 0;
+  box-shadow: none;
 }
 .company-app .notice::before,
 .company-app .error::before {
@@ -221,56 +223,72 @@
   place-items: center;
   width: 18px;
   height: 18px;
-  border-radius: 50%;
-  background: #f5a623;
-  color: #fff;
-  font: 700 12px/1 var(--ui);
+  border-radius: 0;
+  background: var(--lamp);
+  color: var(--text);
+  font: 700 12px/1 var(--font-game);
 }
-.company-app .error { margin-bottom: 14px; background: #ffeceb; box-shadow: 0 0 0 0.5px rgba(212, 42, 30, 0.4); }
+.company-app .error { margin-bottom: 14px; background: #fde4df padding-box; }
 .company-app .error::before { background: var(--red); }
 
 /* ---------- Кнопки и поля ---------- */
 .company-app button,
 .company-app input,
 .company-app select {
-  font: 13px/1.3 var(--ui);
+  font: 500 13px/1.3 var(--ui);
   color: var(--text);
-  background: #fff;
-  border: 0;
-  border-radius: 6px;
-  padding: 4px 11px;
-  box-shadow:
-    0 0 0 0.5px rgba(0, 0, 0, 0.16),
-    0 1px 1.5px rgba(0, 0, 0, 0.12);
+  background: var(--panel) padding-box;
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
+  border-radius: 0;
+  padding: 4px 11px 5px;
+  box-shadow: inset 0 -2px 0 #e6e1d9;
 }
 .company-app button { cursor: pointer; }
-.company-app button:hover:not(:disabled) { background: #f4f4f6; }
-.company-app button:active:not(:disabled) { background: #e9e9ec; }
-.company-app button:disabled { color: #b0b0b5; cursor: default; opacity: 1; box-shadow: 0 0 0 0.5px rgba(0, 0, 0, 0.1); }
-.company-app button.active { color: #fff; background: var(--accent); }
-/* Главное действие — синяя кнопка, как кнопка по умолчанию в диалогах системы. */
+.company-app button:hover:not(:disabled) { background-color: #f4efe6; }
+.company-app button:active:not(:disabled) { background-color: #ebe4d8; box-shadow: inset 0 2px 0 #e6e1d9; }
+.company-app button:disabled { color: #aaa6b2; cursor: default; opacity: 1; background-color: #f1ede6; box-shadow: none; }
+.company-app button.active { color: #f4f1ec; background-color: var(--accent); box-shadow: inset 0 -2px 0 #9a4f31; }
+/* Главное действие — жёлтая кнопка, цвета лампы: та же, что «▶» на плашках квартиры. */
 .company-app button.primary {
-  font-weight: 500;
-  color: #fff;
-  background: linear-gradient(#2b8fff, #0a72f5);
+  font-weight: 600;
+  color: var(--text);
+  background-color: var(--lamp);
   box-shadow:
-    0 0 0 0.5px rgba(0, 60, 160, 0.5),
-    0 1px 1.5px rgba(0, 60, 160, 0.35);
+    inset 0 2px 0 #ffe08a,
+    inset 0 -2px 0 #c9952a;
 }
-.company-app button.primary:hover:not(:disabled) { background: linear-gradient(#3b98ff, #1a7af7); }
-.company-app button.primary:disabled { color: #fff; background: #b9d4f7; box-shadow: none; }
+.company-app button.primary:hover:not(:disabled) { background-color: #ffd062; }
+.company-app button.primary:disabled { color: #8d8676; background-color: #efe0b3; box-shadow: none; }
 .company-app .notice button { margin-left: 8px; }
 
 .company-app input[type='number'],
 .company-app select {
   padding: 4px 8px;
-  box-shadow:
-    inset 0 0 0 0.5px rgba(0, 0, 0, 0.22),
-    inset 0 1px 1.5px rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 2px 0 #efe9df;
   font-variant-numeric: tabular-nums;
 }
-.company-app input[type='checkbox'] { width: 14px; height: 14px; padding: 0; accent-color: var(--accent); box-shadow: none; }
-.company-app :focus-visible { outline: 3px solid rgba(10, 122, 255, 0.45); outline-offset: 1px; }
+/* Флажок — пиксельный квадрат; отмечен — заливка цветом лампы и тёмная «галочка» из двух полосок. */
+.company-app input[type='checkbox'] {
+  appearance: none;
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+  background: var(--panel) padding-box;
+  box-shadow: inset 0 2px 0 #efe9df;
+}
+.company-app input[type='checkbox']:checked {
+  background:
+    linear-gradient(var(--text) 0 0) 3px 6px / 3px 3px no-repeat,
+    linear-gradient(var(--text) 0 0) 5px 7px / 3px 3px no-repeat,
+    linear-gradient(var(--text) 0 0) 7px 3px / 2px 6px no-repeat,
+    var(--lamp) padding-box;
+  box-shadow: inset 0 -2px 0 #c9952a;
+}
+.company-app :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .company-app .choices { gap: 6px; }
 
 /* ---------- Графики ---------- */
@@ -279,17 +297,56 @@
   border: 0;
   border-radius: 0;
   border-bottom: 1px solid var(--hair);
-  background: repeating-linear-gradient(transparent 0 29px, rgba(0, 0, 0, 0.05) 29px 30px);
+  background: repeating-linear-gradient(transparent 0 29px, rgba(58, 58, 80, 0.07) 29px 30px);
 }
-.company-app .chart-zero { stroke: rgba(212, 42, 30, 0.5); }
+.company-app .chart-zero { stroke: rgba(192, 57, 43, 0.5); }
 
 /* ---------- Команда ---------- */
 .company-app .person { border-bottom: 1px solid var(--hair); }
 .company-app .person-head b { font-size: 14px; font-weight: 600; }
 .company-app .person-head div span { font-size: 12px; color: var(--muted); }
-.company-app .avatar { width: 38px; height: 38px; font-size: 13px; }
+.company-app .avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 0;
+  font: 700 13px/1 var(--font-game);
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -3px 0 rgba(0, 0, 0, 0.25);
+}
+/* Полоски сил и настроения — деления, как индикатор в игре. */
 .company-app .meter { font-size: 12px; }
-.company-app .meter-bar { height: 6px; border-radius: 3px; background: rgba(0, 0, 0, 0.09); }
+.company-app .meter-bar {
+  height: 10px;
+  border-radius: 0;
+  background: #e6e1d9;
+  -webkit-mask: repeating-linear-gradient(to right, #000 0 8px, #0000 8px 10px);
+  mask: repeating-linear-gradient(to right, #000 0 8px, #0000 8px 10px);
+}
+.company-app .meter-bar i { border-radius: 0; }
+/* Пустые места в офисе: пунктирная рамка и маленький пиксельный стол. */
+.company-app .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; margin-top: 10px; }
+.company-app .seats > .muted { grid-column: 1 / -1; }
+/* Пока людей мало, блок не тянется на высоту списка кандидатов. */
+.company-app .two:has(.seats) { align-items: start; }
+.company-app .seat {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 12px 8px 10px;
+  border: 2px dashed var(--oat-2);
+  font-size: 12px;
+  color: var(--muted);
+}
+.company-app .seat-desk {
+  width: 36px;
+  height: 22px;
+  background:
+    linear-gradient(#8f887f 0 0) 0 0 / 36px 6px no-repeat,
+    linear-gradient(#8f887f 0 0) 3px 6px / 4px 16px no-repeat,
+    linear-gradient(#8f887f 0 0) 29px 6px / 4px 16px no-repeat,
+    linear-gradient(var(--oat-2) 0 0) 12px 9px / 12px 9px no-repeat;
+}
 .company-app .salary input { width: 96px; }
 
 /* ---------- Подсказка обучения: всплывающая подсказка системы ---------- */
@@ -300,10 +357,11 @@
   margin: 0 0 16px;
   padding: 10px 14px 10px 44px;
   color: var(--text);
-  background: #eaf3ff;
-  border: 0;
-  border-radius: 10px;
-  box-shadow: 0 0 0 0.5px rgba(10, 122, 255, 0.4);
+  background: #fff3d6 padding-box;
+  border: 2px solid;
+  border-image: var(--px-frame) 1 / 2px / 0 stretch;
+  border-radius: 0;
+  box-shadow: none;
 }
 .company-app .coach.inline::before {
   content: '→';
@@ -314,17 +372,17 @@
   place-items: center;
   width: 20px;
   height: 20px;
-  border-radius: 50%;
-  background: var(--accent);
-  color: #fff;
-  font: 700 12px/1 var(--ui);
+  border-radius: 0;
+  background: var(--lamp);
+  color: var(--text);
+  font: 700 12px/1 var(--font-game);
 }
-.company-app .coach-label { font: 600 11.5px/1.3 var(--ui); letter-spacing: 0; text-transform: none; color: var(--accent); }
+.company-app .coach-label { font: 500 12.5px/1.3 var(--font-game); letter-spacing: 0; text-transform: none; color: var(--accent); }
 .company-app .coach p { font: 13.5px/1.4 var(--ui); }
-.company-app button.coach-skip { padding: 0; font-size: 12px; color: var(--muted); background: none; box-shadow: none; }
+.company-app button.coach-skip { padding: 0; font-size: 12px; color: var(--muted); background: none; border: 0; border-image: none; box-shadow: none; }
 .company-app button.coach-skip:hover:not(:disabled) { color: var(--text); background: none; text-decoration: underline; }
 
-/* Кнопка, которую сейчас нужно нажать: мигает синим кольцом фокуса. */
+/* Кнопка, которую сейчас нужно нажать: мигает жёлтым кольцом, цвета лампы. */
 [data-coach='openProduct'] .company-app [data-nav='product'],
 [data-coach='openProductLaunch'] .company-app [data-nav='product'],
 [data-coach='queueCore'] .company-app [data-coach-target='queueCore'],
@@ -338,29 +396,31 @@
   animation: ca-ring 1.1s ease-in-out infinite;
 }
 @keyframes ca-ring {
-  0%, 100% { box-shadow: 0 0 0 2px rgba(10, 122, 255, 0.9); }
-  50% { box-shadow: 0 0 0 6px rgba(10, 122, 255, 0.15); }
+  0%, 100% { box-shadow: 0 0 0 3px rgba(246, 195, 74, 1); }
+  50% { box-shadow: 0 0 0 7px rgba(246, 195, 74, 0.2); }
 }
 @media (prefers-reduced-motion: reduce) {
   [data-coach] .company-app [data-nav],
-  [data-coach] .company-app [data-coach-target] { animation: none; box-shadow: 0 0 0 2px rgba(10, 122, 255, 0.9); }
+  [data-coach] .company-app [data-coach-target] { animation: none; box-shadow: 0 0 0 3px rgba(246, 195, 74, 1); }
 }
 
 .company-app ::-webkit-scrollbar { width: 8px; height: 8px; }
-.company-app ::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.22); border-radius: 4px; }
+.company-app ::-webkit-scrollbar-thumb { background: rgba(58, 58, 80, 0.3); border-radius: 0; }
 .company-app ::-webkit-scrollbar-track { background: transparent; }
 
 /* ---------- Ближайшая цель внизу бокового списка ---------- */
 .ca-fill { flex: 1; }
 .company-app .goal-app {
-  padding: 9px 10px 10px;
-  border-radius: 9px;
-  background: rgba(255, 255, 255, 0.72);
-  box-shadow: 0 0 0 0.5px var(--hair);
+  padding: 10px 11px 11px;
+  border-radius: 0;
+  background: var(--wood-dk);
+  color: var(--oat);
+  box-shadow: inset 0 3px 0 rgba(0, 0, 0, 0.18);
   font-size: 12px;
 }
-.company-app .goal-app b { font-size: 12.5px; line-height: 1.3; }
-.company-app .goal-label { font-size: 10.5px; color: #8a8a8f; }
-.company-app .goal-hint, .company-app .goal-meta { font-size: 11px; line-height: 1.3; }
-.company-app .goal-bar { background: rgba(0, 0, 0, 0.09); }
+.company-app .goal-app b { font: 500 14px/1.3 var(--font-game); color: #f4f1ec; }
+.company-app .goal-label { font-size: 10.5px; color: var(--oat-2); }
+.company-app .goal-hint, .company-app .goal-meta { font-size: 11px; line-height: 1.35; color: var(--oat); }
+.company-app .goal-bar { height: 6px; border-radius: 0; background: var(--wood-lo); }
+.company-app .goal-bar i { border-radius: 0; background: var(--lamp); }
 .company-app .end-cause { background: #fff8e6; }

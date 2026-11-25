@@ -123,27 +123,28 @@ html.lm-standalone body {
   align-items: center;
   gap: 8px;
   margin-top: -8px;
-  padding: 5px 11px 5px 5px;
-  border-radius: 8px;
-  background: rgba(19, 18, 25, 0.86);
-  color: #f4efe6;
-  font: 600 12.5px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  padding: 4px 11px 4px 5px;
+  border: 3px solid;
+  border-image: var(--px-frame) 1 / 3px / 0 stretch;
+  background: #24222d padding-box;
+  color: #f4f1ec;
+  font: 500 13px/1 var(--font-game);
   white-space: nowrap;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 8px 20px rgba(0, 0, 0, 0.3);
+    inset 0 3px 0 #3b3a48,
+    inset 0 -3px 0 #17151d;
+  filter: drop-shadow(0 4px 0 rgba(10, 8, 16, 0.45));
   animation: lmIn 0.25s cubic-bezier(0.3, 1.4, 0.5, 1);
 }
 .lm-prompt kbd,
 .lm-keys kbd {
-  min-width: 18px;
-  padding: 3px 5px;
-  border-radius: 5px;
-  background: #f1ece2;
-  color: #1f1c25;
-  font: 700 11px/1 'SF Mono', ui-monospace, Menlo, monospace;
+  min-width: 20px;
+  padding: 3px 5px 4px;
+  background: #f4f1ec;
+  color: #3a3a50;
+  font: 700 11px/1 var(--font-game);
   text-align: center;
-  box-shadow: 0 2px 0 #9f978a;
+  box-shadow: inset 0 -2px 0 #cdbfab;
 }
 
 /* ── Мысли героя */
@@ -202,11 +203,14 @@ html.lm-standalone body {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 7px 13px 7px 8px;
-  border-radius: 9px;
-  background: rgba(19, 18, 25, 0.74);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.07);
-  color: #b9b2c2;
+  padding: 6px 13px 6px 8px;
+  border: 3px solid;
+  border-image: var(--px-frame) 1 / 3px / 0 stretch;
+  background: rgba(36, 34, 45, 0.92) padding-box;
+  box-shadow:
+    inset 0 3px 0 #3b3a48,
+    inset 0 -3px 0 #17151d;
+  color: #cfc8be;
   font: 500 12px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   white-space: nowrap;
   transform: translateX(-50%);
@@ -286,83 +290,110 @@ html.lm-standalone body {
   right: 16px;
   pointer-events: auto;
 }
+/* Плашка — тёмная пиксельная коробка с фаской: светлая кромка сверху, тёмная снизу, жёсткая тень. */
 .lm-card {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 14px 8px 12px;
-  border-radius: 9px;
-  background: rgba(19, 18, 25, 0.82);
-  color: #f4efe6;
+  padding: 7px 14px 8px 12px;
+  border: 3px solid;
+  border-image: var(--px-frame) 1 / 3px / 0 stretch;
+  background: #24222d padding-box;
+  color: #f4f1ec;
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.07),
-    0 10px 26px rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(10px);
+    inset 0 3px 0 #3b3a48,
+    inset 0 -3px 0 #17151d;
+  filter: drop-shadow(0 4px 0 rgba(10, 8, 16, 0.45));
   white-space: nowrap;
 }
+.lm-card .lm-sun {
+  width: 1em;
+  height: 1em;
+  font-size: 22px;
+  color: #f6c34a;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+.lm-card .lm-sun.moon {
+  color: #e6ebfa;
+}
 .lm-date {
-  font: 600 14px/1.2 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font: 500 15px/1.2 var(--font-game);
 }
 .lm-sub {
-  margin-top: 4px;
-  font: 500 11.5px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  color: #a39daf;
+  margin-top: 3px;
+  font: 500 11.5px/1 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  color: #a9a2b5;
 }
 .lm-sub.alert {
   color: #ff9d9d;
 }
 .lm-cash {
-  font: 600 18px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  color: #a7e08f;
+  font: 700 21px/1 var(--font-game);
+  color: #8ee08a;
+  font-variant-numeric: tabular-nums;
 }
 .lm-cash.negative {
   color: #ff8f8f;
 }
 .lm-status {
   max-width: 300px;
-  font: 500 12.5px/1.35 -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font: 500 14px/1.3 var(--font-game);
   white-space: normal;
 }
 .lm-speed {
-  gap: 2px;
-  padding: 4px;
+  gap: 0;
+  padding: 0;
 }
 .lm-speed button,
 .lm-save {
-  font: 600 12px/1 'SF Mono', ui-monospace, Menlo, Consolas, monospace;
-  color: #b9b2c2;
-  background: none;
-  border: 0;
+  color: #cfc8be;
+  border-radius: 0;
   cursor: pointer;
 }
 .lm-speed button {
-  min-width: 38px;
-  padding: 9px 7px;
-  border-radius: 6px;
-  letter-spacing: -0.12em;
-  transition:
-    background 0.15s ease,
-    color 0.15s ease;
+  background: none;
+  border: 0;
+}
+.lm-speed button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  font-size: 17px;
+  transition: background 0.12s ease;
 }
 .lm-speed button:hover {
-  color: #f4efe6;
-  background: rgba(255, 255, 255, 0.08);
+  color: #f4f1ec;
+  background: #3b3a48;
 }
 .lm-speed button.on {
-  color: #1f1c25;
+  color: #3a3a50;
   background: #f6c34a;
+  box-shadow:
+    inset 0 3px 0 #ffe08a,
+    inset 0 -3px 0 #c9952a;
 }
 .lm-save {
+  gap: 8px;
   padding: 0 14px;
-  letter-spacing: 0.02em;
+  font: 500 14px/1 var(--font-game);
+}
+.lm-save .px-icon {
+  font-size: 15px;
 }
 .lm-save:hover {
-  color: #f4efe6;
+  color: #f4f1ec;
+  background-color: #2f2d3a;
+}
+.lm-speed button:active,
+.lm-save:active {
+  transform: translateY(1px);
 }
 .lm-speed button:focus-visible,
 .lm-save:focus-visible {
   outline: 2px solid #f6c34a;
-  outline-offset: 2px;
+  outline-offset: -2px;
 }
 [data-coach='startTime'] .lm-speed [data-coach-target='speed1'],
 [data-coach='resumeTime'] .lm-speed [data-coach-target='speed1'] {

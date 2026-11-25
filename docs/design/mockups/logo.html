@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8"><title>Значок системы — варианты</title>
+<style>
+  body { margin: 0; padding: 28px; background: #141219; color: #f4efe6; font: 14px/1.4 -apple-system, system-ui, sans-serif; }
+  .row { display: grid; grid-template-columns: 200px 520px 140px 140px; gap: 28px; align-items: center; padding: 22px 0; border-bottom: 1px solid #ffffff14; }
+  .bar { height: 28px; display: flex; align-items: center; gap: 16px; padding: 0 12px; background: rgba(30, 26, 44, 0.78); border-radius: 6px; font-size: 13px; }
+  .bar b { font-weight: 700; }
+  svg { shape-rendering: crispEdges; display: block; }
+  .chin { width: 120px; height: 70px; display: grid; place-items: center; background: linear-gradient(#f2f2f4, #d9dadf); border-radius: 0 0 14px 14px; }
+  .name b { display: block; font-size: 17px; } .name span { opacity: .6; font-size: 12px; }
+</style></head><body>
+<script>
+const LOGOS = {
+  'Орех': { note: 'под стиль «Орех и бумага»: ореховый стол, ореховое меню', rows: ['....####....','..########..','.####..####.','.###.##.###.','####.##.####','###.####.###','###.####.###','####.##.####','.###.##.###.','.####..####.','..########..','....####....'] },
+  'Ракета': { note: 'стартап взлетает', rows: ['.....##.....','....####....','...######...','...##..##...','...##..##...','...######...','...######...','..########..','.###.##.###.','.##..##..##.','.....##.....','....#..#....'] },
+  'Росток': { note: 'компания растёт из маленького', rows: ['............','.###....###.','#####..#####','.#####.####.','...###.##...','.....##.....','.....##.....','.....##.....','..########..','.##########.','.##########.','............'] },
+};
+const svg = (rows, size, color) => `<svg width="${size}" height="${size}" viewBox="0 0 12 12"><path fill="${color}" d="${rows.flatMap((r, y) => [...r].map((c, x) => c === '#' ? `M${x} ${y}h1v1h-1z` : '')).join('')}"/></svg>`;
+document.write(Object.entries(LOGOS).map(([name, l], i) => `<div class="row">
+  <div class="name"><b>${i + 1} · ${name}</b><span>${l.note}</span></div>
+  <div class="bar">${svg(l.rows, 15, '#fff')}<b>Компания</b><span>Файл</span><span>Правка</span><span>Вид</span><span>Окно</span><span>Справка</span></div>
+  <div>${svg(l.rows, 120, '#f4f1ec')}</div>
+  <div class="chin">${svg(l.rows, 30, '#9a9ea8')}</div>
+</div>`).join(''));
+</script></body></html>

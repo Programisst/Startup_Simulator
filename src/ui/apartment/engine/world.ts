@@ -1,6 +1,7 @@
 // Мир квартиры: герой, предметы, свет, камера. Рисуем сцену в маленьком холсте 384×240,
 // затем увеличиваем в целое число раз (пиксели чёткие), а свет кладём поверх плавными пятнами.
 import { advanceClock } from '../link';
+import { idlePose } from './heroPixels';
 import { drawEditorScreen, TOKEN_COLORS } from './editorScreen';
 import { MonitorTyping, textAmount } from './monitor';
 import { findPath } from './nav';
@@ -594,9 +595,10 @@ export class World {
     } else if (h.moving) {
       frame = art.walk[h.dir]![Math.floor(h.anim * 7.5) % 4]!;
     } else {
-      // Дышит, раз в несколько секунд моргает.
-      const blink = this.time % 3.7 < 0.14;
-      frame = blink ? art.blink[h.dir]! : art.idle[h.dir]![Math.floor(this.time / 0.9) % 2]!;
+      // Дышит, раз в несколько секунд моргает; лицом к нам иногда оглядывается.
+      const pose = idlePose(h.anim, h.dir);
+      if (pose.kind === 'look') frame = art.look[pose.frame]!;
+      else frame = this.time % 3.7 < 0.14 ? art.blink[h.dir]! : art.idle[h.dir]![pose.frame]!;
     }
     b.drawImage(frame, x - 8, y - 31 - (sitting ? 4 : 0));
   }

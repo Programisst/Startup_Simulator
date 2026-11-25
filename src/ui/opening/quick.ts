@@ -1,6 +1,6 @@
 // Быстрый вход для разработчиков — только при `npm run dev`, в собранной игре его нет.
-// Ссылка с ?skip сразу ведёт в квартиру с готовой компанией (свои прошлые ответы или простой образец).
-// В переписке подставлены прошлые ответы — жми Enter; в первый раз пишешь сам.
+// При разработке игра сразу ведёт в квартиру с готовой компанией (свои прошлые ответы или простой образец).
+// Посмотреть заставку и переписку — ссылка с ?story; в переписке подставлены прошлые ответы — жми Enter.
 import type { NewGameSetup, ProductTypeId } from '../../core';
 import { chatSetup, choose, reply, resolveIdea, startChat } from './chat';
 
@@ -20,8 +20,9 @@ function local(): Storage | null {
   }
 }
 
+/** Пропустить заставку и переписку? Да, если в ссылке нет ?story. Вызывается только при разработке. */
 export function wantsSkip(search: string): boolean {
-  return new URLSearchParams(search).has('skip');
+  return !new URLSearchParams(search).has('story');
 }
 
 export function lastAnswers(storage: Storage | null = local()): Answers {
