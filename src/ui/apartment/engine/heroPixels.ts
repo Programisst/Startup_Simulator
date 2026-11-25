@@ -16,6 +16,7 @@ export const HERO_PALETTE: Record<string, string> = {
   e: '#2b2733', // глаз
   w: '#f0e9dd', // джемпер
   W: '#d4c7b3', // джемпер — тень
+  v: '#b3a48e', // джемпер — складка (руки вдоль тела лёжа)
   c: '#ffffff', // воротник рубашки
   p: '#3f4863', // брюки
   P: '#30374d', // брюки — тень
@@ -35,6 +36,10 @@ export interface HeroFrames {
   sleepHead: Frame;
   /** Лицом к нам: оглядывается — голова повёрнута вправо (0) и влево (1). */
   look: Frame[];
+  /** Сидит на краю кровати в профиль (лицом вправо), ступни на полу. */
+  edge: Frame;
+  /** Туловище лежащего героя сверху — видно, пока одеяло не натянуто до подбородка, 16×10. */
+  sleepBody: Frame;
 }
 
 // ───────── головы 12×11 (ставятся в столбец 2) ─────────
@@ -211,6 +216,32 @@ const LEGS_RIGHT_STRIDE = [
   '...ooo.....oooo.',
 ];
 
+/** Сидит в профиль: бедро вперёд, голень свисает (строки 27–31). */
+const LEGS_RIGHT_SEATED = [
+  '....oWWssppppo..',
+  '.....oPpppppPPo.',
+  '...........oPPo.',
+  '...........oPPo.',
+  '..........okkkko',
+];
+
+/**
+ * Лёжа на спине, вид сверху: воротник под подбородком, плечи шире головы, руки вдоль тела.
+ * Руки отделены от туловища тенью джемпера, тёмный контур — только снаружи. Ниже пояса — под одеялом.
+ */
+const SLEEP_BODY = [
+  '....oWccccWo....',
+  '...oWwwccwwWo...',
+  '.ooWwwwwwwwwWoo.',
+  'oWWvWwwwwwwWvWWo',
+  'oWwvWwwwwwwWvwWo',
+  'oWwvWWwwwwWWvwWo',
+  'oWwvWWwwwwWWvwWo',
+  'oWWvWWWwwWWWvWWo',
+  'oWWvWWWWWWWWvWWo',
+  'oWWvWWWWWWWWvWWo',
+];
+
 // ───────── сборка ─────────
 
 const mirror = (rows: readonly string[]): string[] => rows.map((r) => r.split('').reverse().join(''));
@@ -236,6 +267,12 @@ function compose(
   put(head, 2, headY);
   return px.map((r) => r.join(''));
 }
+
+/** Накладывает строку поверх строки: точки сверху прозрачны. */
+const overlay = (under: string, over: string): string => under.split('').map((ch, i) => (over[i] === '.' ? ch : over[i]!)).join('');
+
+/** Сдвигает кадр вниз на n строк (низ уходит за край). */
+const shiftDown = (rows: readonly string[], n: number): string[] => [...Array<string>(n).fill('.'.repeat(HERO_FRAME_W)), ...rows.slice(0, rows.length - n)];
 
 /** Глаза закрыты (моргание и сон). */
 export function closeEyes(rows: readonly string[]): string[] {
@@ -286,6 +323,12 @@ export function heroFrames(): HeroFrames {
     sleepHead: closeEyes(HEAD_FRONT),
     // оглядывается: голова в профиль вправо и влево, тело стоит как стояло
     look: [compose(HEAD_RIGHT, 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26)), compose(mirror(HEAD_RIGHT), 9, TORSO_FRONT, LEGS_FRONT, armsDown(26, 26))],
+    // на краю кровати: голова и туловище ниже на 3 пикселя, бёдра вперёд
+    edge: (() => {
+      const top = shiftDown(compose(HEAD_RIGHT, 9, BODY_RIGHT, null), 3);
+      return top.map((row, y) => (y < 27 ? row : overlay(row, LEGS_RIGHT_SEATED[y - 27]!)));
+    })(),
+    sleepBody: SLEEP_BODY,
   };
 }
 

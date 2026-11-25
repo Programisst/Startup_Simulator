@@ -6,6 +6,7 @@ import { money } from '../format';
 import { loadArt } from './engine/art';
 import { daylightAt, realMinutes } from './engine/daylight';
 import { SPOTS, type LampId, type Spot } from './engine/scene';
+import { MOVE_SECONDS } from './engine/moves';
 import { World } from './engine/world';
 import { PixelIcon } from '../pixelIcons';
 import { Laptop } from './laptop/Laptop';
@@ -142,7 +143,7 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
         if (openingRef.current) {
           // Начало игры: герой уже сидит за компьютером, через миг экран приближается — там пишет друг.
           world.stand();
-          world.sit();
+          world.sit(true);
           busy.current = true;
           window.setTimeout(() => {
             setOrigin(world.monitorOnScreen());
@@ -254,8 +255,8 @@ export function Apartment({ link, opening }: { link?: RoomLink; opening?: Openin
         busy.current = true;
         world.sit();
         setOrigin(world.monitorOnScreen());
-        // Уже сидит за столом — экран открывается сразу.
-        window.setTimeout(() => setComputer('open'), alreadySeated ? 80 : 700);
+        // Уже сидит за столом — экран открывается сразу, иначе — когда герой сел.
+        window.setTimeout(() => setComputer('open'), alreadySeated ? 80 : MOVE_SECONDS.sit * 1000 + 120);
       } else if (spot.id === 'coffee') {
         // В игре кофе помогает не всегда: после чашки нужен перерыв в несколько дней.
         if (linkRef.current && !linkRef.current.coffee()) {
