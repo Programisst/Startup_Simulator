@@ -1,6 +1,8 @@
-"""Draw three views of the same 2:1 office at native pixel resolution."""
+"""Draw three 2:1 coworking scenes from a SceneTeam JSON on stdin."""
 
 import argparse
+import json
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -9,17 +11,21 @@ from PIL import Image, ImageDraw
 from iso import Scene, hx, ihash
 
 
-WIDTH, HEIGHT = 352, 240
-ROOM_X, ROOM_Y = 174, 122
-DESKS = ((33, 28, "founder"), (79, 28, "colleague"), (126, 76, None))
+WIDTH, HEIGHT = 408, 276
+ROOM_X, ROOM_Y = 195, 145
+# Each index is a permanent ScenePerson.seat. Keep holes when someone leaves.
+DESKS = ((33, 28), (82, 28), (131, 28), (42, 92), (91, 92), (140, 92))
 COFFEE = (6, 25, 59, 108)
-RUG = (39, 105, 76, 114)
-FLOOR_PLANTS = ((12, 115), (159, 64))
+RUG = (32, 176, 68, 87)
+FLOOR_PLANTS = ((13, 118), (187, 69))
+WINDOW_START, WINDOW_SPACING = 48, 39
+WINDOW_BAYS = tuple(WINDOW_START + i * WINDOW_SPACING for i in range(3))
+WINDOW_END = WINDOW_BAYS[-1] + WINDOW_SPACING - 2
 
 # The three faces are top, y-facing and x-facing, in that order.
 LOOKS = {
     "evening": {
-        "name": "1 · Тёплый вечер",
+        "name": "1 · Коворкинг — Тёплый вечер",
         "backdrop": "25222c 312a32 211e27",
         "floor": "97704f 775137 513749",
         "walls": "cab090 94705d 735b5a",
@@ -34,7 +40,7 @@ LOOKS = {
         "screen": "6d9b8e a9d0aa c7b586",
     },
     "loft": {
-        "name": "2 · Ночной лофт",
+        "name": "2 · Коворкинг — Ночной лофт",
         "backdrop": "1a2332 232f40 171f2d",
         "floor": "5e6570 474b59 373744",
         "walls": "9e8581 76636a 63595e",
@@ -49,7 +55,7 @@ LOOKS = {
         "screen": "69a2ba b6e3dd d1a67f",
     },
     "day": {
-        "name": "3 · Светлый день",
+        "name": "3 · Коворкинг — Светлый день",
         "backdrop": "343836 3d423c 2d312f",
         "floor": "c2a47d a88b66 766453",
         "walls": "e5d7ba cbb99d a79b86",
@@ -104,16 +110,50 @@ PLANT = (
     ".....oooo......",
 )
 
-STATUS = (
-    "..ooooooo..",
-    ".obbbbbbbo.",
-    "obbbbbbbbbo",
-    "obibibibibo",
-    "obbbbbbbbbo",
-    ".obbbbbbbo.",
-    "..ooboo....",
-    "....o......",
+WORKER_COLORS = (
+    ("#8b6e60", "#55423d", "#b3a492", "#ede1ce", "#bb897c", "#e8bfa1"),
+    ("#7b6175", "#4b3d52", "#818574", "#a9a489", "#a26f5e", "#c9947d"),
+    ("#986455", "#684840", "#a67369", "#c08a79", "#c29178", "#f0c49f"),
+    ("#586373", "#373d4f", "#657e8a", "#86a0a5", "#875a53", "#b88974"),
 )
+
+MOOD_ICONS = {
+    "high": ("#456c5f", ("     ", " x x ", "     ", "x   x", " xxx ")),
+    "mid": ("#716350", ("     ", " x x ", "     ", " xxx ", "     ")),
+    "low": ("#965750", ("     ", " x x ", "     ", " xxx ", "x   x")),
+}
+BUSY_ICON = ("#4a6973", ("     ", "xxxxx", "x x x", "xxxxx", "     "))
+LEAVING_ICON = ("#9d4e42", ("  x  ", "  x  ", "  x  ", "     ", "  x  "))
+STAR_ICON = ("#936532", ("  x  ", " xxx ", "xxxxx", " xxx ", " x x "))
+
+
+def status_icons(person):
+    icons = [MOOD_ICONS[person["mood"]]]
+    if person["busy"]:
+        icons.append(BUSY_ICON)
+    if person["leaving"]:
+        icons.append(LEAVING_ICON)
+    if person["star"]:
+        icons.append(STAR_ICON)
+    return icons
+
+
+def show_status(scene, person, x, y):
+    icons = status_icons(person)
+    ink_keys = ("i", "j", "k", "l")
+    cells = []
+    palette = {"o": "#3a3a50", "b": "#efe1c8"}
+    for ink, (tone, glyph) in zip(ink_keys, icons):
+        cells.append(tuple("b" + row.replace(" ", "b").replace("x", ink) + "b" for row in glyph))
+        palette[ink] = tone
+    width = 7 * len(cells) + 2
+    rows = (
+        "." + "o" * (width - 2) + ".",
+        *("o" + "".join(line) + "o" for line in zip(*cells)),
+        "o" + "b" * (width - 2) + "o",
+        "." + "o" * (width - 2) + ".",
+    )
+    scene.over(rows, palette, x, y, 34, width // 2, 7)
 
 
 def colors(look, surface):
@@ -169,7 +209,7 @@ def floor_color(look, style, rug=False):
 
         ambient = np.minimum(np.minimum(x, y), np.minimum(ROOM_X - x, ROOM_Y - y))
         shade = np.where(ambient < 4, 9, np.where(ambient < 9, 4, 0))
-        for dx, dy, _person in DESKS:
+        for dx, dy in DESKS:
             distance = np.maximum.reduce((dx - x, x - dx - 35, dy - y, y - dy - 35))
             shade += np.where(distance < 1, 11, np.where(distance < 5, 4, 0))
         x0, x1, y0, y1 = COFFEE
@@ -181,8 +221,8 @@ def floor_color(look, style, rug=False):
 
         # The window mullions cast shadows in the same direction as the light.
         through_window = x - y * (.58 if style == "day" else .37)
-        slit = (through_window > 48) & (through_window < 143)
-        slit &= ((through_window - 48) % 32 > 2) & (y > 11)
+        slit = (through_window > WINDOW_START) & (through_window < WINDOW_END)
+        slit &= ((through_window - WINDOW_START) % WINDOW_SPACING > 2) & (y > 11)
         if style == "day":
             lower_rail = (y > 44) & (y < 48)
             window = (slit & ~lower_rail) * np.where(y < 63, .44, np.where(y < 78, .23, 0))
@@ -200,7 +240,7 @@ def backdrop(look):
 
     def draw(scene):
         yy, xx = np.mgrid[0:HEIGHT, 0:WIDTH]
-        distance = ((xx - 181) / 177) ** 2 + ((yy - 106) / 137) ** 2
+        distance = ((xx - WIDTH / 2) / 205) ** 2 + ((yy - 122) / 152) ** 2
         levels = np.floor(np.maximum(0, 1 - distance) * 10) / 10
         scene.col[:] = base + levels[:, :, None] * (halo - base)
         mask = Image.new("1", (WIDTH, HEIGHT))
@@ -221,7 +261,7 @@ def city(look, style):
                  (44, 20, 7), (65, 11, 13), (77, 21, 8))
 
     def view(x, _, z):
-        u = x - 48
+        u = (x - WINDOW_START) * 98 / (WINDOW_END - WINDOW_START)
         v = z - 17
         band = np.clip(np.floor(v / 9), 0, 2).astype(int)
         result = sky[2 - band].copy()
@@ -265,30 +305,34 @@ def architecture(scene, look, style):
 
     # Three window bays share a single city view behind their mullions.
     frame = metal if style == "loft" else trim
-    material(scene, (45, 146, 3, 6, 15, 47), frame)
+    window_left, window_right = WINDOW_START - 3, WINDOW_END + 4
+    material(scene, (window_left, window_right, 3, 6, 15, 47), frame)
     glass = city(look, style)
-    for left in (48, 80, 112):
-        material(scene, (left, left + 30, 6, 7, 18, 44), (None, glass, None), outline="none")
-    material(scene, (45, 146, 4, 8, 15, 18), frame)
-    material(scene, (45, 146, 5, 7, 33, 34), frame, outline="none")
+    for left in WINDOW_BAYS:
+        material(scene, (left, left + WINDOW_SPACING - 2, 6, 7, 18, 44),
+                 (None, glass, None), outline="none")
+    material(scene, (window_left, window_right, 4, 8, 15, 18), frame)
+    material(scene, (window_left, window_right, 5, 7, 33, 34), frame, outline="none")
     if style != "loft":
-        for left in (48, 80, 112):
+        for left in WINDOW_BAYS:
             material(scene, (left + 1, left + 2, 6, 7.2, 35, 43),
                      (None, colors(look, "sky")[1], None), outline="none")
     if style == "day":
-        for left, bottom in ((48, 39), (80, 42), (112, 43)):
-            material(scene, (left, left + 30, 7, 8, bottom, 45),
+        for left, bottom in zip(WINDOW_BAYS, (39, 42, 43)):
+            right = left + WINDOW_SPACING - 2
+            material(scene, (left, right, 7, 8, bottom, 45),
                      ("#eee4cd", "#c7bda8", "#989583"), outline="none")
-            material(scene, (left, left + 30, 8, 9, bottom, bottom + 1),
+            material(scene, (left, right, 8, 9, bottom, bottom + 1),
                      ("#d8cdb4", "#a89f8e", "#989583"), outline="none")
 
     # Door and threshold at the end of the aisle.
-    material(scene, (151, 171, 3, 6, 0, 41), frame)
+    door_x = ROOM_X - 23
+    material(scene, (door_x, door_x + 20, 3, 6, 0, 41), frame)
     door = colors(look, "wood") if style != "loft" else metal
-    material(scene, (153, 169, 5, 6.5, 1, 38), door)
-    material(scene, (155, 167, 6, 7, 12, 34), (None, door[0], None), outline="none")
-    material(scene, (154, 158, 7, 8, 15, 17), ("#d0b68b", "#a78a6f", "#776b67"))
-    material(scene, (151, 171, 6, 10, 0, .8), trim, outline="none")
+    material(scene, (door_x + 2, door_x + 18, 5, 6.5, 1, 38), door)
+    material(scene, (door_x + 4, door_x + 16, 6, 7, 12, 34), (None, door[0], None), outline="none")
+    material(scene, (door_x + 3, door_x + 7, 7, 8, 15, 17), ("#d0b68b", "#a78a6f", "#776b67"))
+    material(scene, (door_x, door_x + 20, 6, 10, 0, .8), trim, outline="none")
 
 
 def pinboard(scene, look, style):
@@ -388,7 +432,8 @@ def keyboard(scene, x, y, occupied):
     material(scene, (x + 16, x + 19, y + 1, y + 5, 16, 17), ("#b5b0a4", "#797780", "#565360"))
 
 
-def desktop(scene, look, style, x, y, person):
+def desktop(scene, look, style, seat, person):
+    x, y = DESKS[seat]
     walnut, front, side = colors(look, "wood")
     metal = colors(look, "metal")
     fabric = colors(look, "fabric")
@@ -408,7 +453,7 @@ def desktop(scene, look, style, x, y, person):
     material(scene, (x + 7, x + 24, y + 3, y + 6, 20, 32), metal)
 
     def display(X, _Y, Z):
-        if person is None:
+        if person is None or not person["busy"]:
             return np.tile(hx("434450"), (len(X), 1))
         dx = X - x - 8
         dz = Z - 21
@@ -423,10 +468,10 @@ def desktop(scene, look, style, x, y, person):
 
     material(scene, (x + 8, x + 23, y + 6, y + 6.3, 21, 31), (None, display, None), outline="none")
     keyboard(scene, x + 9, y + 12, person is not None)
-    if person == "founder":
+    if seat == 0:
         mug(scene, x + 4, y + 13, 16, "#d9bea0")
         lamp(scene, look, style, x + 26, y + 3, 16)
-    elif person == "colleague":
+    elif seat in (2, 5):
         plant(scene, x + 30, y + 5, 16, tabletop=True)
         material(scene, (x + 2, x + 7, y + 10, y + 17, 16, 16.6),
                  ("#b08877", "#86655c", "#796269"), outline="none")
@@ -443,15 +488,10 @@ def desktop(scene, look, style, x, y, person):
     material(scene, (cx - 6, cx + 7, cy + 4, cy + 7, 9, 20), fabric)
 
     if person:
-        palette = {"o": "#3a3a50", "d": "#382c38", "S": "#bb897c", "s": "#e8bfa1"}
-        if person == "founder":
-            palette.update(H="#8b6e60", h="#55423d", W="#b3a492", w="#ede1ce")
-        else:
-            palette.update(H="#7b6175", h="#4b3d52", W="#818574", w="#a9a489")
+        palette = dict(zip("HhWwSs", WORKER_COLORS[person["nameSeed"] % len(WORKER_COLORS)]))
+        palette.update(o="#3a3a50", d="#382c38")
         scene.sprite(WORKER, palette, cx, cy, 11, 8, 17, bias=19)
-        badge = {"o": "#3a3a50", "b": "#e4d1ac" if person == "founder" else "#aec0a9",
-                 "i": "#74605b" if person == "founder" else "#546d6d"}
-        scene.over(STATUS, badge, cx + 1, cy, 38, 5, 7)
+        show_status(scene, person, cx + 1, cy)
 
 
 def details(scene, look, style):
@@ -462,22 +502,36 @@ def details(scene, look, style):
              (floor_color(look, style, rug=True), None, None), outline="none")
     for x, y in FLOOR_PLANTS:
         plant(scene, x, y)
-    material(scene, (154, 167, 99, 112, 0, 9), wood)
-    material(scene, (155, 165, 100, 109, 9, 10), ("#a6957b", wood[1], wood[2]), outline="none")
-    material(scene, (158, 164, 111, 112.5, 4, 6), ("#d1b48a", "#c0a17a", "#a7846d"), outline="none")
-    material(scene, (118, 124, 51, 57, 0, 7), metal)
-    material(scene, (119, 123, 52, 56, 7, 7.2), ("#3a3a50", None, None), outline="none")
+    material(scene, (9, 28, 123, 135, 0, 9), wood)
+    material(scene, (10, 27, 124, 132, 9, 10), ("#a6957b", wood[1], wood[2]), outline="none")
+    material(scene, (15, 22, 134, 135.5, 4, 6), ("#d1b48a", "#c0a17a", "#a7846d"), outline="none")
+    material(scene, (182, 188, 43, 49, 0, 7), metal)
+    material(scene, (183, 187, 44, 48, 7, 7.2), ("#3a3a50", None, None), outline="none")
 
 
-def render(style):
+def people_by_seat(team):
+    office = team["office"]
+    if office["id"] != "coworking" or office["seats"] != len(DESKS):
+        raise ValueError("The layout must match the coworking capacity from SceneTeam.")
+    people = {person["seat"]: person for person in team["people"]}
+    all_seats = set(range(office["seats"]))
+    if len(people) != len(team["people"]) or not people.keys() <= all_seats:
+        raise ValueError("Every employee needs their own seat in the layout.")
+    if team["freeSeats"] != sorted(all_seats - people.keys()):
+        raise ValueError("SceneTeam.freeSeats must match the unoccupied desks.")
+    return people
+
+
+def render(style, team):
+    people = people_by_seat(team)
     look = LOOKS[style]
-    scene = Scene(WIDTH, HEIGHT, 151, 72, backdrop(look))
+    scene = Scene(WIDTH, HEIGHT, 176, 79, backdrop(look))
     architecture(scene, look, style)
     details(scene, look, style)
     pinboard(scene, look, style)
     coffee_corner(scene, look, style)
-    for x, y, person in DESKS:
-        desktop(scene, look, style, x, y, person)
+    for seat in range(team["office"]["seats"]):
+        desktop(scene, look, style, seat, people.get(seat))
 
     light = colors(look, "light")[0]
     gx, gy = scene.proj(63, 33, 25)
@@ -494,9 +548,10 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path, help="Directory for the native-resolution PNGs")
     args = parser.parse_args()
+    team = json.load(sys.stdin)
     args.output.mkdir(parents=True, exist_ok=True)
     for style, look in LOOKS.items():
-        render(style).save(args.output / (look["name"] + ".png"))
+        render(style, team).save(args.output / (look["name"] + ".png"))
 
 
 if __name__ == "__main__":
