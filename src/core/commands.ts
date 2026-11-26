@@ -7,6 +7,7 @@ import { buyBack, closeRound, counterOffer, leaveRound, openRound } from './fund
 import { buyTarget, checkTarget } from './acquisitions';
 import { cutOps } from './ops';
 import { respondThreat } from './threats';
+import { beforePolish, checkRequest, dropRequest, takeRequest } from './roadmap';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { canPolishByTyping, coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -74,6 +75,8 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
         const cost = featuresOf(state, content).find((d) => d.id === task.featureId)?.cost ?? 0;
         progress = Math.max(task.progress, Math.min(progress, cost - 1e-6));
       }
+      // Запрос, как и функцию, завершает шаг дня: там выясняется, сработал ли он.
+      if (task.kind === 'request') progress = Math.max(task.progress, Math.min(progress, task.cost - 1e-6));
       next.tasks = [{ ...task, progress }, ...tasks.slice(1)];
       // Набранное игроком тоже идёт в зачёт обещанного обновления.
       const release = withReleaseWork(state, progress - task.progress);
@@ -110,6 +113,12 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'buyTarget': {
       const next = cmd.type === 'checkTarget' ? checkTarget(state, content) : buyTarget(state, content, cmd.offer);
       return next ? { ok: true, state: next } : fail('acquisitionUnavailable');
+    }
+
+    case 'takeRequest':
+    case 'checkRequest': {
+      const next = cmd.type === 'takeRequest' ? takeRequest(state, content, cmd.source) : checkRequest(state, content, cmd.source);
+      return next ? { ok: true, state: next } : fail('requestUnavailable');
     }
 
     case 'cutOps': {
@@ -230,7 +239,8 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       }
       return {
         ok: true,
-        state: { ...state, tasks: [...state.tasks, { kind: 'feature', featureId: def.id, progress: 0 }] },
+        // Перед «улучшением продукта»: оно не кончается само, и функция за ним никогда бы не началась.
+        state: { ...state, tasks: beforePolish(state.tasks, { kind: 'feature', featureId: def.id, progress: 0 }) },
       };
     }
 
@@ -260,7 +270,13 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       if (!Number.isInteger(cmd.index) || cmd.index < 0 || cmd.index >= state.tasks.length) {
         return fail('noSuchTask');
       }
-      return { ok: true, state: { ...state, tasks: state.tasks.filter((_, i) => i !== cmd.index) } };
+      {
+        const removed = state.tasks[cmd.index]!;
+        const next: GameState = { ...state, tasks: state.tasks.filter((_, i) => i !== cmd.index) };
+        // Снятый заказ клиента — сорванное обещание.
+        if (removed.kind === 'request') dropRequest(next, content, removed);
+        return { ok: true, state: next };
+      }
 
     case 'setRush':
       return { ok: true, state: { ...state, rush: cmd.rush } };

@@ -679,6 +679,7 @@ export interface GameConfig {
   acquisitions: AcquisitionsConfig;
   ops: OpsConfig;
   threats: ThreatsConfig;
+  roadmap: RoadmapConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -747,7 +748,9 @@ export type Task =
   | { kind: 'bugfix'; progress: number }
   | { kind: 'refactor'; progress: number }
   /** Улучшение продукта: повторяемая задача, идёт, пока её не снимут */
-  | { kind: 'polish'; progress: number };
+  | { kind: 'polish'; progress: number }
+  /** Запрос рынка: что просят пользователи, заказал клиент или придумала команда. Цена и условия записаны при взятии. */
+  | { kind: 'request'; wave: number; source: RequestSource; name: number; progress: number; cost: number; dueDay?: number; reward?: number };
 
 export interface Modifier {
   target: ModifierTarget;
@@ -772,7 +775,7 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding' | 'acquisition' | 'threat' | 'opsCut';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding' | 'acquisition' | 'threat' | 'opsCut' | 'request';
   /** Число, о котором новость: пользователей, платящих, долларов; для звезды — число, по которому подбирается имя */
   value?: number;
   /** Для готовой функции — её id */
@@ -901,6 +904,72 @@ export interface OpsState {
   cutDay?: number;
   /** Последнее сокращение: чем кончилось */
   last?: { day: number; cut: OpsCutId; severance: number; saving: number; backfired: boolean };
+}
+
+/** Откуда запрос: просят пользователи, заказал крупный клиент, придумала команда. */
+export type RequestSource = 'users' | 'client' | 'bet';
+export type RequestOutcome = 'hit' | 'flop' | 'paid' | 'late';
+
+/** Что готовый запрос меняет в компании. */
+export interface RequestEffect {
+  /** Очки продукта, в долях того, чего сейчас ждёт рынок */
+  value: number;
+  debt: number;
+  reputation: number;
+  /** Во сколько раз меняется обычный уход пользователей — навсегда (0.97 = на 3% реже) */
+  churn: number;
+  /** Во сколько раз вырастает рынок — навсегда */
+  market: number;
+  /** Временный приток новых людей: во сколько раз и на сколько дней */
+  boost?: { factor: number; days: number };
+}
+
+export interface RequestSourceDef {
+  id: RequestSource;
+  /** Сколько дней работы стоит запрос для команды «по размеру компании»: от и до */
+  minDays: number;
+  maxDays: number;
+  /** Шанс, что сделанное сработает; 1 — исход известен заранее */
+  chance: number;
+  hit: RequestEffect;
+  flop: RequestEffect;
+  /** Заказ клиента: срок в днях, оплата в долях дохода за 30 дней, удар по репутации за срыв */
+  deadlineDays?: number;
+  reward?: number;
+  lateReputation?: number;
+}
+
+/** Запросы рынка: работа над продуктом, которая не кончается. */
+export interface RoadmapConfig {
+  /** Раз во сколько дней приходят новые запросы */
+  periodDays: number;
+  /** Сколько названий в списке у каждого источника */
+  names: number;
+  /** Чем больше компания, тем дороже каждая переделка: единица размера на столько долларов месячного дохода */
+  revenuePerScale: number;
+  maxScale: number;
+  /** Проверка спроса: сколько дней идёт и сколько стоит в долях дохода за 30 дней */
+  checkDays: number;
+  checkCostShare: number;
+  /** Сколько раз удачные просьбы пользователей могут снизить уход: дальше продукт уже «вылизан» */
+  maxChurnHits: number;
+  sources: RequestSourceDef[];
+}
+
+/** Состояние запросов. Необязательное: в старых сохранениях его нет. */
+export interface RoadmapState {
+  /** К какому периоду относятся taken и check */
+  wave: number;
+  /** Какие запросы периода уже взяты в работу */
+  taken: RequestSource[];
+  /** Проверка спроса: чей запрос и когда будет ответ */
+  check: { source: RequestSource; readyDay: number } | null;
+  built: number;
+  hits: number;
+  flops: number;
+  /** Сколько раз уход пользователей уже снижен */
+  churnHits: number;
+  last: { day: number; source: RequestSource; name: number; outcome: RequestOutcome; cash: number } | null;
 }
 
 export type ThreatKind = 'downturn' | 'rival';
@@ -1105,6 +1174,8 @@ export interface GameState {
   ops?: OpsState;
   /** Угрозы большой компании. Необязательное поле: в старых сохранениях его нет. */
   threats?: ThreatsState;
+  /** Запросы рынка. Необязательное поле: в старых сохранениях его нет. */
+  roadmap?: RoadmapState;
   /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
   milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
@@ -1164,6 +1235,10 @@ export type Command =
   /** Покупка компании: заказать проверку; купить за полную цену или предложить меньше */
   | { type: 'checkTarget' }
   | { type: 'buyTarget'; offer: 'full' | 'low' }
+  /** Взять запрос рынка в работу */
+  | { type: 'takeRequest'; source: RequestSource }
+  /** Проверить спрос, прежде чем строить */
+  | { type: 'checkRequest'; source: RequestSource }
   /** Срочно сократить службы компании */
   | { type: 'cutOps'; cut: OpsCutId }
   /** Ответить на угрозу */
@@ -1215,6 +1290,7 @@ export type CommandError =
   | 'fundingUnavailable'
   | 'acquisitionUnavailable'
   | 'opsCutUnavailable'
+  | 'requestUnavailable'
   | 'threatUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'

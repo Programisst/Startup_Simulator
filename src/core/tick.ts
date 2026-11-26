@@ -31,6 +31,7 @@ import { stepAcquisitions } from './acquisitions';
 import { officeOf } from './office';
 import { opsCostPerMonth, stepOps } from './ops';
 import { stepThreats, threatPressure } from './threats';
+import { completeRequest } from './roadmap';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -107,6 +108,20 @@ function develop(draft: GameState, content: GameContent, rng: RngState): RngStat
             }
           }
         }
+      }
+    } else if (task.kind === 'request') {
+      const need = task.cost - task.progress;
+      if (work >= need) {
+        work -= Math.max(0, need);
+        tasks.shift();
+        // Новый код — новые ошибки, как и у обычной функции.
+        const newBugs = nextInt(r, draft.rush ? 2 : 1, draft.rush ? 6 : 3);
+        r = newBugs.next;
+        draft.bugs += newBugs.value + sloppy;
+        completeRequest(draft, content, task);
+      } else {
+        task.progress += work;
+        work = 0;
       }
     } else if (task.kind === 'bugfix') {
       if (draft.bugs <= 0) {
