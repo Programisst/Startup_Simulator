@@ -48,6 +48,31 @@ describe('цели на пути компании', () => {
     expect(ids(tick(a, quiet))).toHaveLength(before + 2);
   });
 
+  it('застрявшая цель не держит остальные: следующие засчитываются, как только выполнены', () => {
+    // Игрок никого не нанимает, а пользователей уже две с половиной тысячи.
+    const upTo = content.milestones.slice(0, content.milestones.findIndex((m) => m.id === 'firstHire')).map((m) => ({ id: m.id, day: 0 }));
+    const s: GameState = { ...launchedGame(), users: 2500, milestones: upTo };
+    const after = tick(s, quiet);
+    expect(ids(after)).toContain('users2000');
+    expect(ids(after)).not.toContain('firstHire');
+    // Ближайшей остаётся самая ранняя из непройденных — та, которую игрок обходит стороной.
+    expect(nextMilestone(after, content)!.id).toBe('firstHire');
+  });
+
+  it('когда застрявшая цель наконец пройдена, за ней не закрывается пачка лёгких', () => {
+    const upTo = content.milestones.slice(0, content.milestones.findIndex((m) => m.id === 'firstHire')).map((m) => ({ id: m.id, day: 0 }));
+    let s: GameState = { ...launchedGame(), users: 2500, milestones: upTo };
+    // Всё, что можно было пройти без найма, уже засчитано к этому дню.
+    for (let i = 0; i < 5; i++) s = tick(s, quiet);
+    const before = ids(s);
+    expect(before).toContain('users2000');
+    // Наняли первого человека: засчитывается только эта цель — и на следующий день ничего больше.
+    const hired: GameState = { ...s, team: { ...teamOf(s, content), employees: [{ ...worker, hiredDay: s.day }] } };
+    const next = tick(hired, quiet);
+    expect(ids(next)).toEqual([...before, 'firstHire']);
+    expect(ids(tick(next, quiet))).toEqual([...before, 'firstHire']);
+  });
+
   it('награда выдаётся один раз', () => {
     const upTo = (id: string) => content.milestones.slice(0, content.milestones.findIndex((m) => m.id === id)).map((m) => ({ id: m.id, day: 0 }));
     const s: GameState = { ...launchedGame(), users: 120, milestones: upTo('users100') };
@@ -170,6 +195,31 @@ describe('главы пути компании', () => {
     expect(ids(tick(base, quiet))).not.toContain('investorOffer');
     const declined: GameState = { ...base, eventLog: [...base.eventLog, { day: 5, eventId: 'angelOffer', choiceId: 'decline', chanceResults: [] }] };
     expect(ids(tick(declined, quiet))).toContain('investorOffer');
+  });
+
+  it('цель «предложение инвестора» засчитывается и тогда, когда игрок сам позвал инвестора: ждать случая не нужно', () => {
+    const before = content.milestones.slice(0, content.milestones.findIndex((m) => m.id === 'investorOffer')).map((m) => ({ id: m.id, day: 0 }));
+    const base: GameState = { ...launchedGame(), milestones: before };
+    const talks = { investor: 'angels', share: 0.1, offer: 50_000, valuation: 500_000, patience: 3, raises: 0, untilDay: base.day + 10 };
+    const funding = { rng: base.rng, talks: null, readyDay: 0, promise: null, last: null, rounds: 0, kept: 0, broken: 0 };
+    // Состояние инвесторов есть, но переговоров ещё не было — цель не засчитана.
+    expect(ids(tick({ ...base, funding }, quiet))).not.toContain('investorOffer');
+    expect(ids(tick({ ...base, funding: { ...funding, talks } }, quiet))).toContain('investorOffer');
+    // Инвестор отказал — предложение всё равно было.
+    const declined = { ...funding, last: { day: base.day, kind: 'declined' as const, investor: 'angels', amount: 0, share: 0 } };
+    expect(ids(tick({ ...base, funding: declined }, quiet))).toContain('investorOffer');
+  });
+
+  it('глава считается пройденной, когда закрыта её последняя непройденная цель, — в каком бы порядке они ни шли', () => {
+    const team = content.chapters.find((c) => c.id === 'team')!.milestones;
+    const earlier = content.milestones.slice(0, content.milestones.findIndex((m) => m.id === team[0])).map((m) => ({ id: m.id, day: 0 }));
+    // В главе «Команда» пройдено всё, кроме первого найма.
+    const rest = team.filter((id) => id !== 'firstHire').map((id) => ({ id, day: 0 }));
+    const s: GameState = { ...launchedGame(), milestones: [...earlier, ...rest], news: [], team: { ...teamOf(launchedGame(), content), employees: [worker] } };
+    const after = tick(s, quiet);
+    expect(ids(after)).toContain('firstHire');
+    expect(after.news).toContainEqual(expect.objectContaining({ kind: 'chapter', id: 'team' }));
+    expect(milestoneView(after, content).chapters.find((c) => c.id === 'team')).toMatchObject({ done: true });
   });
 
   it('старое сохранение с целями, которых больше нет, открывается и продолжает путь', () => {
