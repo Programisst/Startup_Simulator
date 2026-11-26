@@ -9,7 +9,7 @@ export type Nav =
   | { view: 'error'; url: string };
 
 export function searchUrl(query: string): string {
-  return `goagle.com/search?q=${query.replace(/\s+/g, '+')}`;
+  return `gugle.com/search?q=${query.replace(/\s+/g, '+')}`;
 }
 
 /** Что откроется, если ввести текст в адресную строку и нажать Enter. */
@@ -18,7 +18,7 @@ export function navigateFromInput(input: string): Nav {
   if (!text) return { view: 'newtab', url: '' };
   const bare = text.replace(/^https?:\/\//i, '').replace(/\/$/, '');
   if (/^(localhost|127\.0\.0\.1)(:\d+)?(\/.*)?$/i.test(bare)) return { view: 'product', url: 'localhost:5173' };
-  if (/^goagle\.com\/?$/i.test(bare)) return { view: 'newtab', url: '' };
+  if (/^(?:gugle|goagle)\.com\/?$/i.test(bare)) return { view: 'newtab', url: '' };
   if (!/\s/.test(bare) && /^[\w-]+(\.[\w-]+)+(\/\S*)?$/.test(bare)) return { view: 'error', url: bare };
   return { view: 'results', query: text, url: searchUrl(text) };
 }

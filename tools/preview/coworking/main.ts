@@ -49,6 +49,7 @@ walk.addEventListener('click', () => {
   updatePause();
 });
 screen.addEventListener('close', () => {
+  if (screen.open) return;
   unmountComputer?.();
   unmountComputer = undefined;
 });

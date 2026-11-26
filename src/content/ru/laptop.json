@@ -1,6 +1,6 @@
 {
   "brand": {
-    "search": "Goagle",
+    "search": "Гугле",
     "product": "Pulse"
   },
   "os": {
@@ -89,7 +89,7 @@
   },
   "browser": {
     "newTab": "Новая вкладка",
-    "placeholder": "Найдите в Goagle или введите URL",
+    "placeholder": "Найдите в Гугле или введите URL",
     "omniboxPlaceholder": "Введите запрос или адрес",
     "aiMode": "Режим ИИ",
     "shortcuts": [

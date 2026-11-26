@@ -10,7 +10,7 @@ describe('адресная строка', () => {
 
   it('ищет в поисковике, если введены слова', () => {
     const nav = navigateFromInput('  как найти инвестора ');
-    expect(nav).toEqual({ view: 'results', query: 'как найти инвестора', url: 'goagle.com/search?q=как+найти+инвестора' });
+    expect(nav).toEqual({ view: 'results', query: 'как найти инвестора', url: 'gugle.com/search?q=как+найти+инвестора' });
   });
 
   it('показывает страницу ошибки для незнакомого сайта', () => {
