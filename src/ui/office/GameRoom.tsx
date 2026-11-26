@@ -18,6 +18,12 @@ const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ def
 /** Сколько набранных знаков кода уходит в расчёт одной пачкой. */
 const TYPED_BATCH = 3;
 
+/**
+ * Сколько знаков засчитывается за одно нажатие. На быстрой скорости игровой день короче,
+ * поэтому нажатие весит больше: прибавка от набора зависит от того, как игрок печатает, а не от скорости игры.
+ */
+export const typedWeight = (speed: number): number => Math.max(1, speed);
+
 /** Какой раздел «Компании» открывает значок нижней панели компьютера. */
 const DOCK_SCREENS: Record<string, ScreenId> = {
   files: 'overview',
@@ -117,7 +123,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     },
     companyApp: <CompanyApp />,
     onTyped: () => {
-      typed.current += 1;
+      typed.current += typedWeight(speed);
       if (typed.current >= TYPED_BATCH) {
         dispatch({ type: 'typeCode', chars: typed.current });
         typed.current = 0;
@@ -130,7 +136,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
     // Плашка в редакторе: игрок видит, как его набор двигает задачу прямо сейчас.
     focusText: view.task
       ? t(view.founder.typedBoost >= view.founder.typedCap ? 'founderCare.typingMax' : 'founderCare.typing', { pct: num(view.task.progress * 100), boost: num(view.founder.typedBoost * 100) })
-      : t('founderCare.typingIdle'),
+      : t(view.founder.typingStartsPolish ? 'founderCare.typingPolish' : 'founderCare.typingIdle'),
     onComputer: setComputerOpen,
     pointAtDesk: step === 'goToComputer' || step === 'backToComputer' || step === 'openMarketing' || step === 'openFinance',
     // Команда для сцены: кто на каком месте, занят ли, в каком настроении. Как это нарисовать, решает напарник.

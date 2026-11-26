@@ -79,10 +79,36 @@ describe('набор кода двигает задачу', () => {
     expect(tick(typed, quiet).doneFeatures).toContain('core');
   });
 
-  it('без задачи, на отдыхе и после конца партии ничего не двигает', () => {
+  it('задач нет, а продукт уже есть — набор не пропадает: основатель берётся улучшать продукт', () => {
+    const built: GameState = { ...newGame(), doneFeatures: ['core'], tasks: [] };
+    expect(roomView(built, content).founder.typingStartsPolish).toBe(true);
+    const typed = type(built, 15);
+    expect(typed.tasks).toHaveLength(1);
+    expect(typed.tasks[0]!.kind).toBe('polish');
+    expect(progress(typed)).toBeGreaterThan(0);
+    expect(typed.typedToday).toBeCloseTo(0.5, 6);
+    // Дальше это обычная задача: полная норма за день даёт столько же работы, сколько сам день.
+    const queued = run(built, { type: 'startPolish' });
+    expect(progress(type(queued, 15))).toBeCloseTo(progress(typed), 6);
+    expect(roomView(typed, content).founder.typingStartsPolish).toBe(false);
+    // Улучшения копятся: продукт становится лучше, чем без набора.
+    let withTyping = built;
+    let without = built;
+    for (let i = 0; i < 20; i++) {
+      withTyping = tick(type({ ...withTyping, energy: 100 }, f.typeCharsPerDay), quiet);
+      without = tick({ ...without, energy: 100 }, quiet);
+    }
+    expect(withTyping.polish).toBeGreaterThan(without.polish);
+    expect(without.polish).toBe(built.polish);
+  });
+
+  it('пока основы продукта нет, улучшать нечего: без задачи, на отдыхе и после конца партии набор ничего не двигает', () => {
     const idle = type(newGame(), 30);
     expect(idle.tasks).toHaveLength(0);
     expect(idle.typedToday ?? 0).toBe(0);
+    expect(roomView(newGame(), content).founder.typingStartsPolish).toBe(false);
+    const restingBuilt: GameState = { ...newGame(), doneFeatures: ['core'], resting: true };
+    expect(type(restingBuilt, 30).tasks).toHaveLength(0);
     const resting: GameState = { ...working(), resting: true };
     expect(progress(type(resting, 30))).toBe(progress(resting));
     const over: GameState = { ...working(), status: 'bankrupt' };
@@ -106,7 +132,7 @@ describe('набор кода двигает задачу', () => {
 describe('плашка в редакторе кода', () => {
   it('все её тексты короткие: вместе с кнопкой не достают до значков нижней панели', () => {
     const texts = ui.founderCare as Record<string, string>;
-    for (const key of ['typing', 'typingMax', 'typingIdle']) {
+    for (const key of ['typing', 'typingMax', 'typingIdle', 'typingPolish']) {
       const longest = texts[key]!.replace('{{pct}}', '100').replace('{{boost}}', '100');
       expect(longest.length, key).toBeLessThanOrEqual(28);
     }

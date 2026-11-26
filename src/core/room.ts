@@ -4,7 +4,7 @@
 
 import { featuresOf } from './features';
 import { overload } from './formulas';
-import { coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
+import { canPolishByTyping, coffeeActive, coffeeReady, energyFactor, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
 import { officeIndex, officeOf } from './office';
 import { driverOf, motivationTarget, seatsOf, teamOf, teamWorkPerDay } from './team';
 import type { DriverId, EmployeeRole, GameContent, GameState, Task, TraitId } from './types';
@@ -82,6 +82,8 @@ export interface RoomFounder {
   /** Набор кода сегодня: какую долю дневной работы игрок уже добавил сам (0.6 = +60%) и сколько можно за день */
   typedBoost: number;
   typedCap: number;
+  /** Задач нет, но набор кода не пропадёт: первое же нажатие начнёт улучшение продукта */
+  typingStartsPolish: boolean;
 }
 
 /** Сотрудник глазами сцены: кто он, где сидит, чем занят и в каком настроении. */
@@ -242,6 +244,7 @@ export function roomView(s: GameState, content: GameContent): RoomView {
       focusBoost: content.config.founder.focusBonus * focusOf(s),
       typedBoost: typedTodayOf(s),
       typedCap: content.config.founder.typeBonusCap,
+      typingStartsPolish: canPolishByTyping(s, content),
     },
     alerts: {
       cashNegative,

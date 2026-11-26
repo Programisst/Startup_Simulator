@@ -9,7 +9,7 @@ import { cutOps } from './ops';
 import { respondThreat } from './threats';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
-import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
+import { canPolishByTyping, coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
 import { nextOffice } from './office';
 import { loanLimit, loanTerms } from './bank';
 import { fire, hire, setSalary, talk, teamOf, teamWorkPerDay, type TeamChange } from './team';
@@ -62,7 +62,9 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       const next: GameState = { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / f.focusChars) };
       // Набор кода сразу двигает текущую задачу: игрок ведёт команду своим примером.
       // За игровой день так можно добавить не больше typeBonusCap дневных норм — иначе работу можно было бы «напечатать» на паузе.
-      const task = state.tasks[0];
+      // Задач нет, а продукт уже есть — основатель берётся его улучшать: набор не должен уходить в пустоту.
+      const tasks = state.tasks.length === 0 && canPolishByTyping(state, content) ? [{ kind: 'polish' as const, progress: 0 }] : state.tasks;
+      const task = tasks[0];
       const share = Math.min(f.typeBonusCap - typedTodayOf(state), cmd.chars / f.typeCharsPerDay);
       if (!task || share <= 0 || state.resting || state.status !== 'running') return { ok: true, state: next };
       const work = share * (founderWorkPerDay(state, cfg) + teamWorkPerDay(teamOf(state, content), cfg.team)) * (state.rush ? cfg.rushSpeed : 1);
@@ -72,7 +74,7 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
         const cost = featuresOf(state, content).find((d) => d.id === task.featureId)?.cost ?? 0;
         progress = Math.max(task.progress, Math.min(progress, cost - 1e-6));
       }
-      next.tasks = [{ ...task, progress }, ...state.tasks.slice(1)];
+      next.tasks = [{ ...task, progress }, ...tasks.slice(1)];
       // Набранное игроком тоже идёт в зачёт обещанного обновления.
       const release = withReleaseWork(state, progress - task.progress);
       if (release) next.release = release;
