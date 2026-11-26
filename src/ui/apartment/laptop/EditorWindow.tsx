@@ -49,9 +49,10 @@ interface Props {
   s: LaptopState;
   actions: Actions;
   height: number;
+  scrollable?: boolean;
 }
 
-export function EditorWindow({ s, actions, height }: Props) {
+export function EditorWindow({ s, actions, height, scrollable = false }: Props) {
   const { t } = useTranslation();
   const file = PROJECT_FILES[s.fileIndex];
   const text = file ? (s.texts[s.fileIndex] ?? '') : '';
@@ -63,7 +64,7 @@ export function EditorWindow({ s, actions, height }: Props) {
 
   const codeHeight = height - CODE_TOP - ED.status - (s.terminalOpen ? ED.panel : 0);
   const visible = Math.max(1, Math.floor(codeHeight / ED.line));
-  const scroll = readOnly ? 0 : Math.max(0, caretLine - visible + 4);
+  const scroll = readOnly || scrollable ? 0 : Math.max(0, caretLine - visible + 4);
   const totalShown = Math.max(lines.length, visible + scroll);
 
   const words = useMemo(() => identifiers(file?.code ?? ''), [file?.code]);
@@ -235,8 +236,8 @@ export function EditorWindow({ s, actions, height }: Props) {
                 {readOnly && <span className="ed-readonly">{t('laptop.editor.readonly')}</span>}
               </div>
 
-              <div className={`ed-code${focused ? ' focused' : ''}`} style={{ height: codeHeight }} onClick={() => actions.setFocus('editor')}>
-                <div className="ed-code-inner" style={{ transform: `translateY(${-scroll * ED.line}px)` }}>
+              <div key={scrollable ? s.fileIndex : undefined} className={`ed-code${scrollable ? ' scrollable' : ''}${focused ? ' focused' : ''}`} style={{ height: codeHeight }} onClick={() => actions.setFocus('editor')}>
+                <div className="ed-code-inner" style={{ transform: `translateY(${-scroll * ED.line}px)`, height: scrollable ? totalShown * ED.line : undefined }}>
                   <div className="ed-current" style={{ top: caretLine * ED.line }} />
                   {Array.from({ length: totalShown }, (_, i) => {
                     const line = lines[i];

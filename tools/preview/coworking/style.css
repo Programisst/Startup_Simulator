@@ -26,7 +26,7 @@ h1, h2 { margin: 0; font-weight: 700; }
 h1 { font-family: Rubik, system-ui, sans-serif; font-size: clamp(19px, 4.2vw, 26px); }
 h2 { font: 600 14px ui-monospace, Menlo, monospace; }
 .controls { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
-button {
+:where(.controls,.screen-bar) button {
   appearance: none;
   color: #f2e8d5;
   background: #424942;
@@ -36,7 +36,7 @@ button {
   padding: 8px 12px;
   cursor: pointer;
 }
-button:hover { background: #505a4d; }
+:where(.controls,.screen-bar) button:hover { background: #505a4d; }
 button:disabled { opacity: .5; cursor: wait; }
 button:focus-visible { outline: 2px solid #e9bd83; outline-offset: 2px; }
 .scene {
@@ -64,25 +64,51 @@ button:focus-visible { outline: 2px solid #e9bd83; outline-offset: 2px; }
   padding: 0;
 }
 .monitor:hover { border-color: #f2d0a6; background: #eed6ab13; }
-dialog {
-  width: min(92vw, 990px);
-  max-height: 90svh;
+#screen {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  margin: 0;
   padding: 0;
-  color: #eee2c8;
-  background: #1f1f1f;
-  border: 1px solid #647061;
-  border-radius: 8px;
+  border: 0;
+  background: #242a27;
 }
-dialog::backdrop { background: #1b211ed9; }
-.screen-bar { padding: 10px 14px; background: #2e352f; border-bottom: 1px solid #49524b; }
-#editor { display: block; width: 100%; height: auto; }
-.visually-hidden {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
+#computer, .computer-workspace { height: 100%; }
+.computer-workspace { display: flex; flex-direction: column; --mono: ui-monospace, Menlo, Consolas, monospace; }
+.screen-bar { flex: none; min-height: 49px; padding: 7px 16px; background: #29332f; border-bottom: 1px solid #45554e; }
+.screen-bar nav { display: flex; gap: 5px; }
+.screen-bar button[aria-pressed="true"] { color: #e9f4ed; background: #435e52; border-color: #69917e; }
+.screen-bar h2 { font-family: Rubik, system-ui, sans-serif; font-size: 15px; }
+.computer-surface.lp-canvas { position: relative; flex: 1; min-height: 0; width: 100%; }
+.computer-surface :where(.br,.ed) .traffic { display: none; }
+.computer-surface .ed-code.scrollable { overflow: auto; }
+.computer-surface .ed-code.scrollable .ed-code-inner { min-width: max(730px, 100%); user-select: text; }
+.computer-surface .ed-code.scrollable .ed-minimap, .computer-surface .ed-code.scrollable .ed-scrollbar { display: none; }
+.computer-surface .st-hint, .computer-surface .ntp-credit, .computer-surface .ntp-edit { display: none; }
+.computer-surface .ed-activity { background: #242f2b; }
+.computer-surface .ed-sidebar { background: #1c2623; }
+.computer-surface .ed-title, .computer-surface .ed-status { background: #293530; }
+.computer-surface .br, .computer-surface .br-toolbar { background: #2e4038; }
+.computer-surface .br-tabs { background: #25342f; }
+.computer-surface .ntp-center { top: clamp(48px, 16%, 155px); }
+.computer-surface .ntp-logo { font-family: Rubik, system-ui, sans-serif; font-size: clamp(40px, 8vw, 77px); letter-spacing: -.045em; }
+.computer-surface .native-search { width: min(550px, 88vw); border-radius: 12px; }
+.native-search input { min-width: 0; flex: 1; background: transparent; color: #212b28; border: 0; font: inherit; outline: none; }
+.native-search:focus-within { outline: 2px solid #97beaa; outline-offset: 3px; }
+.computer-surface .ntp-shortcuts { flex-wrap: wrap; justify-content: center; }
+@media (max-width: 640px) {
+  .screen-bar { padding-inline: 7px; gap: 4px; }
+  .screen-bar h2 { display: none; }
+  .computer-surface .ed-activity { display: none; }
+  .computer-surface .ed-sidebar { width: 118px !important; }
+  .computer-surface .sr-head { padding: 10px; gap: 10px; }
+  .computer-surface .sr-box { min-width: 0; flex: 1; }
+  .computer-surface .sr-tabs, .computer-surface .sr-body { margin-left: 14px; }
+  .computer-surface .sr-body { width: calc(100% - 28px); }
+  .computer-surface .ed-num { width: 36px; padding-right: 9px; }
 }
 @media (max-width: 560px) {
   main { padding-inline: 9px; }

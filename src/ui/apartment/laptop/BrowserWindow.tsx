@@ -10,9 +10,9 @@ import { resultsFor, type SearchResult } from './logic';
 import type { BrowserTab, LaptopState } from './store';
 import { TrafficLights } from './Traffic';
 
-function tabTitle(tab: BrowserTab, t: (k: string) => string): string {
+function tabTitle(tab: BrowserTab, t: (k: string) => string, searchBrand?: string): string {
   if (tab.view === 'product') return `${t('laptop.brand.product')} — ${t('laptop.product.title')}`;
-  if (tab.view === 'results') return `${tab.query} — ${t('laptop.brand.search')}`;
+  if (tab.view === 'results') return `${tab.query} — ${searchBrand ?? t('laptop.brand.search')}`;
   if (tab.view === 'article') return tab.article?.title ?? tab.url;
   if (tab.view === 'error') return tab.url;
   return t('laptop.browser.newTab');
@@ -28,14 +28,14 @@ function Favicon({ tab }: { tab: BrowserTab }) {
 
 const stop = (e: { stopPropagation: () => void }) => e.stopPropagation();
 
-export function BrowserWindow({ s, actions }: { s: LaptopState; actions: Actions }) {
+export function BrowserWindow({ s, actions, searchBrand, searchPlaceholder }: { s: LaptopState; actions: Actions; searchBrand?: string; searchPlaceholder?: string }) {
   const { t } = useTranslation();
   const active = s.tabs.find((tab) => tab.id === s.activeTab) ?? s.tabs[0];
   const canBack = (active?.back.length ?? 0) > 0;
   const canForward = (active?.forward.length ?? 0) > 0;
 
   let page: ReactNode = null;
-  if (active?.view === 'newtab') page = <NewTab s={s} actions={actions} />;
+  if (active?.view === 'newtab') page = <NewTab s={s} actions={actions} searchBrand={searchBrand} searchPlaceholder={searchPlaceholder} />;
   else if (active?.view === 'product')
     page = (
       <ProductPage
@@ -46,7 +46,7 @@ export function BrowserWindow({ s, actions }: { s: LaptopState; actions: Actions
         onSection={(i) => actions.setProductSection(i)}
       />
     );
-  else if (active?.view === 'results') page = <ResultsPage s={s} tab={active} actions={actions} />;
+  else if (active?.view === 'results') page = <ResultsPage s={s} tab={active} actions={actions} searchBrand={searchBrand} />;
   else if (active?.view === 'article') page = <ArticlePage tab={active} scroll={s.pageScroll} actions={actions} />;
   else if (active?.view === 'error') page = <ErrorPage tab={active} actions={actions} />;
 
@@ -66,7 +66,7 @@ export function BrowserWindow({ s, actions }: { s: LaptopState; actions: Actions
                 onClick={() => actions.selectTab(tab.id)}
               >
                 <Favicon tab={tab} />
-                <span className="br-tab-title">{tabTitle(tab, t)}</span>
+                <span className="br-tab-title">{tabTitle(tab, t, searchBrand)}</span>
                 <button
                   type="button"
                   className="br-tab-x"
@@ -150,7 +150,7 @@ export function BrowserWindow({ s, actions }: { s: LaptopState; actions: Actions
   );
 }
 
-function NewTab({ s, actions }: { s: LaptopState; actions: Actions }) {
+function NewTab({ s, actions, searchBrand, searchPlaceholder }: { s: LaptopState; actions: Actions; searchBrand?: string; searchPlaceholder?: string }) {
   const { t } = useTranslation();
   const shortcuts = t('laptop.browser.shortcuts', { returnObjects: true }) as string[];
   const targets = t('laptop.browser.shortcutTargets', { returnObjects: true }) as string[];
@@ -160,7 +160,17 @@ function NewTab({ s, actions }: { s: LaptopState; actions: Actions }) {
     <div className="ntp">
       <Landscape variant="dawn" id="ntp" />
       <div className="ntp-center">
-        <div className="ntp-logo">{t('laptop.brand.search')}</div>
+        <div className="ntp-logo">{searchBrand ?? t('laptop.brand.search')}</div>
+        {searchBrand ? (
+          <form className="ntp-search native-search" onSubmit={(event) => {
+            event.preventDefault();
+            const query = new FormData(event.currentTarget).get('query')?.toString().trim();
+            if (query) actions.navigate(query);
+          }}>
+            <Icon name="search" size={19} />
+            <input type="search" name="query" aria-label={searchPlaceholder} placeholder={searchPlaceholder} autoComplete="off" />
+          </form>
+        ) : (
         <div
           className={`ntp-search${s.ntpFocus ? ' focus' : ''}${s.ntpFocus && typed ? ' open' : ''}`}
           onClick={(e) => {
@@ -196,6 +206,7 @@ function NewTab({ s, actions }: { s: LaptopState; actions: Actions }) {
             </div>
           )}
         </div>
+        )}
         <div className="ntp-shortcuts">
           {shortcuts.map((label, i) => (
             <button
@@ -408,7 +419,7 @@ function ProductPage({ loading, scroll, hoverDay, section, onSection }: { loadin
 
 // ——— Страница результатов поиска ———
 
-function ResultsPage({ s, tab, actions }: { s: LaptopState; tab: BrowserTab; actions: Actions }) {
+function ResultsPage({ s, tab, actions, searchBrand }: { s: LaptopState; tab: BrowserTab; actions: Actions; searchBrand?: string }) {
   const { t } = useTranslation();
   const curated = {
     queries: t('laptop.browser.curatedQueries', { returnObjects: true }) as string[],
@@ -425,7 +436,7 @@ function ResultsPage({ s, tab, actions }: { s: LaptopState; tab: BrowserTab; act
       <div className="sr-scroll" style={{ transform: `translateY(${-s.pageScroll}px)` }}>
         <div className="sr-head">
           <button type="button" className="sr-logo" onClick={(e) => (stop(e), actions.goTo({ view: 'newtab', url: '', query: '' }, 200))}>
-            {t('laptop.brand.search')}
+            {searchBrand ?? t('laptop.brand.search')}
           </button>
           <div className={`sr-box${editing ? ' focus' : ''}`} onClick={(e) => (stop(e), actions.focusSearchBox())}>
             <span className="sr-box-text">

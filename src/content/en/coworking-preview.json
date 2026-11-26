@@ -1,11 +1,15 @@
 {
   "title": "Coworking",
-  "hint": "Select an active monitor to read the code",
+  "hint": "Select an active monitor to open the computer",
   "walk": "Show walk",
   "play": "Resume",
   "pause": "Pause",
-  "close": "Close",
+  "close": "Back to office",
   "monitor": "Monitor · seat {{seat}}",
   "loading": "Loading coworking scene…",
-  "error": "The preview could not load. Refresh the page."
+  "error": "The preview could not load. Refresh the page.",
+  "editor": "Editor",
+  "browser": "Browser",
+  "searchBrand": "Beacon",
+  "searchPlaceholder": "Search or enter an address"
 }
