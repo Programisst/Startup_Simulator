@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+</head>
+<body>
+  <header id="office-toolbar">
+    <div class="office-heading"><h1></h1><span id="subtitle"></span></div>
+    <nav><button id="walk" type="button"></button><button id="pause" type="button"></button><button id="reset" type="button"></button></nav>
+  </header>
+  <div id="viewport"><canvas id="office"></canvas><p id="loading" role="status"></p></div>
+  <footer id="hint"></footer>
+  <dialog id="screen" aria-labelledby="screen-title"><div id="computer"></div></dialog>
+  <script type="module" src="./office-3d/main.ts"></script>
+</body>
+</html>
