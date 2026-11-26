@@ -11,14 +11,22 @@ from PIL import Image, ImageDraw
 from iso import Scene, hx, ihash
 
 
-WIDTH, HEIGHT = 408, 276
-ROOM_X, ROOM_Y = 195, 145
+WIDTH, HEIGHT = 464, 310
+ORIGIN = (204, 80)
+ROOM_X, ROOM_Y = 218, 170
 # Each index is a permanent ScenePerson.seat. Keep holes when someone leaves.
-DESKS = ((33, 28), (82, 28), (131, 28), (42, 92), (91, 92), (140, 92))
+DESKS = ((42, 31), (96, 31), (150, 31), (49, 101), (103, 101), (157, 101))
 COFFEE = (6, 25, 59, 108)
-RUG = (32, 176, 68, 87)
-FLOOR_PLANTS = ((13, 118), (187, 69))
-WINDOW_START, WINDOW_SPACING = 48, 39
+RUG = (34, 195, 78, 95)
+FLOOR_PLANTS = ((15, 120), (208, 80), (207, 146))
+BENCH = (7, 24, 130, 161)
+SIDE_TABLE = (26, 38, 150, 162)
+WINDOW_START, WINDOW_SPACING = 49, 46
+DESK_WIDTH, DESK_DEPTH = 38, 23
+SEAT_OFFSET = (18, 29)
+MONITOR = (6, 21, 6.5, 21, 34)
+CHAIR_ATLAS = (42, 38)
+CHAIR_ORIGIN = (20, 30)
 WINDOW_BAYS = tuple(WINDOW_START + i * WINDOW_SPACING for i in range(3))
 WINDOW_END = WINDOW_BAYS[-1] + WINDOW_SPACING - 2
 
@@ -210,7 +218,7 @@ def floor_color(look, style, rug=False):
         ambient = np.minimum(np.minimum(x, y), np.minimum(ROOM_X - x, ROOM_Y - y))
         shade = np.where(ambient < 4, 9, np.where(ambient < 9, 4, 0))
         for dx, dy in DESKS:
-            distance = np.maximum.reduce((dx - x, x - dx - 35, dy - y, y - dy - 35))
+            distance = np.maximum.reduce((dx - x, x - dx - DESK_WIDTH, dy - y, y - dy - 37))
             shade += np.where(distance < 1, 11, np.where(distance < 5, 4, 0))
         x0, x1, y0, y1 = COFFEE
         near_cabinet = np.maximum.reduce((x0 - x, x - x1, y0 - y, y - y1))
@@ -240,7 +248,7 @@ def backdrop(look):
 
     def draw(scene):
         yy, xx = np.mgrid[0:HEIGHT, 0:WIDTH]
-        distance = ((xx - WIDTH / 2) / 205) ** 2 + ((yy - 122) / 152) ** 2
+        distance = ((xx - WIDTH / 2) / 235) ** 2 + ((yy - 147) / 172) ** 2
         levels = np.floor(np.maximum(0, 1 - distance) * 10) / 10
         scene.col[:] = base + levels[:, :, None] * (halo - base)
         mask = Image.new("1", (WIDTH, HEIGHT))
@@ -432,11 +440,10 @@ def keyboard(scene, x, y, occupied):
     material(scene, (x + 16, x + 19, y + 1, y + 5, 16, 17), ("#b5b0a4", "#797780", "#565360"))
 
 
-def desktop(scene, look, style, seat, person):
+def desktop(scene, look, style, seat, person, *, with_chair=True):
     x, y = DESKS[seat]
     walnut, front, side = colors(look, "wood")
     metal = colors(look, "metal")
-    fabric = colors(look, "fabric")
     screen, signal, caret = (hx(c) for c in colors(look, "screen"))
 
     def surface(X, Y, _):
@@ -444,18 +451,18 @@ def desktop(scene, look, style, seat, person):
         delta = (Y % 5 < .85) * -6
         return hx(walnut) + (streaks + delta)[:, None]
 
-    for dx in (1, 31):
-        for dy in (1, 17):
+    for dx in (1, DESK_WIDTH - 4):
+        for dy in (1, DESK_DEPTH - 4):
             material(scene, (x + dx, x + dx + 2.8, y + dy, y + dy + 2.8, 0, 14), metal)
-    material(scene, (x, x + 35, y, y + 21, 14, 16), (surface, front, side))
+    material(scene, (x, x + DESK_WIDTH, y, y + DESK_DEPTH, 14, 16), (surface, front, side))
     material(scene, (x + 10, x + 21, y + 3, y + 8, 16, 17), metal)
     material(scene, (x + 14, x + 17, y + 4, y + 6, 17, 21), metal, outline="none")
-    material(scene, (x + 7, x + 24, y + 3, y + 6, 20, 32), metal)
+    material(scene, (x + 5, x + 28, y + 3, y + 6, 20, 35), metal)
 
     def display(X, _Y, Z):
         if person is None or not person["busy"]:
             return np.tile(hx("434450"), (len(X), 1))
-        dx = X - x - 8
+        dx = X - x - MONITOR[0]
         dz = Z - 21
         result = np.tile(screen * .48, (len(X), 1))
         bar = (dz >= 8) | (dx < 2)
@@ -466,7 +473,9 @@ def desktop(scene, look, style, seat, person):
         result[(dx > 3) & (dx < 5) & (dz > 2) & (dz < 3)] = caret
         return result
 
-    material(scene, (x + 8, x + 23, y + 6, y + 6.3, 21, 31), (None, display, None), outline="none")
+    u, w, v, z0, z1 = MONITOR
+    material(scene, (x + u, x + u + w, y + v - .2, y + v, z0, z1),
+             (None, display, None), outline="none")
     keyboard(scene, x + 9, y + 12, person is not None)
     if seat == 0:
         mug(scene, x + 4, y + 13, 16, "#d9bea0")
@@ -479,34 +488,58 @@ def desktop(scene, look, style, seat, person):
         material(scene, (x + 3, x + 10, y + 5, y + 12, 16, 17),
                  ("#b4aba4", "#71656b", "#71656b"), outline="none")
 
-    cy = y + (26 if person else 30)
-    cx = x + 16
-    material(scene, (cx - 6, cx + 7, cy + 1, cy + 3, 0, 2), metal)
-    material(scene, (cx, cx + 2, cy - 4, cy + 7, 0, 2), metal)
-    material(scene, (cx - 1, cx + 2, cy, cy + 3, 2, 8), metal)
-    material(scene, (cx - 6, cx + 7, cy - 5, cy + 6, 8, 11), fabric)
-    material(scene, (cx - 6, cx + 7, cy + 4, cy + 7, 9, 20), fabric)
+    cx, cy = x + SEAT_OFFSET[0], y + SEAT_OFFSET[1]
+    if with_chair:
+        chair(scene, look, cx, cy + (0 if person else 4))
 
     if person:
         palette = dict(zip("HhWwSs", WORKER_COLORS[person["nameSeed"] % len(WORKER_COLORS)]))
         palette.update(o="#3a3a50", d="#382c38")
-        scene.sprite(WORKER, palette, cx, cy, 11, 8, 17, bias=19)
+        scene.sprite(WORKER, palette, cx, cy, 12, 8, 17, bias=4)
         show_status(scene, person, cx + 1, cy)
 
 
-def details(scene, look, style):
+def chair(scene, look, x, y):
+    metal = colors(look, "metal")
+    fabric = colors(look, "fabric")
+    material(scene, (x - 7, x + 8, y + 1, y + 3, 0, 2), metal)
+    material(scene, (x - 1, x + 2, y - 5, y + 8, 0, 2), metal)
+    material(scene, (x - 1, x + 2, y, y + 3, 2, 9), metal)
+    material(scene, (x - 7, x + 8, y - 5, y + 6, 9, 12), fabric)
+    material(scene, (x - 7, x + 8, y + 4, y + 7, 10, 20), fabric)
+    material(scene, (x - 6, x + 7, y + 7, y + 7.5, 13, 18),
+             (None, fabric[1], None), outline="none")
+
+
+def lounge(scene, look):
     wood = colors(look, "wood")
+    fabric = colors(look, "fabric")
+    x0, x1, y0, y1 = BENCH
+    material(scene, (x0, x1, y0, y1, 1, 7), wood)
+    material(scene, (x0, x1, y0, y1, 7, 10), fabric)
+    material(scene, (x0, x0 + 4, y0, y1, 8, 20), fabric)
+    for y in (y0 + 1, y0 + 16):
+        material(scene, (x0 + 4, x1 - 1, y, y + 14, 10, 11),
+                 (fabric[0], None, fabric[1]), outline="none")
+    material(scene, (x0 + 4, x0 + 9, y0 + 1, y0 + 8, 11, 15),
+             ("#cfb497", "#aa8f7a", "#92766b"))
+    x0, x1, y0, y1 = SIDE_TABLE
+    material(scene, (x0 + 4, x1 - 4, y0 + 2, y1 - 2, 0, 9), wood)
+    material(scene, (x0, x1, y0, y1, 9, 11), wood)
+    material(scene, (x0 + 2, x1 - 2, y0 + 3, y1 - 2, 11, 12),
+             ("#d1c2a5", "#987960", "#987960"), outline="none")
+
+
+def details(scene, look, style):
     metal = colors(look, "metal")
     x0, x1, y0, y1 = RUG
     material(scene, (x0, x1, y0, y1, 0, .4),
              (floor_color(look, style, rug=True), None, None), outline="none")
     for x, y in FLOOR_PLANTS:
         plant(scene, x, y)
-    material(scene, (9, 28, 123, 135, 0, 9), wood)
-    material(scene, (10, 27, 124, 132, 9, 10), ("#a6957b", wood[1], wood[2]), outline="none")
-    material(scene, (15, 22, 134, 135.5, 4, 6), ("#d1b48a", "#c0a17a", "#a7846d"), outline="none")
-    material(scene, (182, 188, 43, 49, 0, 7), metal)
-    material(scene, (183, 187, 44, 48, 7, 7.2), ("#3a3a50", None, None), outline="none")
+    lounge(scene, look)
+    material(scene, (201, 207, 46, 52, 0, 7), metal)
+    material(scene, (202, 206, 47, 51, 7, 7.2), ("#3a3a50", None, None), outline="none")
 
 
 def people_by_seat(team):
@@ -522,19 +555,23 @@ def people_by_seat(team):
     return people
 
 
-def render(style, team):
-    people = people_by_seat(team)
+def room_art(style, people, *, with_chairs=True):
     look = LOOKS[style]
-    scene = Scene(WIDTH, HEIGHT, 176, 79, backdrop(look))
+    scene = Scene(WIDTH, HEIGHT, *ORIGIN, backdrop(look))
     architecture(scene, look, style)
     details(scene, look, style)
     pinboard(scene, look, style)
     coffee_corner(scene, look, style)
-    for seat in range(team["office"]["seats"]):
-        desktop(scene, look, style, seat, people.get(seat))
+    for seat in range(len(DESKS)):
+        desktop(scene, look, style, seat, people.get(seat), with_chair=with_chairs)
+    return scene
 
+
+def render(style, team):
+    scene = room_art(style, people_by_seat(team))
+    look = LOOKS[style]
     light = colors(look, "light")[0]
-    gx, gy = scene.proj(63, 33, 25)
+    gx, gy = scene.proj(DESKS[0][0] + 31, DESKS[0][1] + 5, 25)
     coffee_x, coffee_y = scene.proj(16, 90, 30)
     glows = ()
     if style == "evening":
@@ -544,12 +581,47 @@ def render(style, team):
     return scene.finish(glows=glows)
 
 
+def depth_image(scene):
+    depth = np.where(scene.obj > 0, np.rint((scene.dep + 64) * 64), 0).astype(np.uint16)
+    rgb = np.zeros((scene.H, scene.W, 3), dtype=np.uint8)
+    rgb[:, :, 0] = depth & 255
+    rgb[:, :, 1] = depth >> 8
+    return Image.fromarray(rgb)
+
+
+def export_preview(output):
+    room = room_art("day", {}, with_chairs=False)
+    cw, ch = CHAIR_ATLAS
+    seat = Scene(cw, ch, *CHAIR_ORIGIN, lambda s: None)
+    chair(seat, LOOKS["day"], 0, 0)
+    atlas = Image.new("RGB", (WIDTH + cw, HEIGHT * 2))
+    for image, location in (
+        (room.finish(), (0, 0)), (depth_image(room), (0, HEIGHT)),
+        (seat.finish(), (WIDTH, 0)), (depth_image(seat), (WIDTH, HEIGHT)),
+    ):
+        atlas.paste(image, location)
+    atlas.save(output / "coworking-art.png", optimize=True)
+    blockers = [COFFEE, BENCH, SIDE_TABLE, (201, 207, 46, 52)]
+    blockers.extend((x - 3, x + 3, y - 3, y + 3) for x, y in FLOOR_PLANTS)
+    data = {
+        "width": WIDTH, "height": HEIGHT, "origin": ORIGIN,
+        "room": (ROOM_X, ROOM_Y), "desks": DESKS, "deskSize": (DESK_WIDTH, DESK_DEPTH),
+        "seatOffset": SEAT_OFFSET, "monitor": MONITOR, "fixedObstacles": blockers,
+        "chair": {"width": cw, "height": ch, "origin": CHAIR_ORIGIN},
+    }
+    (output / "coworking-art.json").write_text(json.dumps(data, indent=2) + "\n")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path, help="Directory for the native-resolution PNGs")
+    parser.add_argument("--preview-art", action="store_true", help="Export the preview art atlas")
     args = parser.parse_args()
-    team = json.load(sys.stdin)
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.preview_art:
+        export_preview(args.output)
+        return
+    team = json.load(sys.stdin)
     for style, look in LOOKS.items():
         render(style, team).save(args.output / (look["name"] + ".png"))
 

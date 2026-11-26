@@ -27,7 +27,7 @@ const worker = (id: number, seat: number, details: Partial<Employee>): Employee 
   ...details,
 });
 
-const team: SceneTeam = sceneTeam({
+export const coworkingTeam: SceneTeam = sceneTeam({
   ...game,
   day: 70,
   office: 'coworking',
@@ -48,4 +48,4 @@ const team: SceneTeam = sceneTeam({
   },
 }, content);
 
-process.stdout.write(JSON.stringify(team));
+if (import.meta.main) process.stdout.write(JSON.stringify(coworkingTeam));

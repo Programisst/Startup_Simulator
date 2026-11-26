@@ -1,0 +1,11 @@
+{
+  "title": "Coworking",
+  "hint": "Select an active monitor to read the code",
+  "walk": "Show walk",
+  "play": "Resume",
+  "pause": "Pause",
+  "close": "Close",
+  "monitor": "Monitor · seat {{seat}}",
+  "loading": "Loading coworking scene…",
+  "error": "The preview could not load. Refresh the page."
+}
