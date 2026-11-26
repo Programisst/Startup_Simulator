@@ -14,6 +14,7 @@ const SHADES = ['#664836', '#8a6a52', '#b39579', '#d8c3a8'];
 export function OpsPanel() {
   const { t } = useTranslation();
   const game = useStore((s) => s.game)!;
+  const dispatch = useStore((s) => s.dispatch);
   const view = opsView(game, content.config);
 
   if (!view.active) {
@@ -52,7 +53,36 @@ export function OpsPanel() {
         ))}
       </div>
       <p className="fin-small">{t('finance.ops.next', { cents: view.nextCents })}</p>
-      <p className="muted fin-small">{t('finance.ops.lag')}</p>
+      <p className="muted fin-small">{t('finance.ops.lag', { pct: view.attritionPct })}</p>
+
+      {/* Срочное сокращение: простой рабочий вид — нужно оформление. */}
+      {view.excessPerMonth > 0 && (
+        <div data-ops-cut>
+          <h4>{t('finance.ops.cutTitle')}</h4>
+          <p>
+            <b>{t('finance.ops.excess', { current: money(view.currentRevenue), level: money(view.steadyRevenue), excess: money(view.excessPerMonth) })}</b>
+          </p>
+          {view.cuts.map((cut) => (
+            <div key={cut.id} className="panel" data-ops-cut-option={cut.id}>
+              <h4>{t(`finance.ops.cuts.${cut.id}`)}</h4>
+              <p className="fin-small">{t('finance.ops.cutTerms', { saving: money(cut.saving), severance: money(cut.severance), months: cut.paybackMonths })}</p>
+              <p className="fin-small">
+                {t('finance.ops.cutPrice', { reputation: cut.reputation, motivation: cut.motivation })}{' '}
+                {t('finance.ops.cutRisk', { pct: cut.riskPct, days: cut.riskDays, churn: cut.riskChurnPct })}
+              </p>
+              <button data-ops-cut-button={cut.id} disabled={cut.blocked !== null} onClick={() => dispatch({ type: 'cutOps', cut: cut.id })}>
+                {t('finance.ops.cutButton', { severance: money(cut.severance) })}
+              </button>
+              {cut.blocked !== null && <p className="muted fin-small">{t(`finance.ops.cutBlocked.${cut.blocked}`, { days: view.cutCooldownLeft })}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+      {view.last && (
+        <p className="muted fin-small" data-ops-last>
+          {t(`finance.ops.last.${view.last.backfired ? 'backfired' : 'done'}`, { severance: money(view.last.severance), saving: money(view.last.saving) })}
+        </p>
+      )}
     </section>
   );
 }

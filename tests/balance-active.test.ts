@@ -11,8 +11,19 @@ vi.setConfig({ testTimeout: 240_000 });
 const GAMES_PER_TYPE = 3;
 const winDay = (results: GameState[]) => median(results.filter((r) => r.status === 'won').map((r) => r.day));
 
-/** Свободная игра на заданное число дней: без цели партия не заканчивается победой. */
+const played = new Map<string, GameState[]>();
+
+/** Свободная игра на заданное число дней: без цели партия не заканчивается победой. Одинаковые прогоны считаются один раз. */
 function sandbox(strategy: Strategy, days: number): GameState[] {
+  const key = `${strategy === active ? 'active' : 'careful'}:${days}`;
+  const ready = played.get(key);
+  if (ready) return ready;
+  const results = play(strategy, days);
+  played.set(key, results);
+  return results;
+}
+
+function play(strategy: Strategy, days: number): GameState[] {
   return PRODUCT_TYPES.map((productType) => {
     let s = createGame({ seed: 1000, companyName: 'Bot', productType, audienceId: content.productTypes[productType].audiences[0]!.id, businessModel: defaultModel[productType], goal: 'sandbox', difficulty: 'normal' }, content);
     while (s.status === 'running' && s.day < days) {
@@ -59,6 +70,17 @@ describe('активный игрок', () => {
       expect(margin).toBeGreaterThan(0.15);
       expect(margin).toBeLessThan(0.45);
       expect(reserve).toBeLessThan(36);
+    }
+  });
+
+  it('угрозы большой компании приходят почти в каждую партию, но грамотного игрока не разоряют — как в жизни', () => {
+    for (const results of [sandbox(carefulHirer, 4 * 360), sandbox(active, 4 * 360)]) {
+      // В спад 2008–2009 годов ни одна публичная софтверная компания не разорилась: рост замедлился, но не остановился.
+      expect(results.every((r) => r.status === 'running')).toBe(true);
+      const threats = results.map((r) => r.threats?.count ?? 0);
+      expect(threats.filter((n) => n > 0).length).toBeGreaterThanOrEqual(Math.ceil(results.length / 3));
+      // Не чаще одной угрозы в год на партию.
+      expect(Math.max(...threats)).toBeLessThanOrEqual(4);
     }
   });
 });

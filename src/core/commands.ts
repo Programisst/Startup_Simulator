@@ -5,6 +5,8 @@ import { announceRelease, withReleaseWork } from './releases';
 import { makeOffer } from './headhunt';
 import { buyBack, closeRound, counterOffer, leaveRound, openRound } from './funding';
 import { buyTarget, checkTarget } from './acquisitions';
+import { cutOps } from './ops';
+import { respondThreat } from './threats';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
 import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
@@ -106,6 +108,16 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'buyTarget': {
       const next = cmd.type === 'checkTarget' ? checkTarget(state, content) : buyTarget(state, content, cmd.offer);
       return next ? { ok: true, state: next } : fail('acquisitionUnavailable');
+    }
+
+    case 'cutOps': {
+      const next = cutOps(state, content, cmd.cut);
+      return next ? { ok: true, state: next } : fail('opsCutUnavailable');
+    }
+
+    case 'respondThreat': {
+      const next = respondThreat(state, content, cmd.response);
+      return next ? { ok: true, state: next } : fail('threatUnavailable');
     }
 
     case 'headhunt': {

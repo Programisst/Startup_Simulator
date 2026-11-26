@@ -52,6 +52,11 @@ describe('содержимое событий', () => {
 
   it('у каждого события два-три варианта, вероятности и суммы в разумных пределах', () => {
     for (const def of content.events) {
+      // Сообщение об угрозе — не выбор: решение принимается на экране «Финансы», где видны суммы и шансы.
+      if (def.threat) {
+        expect(def.choices.map((c) => c.effects), def.id).toEqual([[]]);
+        continue;
+      }
       expect(def.choices.length, def.id).toBeGreaterThanOrEqual(2);
       expect(def.choices.length, def.id).toBeLessThanOrEqual(3);
       expect(def.weight, def.id).toBeGreaterThan(0);

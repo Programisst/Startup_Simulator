@@ -22,7 +22,8 @@ export { marketingView, channelSpend, totalAdSpend, channelEfficiency, contentBo
 export { campaignBlock, campaignCost, campaignOdds, campaignsOf, campaignsView, type CampaignBlock, type CampaignView, type CampaignsView } from './campaigns';
 export { headhuntView, headhuntBlock, headhuntChance, starNow, starOfWindow, type HeadhuntBlock, type HeadhuntOfferView, type HeadhuntView, type StarFit } from './headhunt';
 export { starAura } from './team';
-export { opsView, opsCostFor, opsCostPerMonth, steadyRevenue, type OpsView } from './ops';
+export { opsView, opsCostFor, opsCostPerMonth, steadyRevenue, currentRevenue, opsLevelOf, type OpsView, type OpsCutView, type OpsCutBlock } from './ops';
+export { threatView, threatPressure, threatOfWindow, threatsOf, threatEventId, type ThreatView, type ThreatResponseView, type ThreatResponseBlock } from './threats';
 export { acquisitionsView, acquisitionBlock, targetOfWindow, targetNow, type AcquisitionBlock, type AcquisitionsView } from './acquisitions';
 export { fundingView, fundingBlock, fundingPosition, fundingOf, interestChance, type FundingBlock, type FundingView, type InvestorView, type PositionReason } from './funding';
 export { basePace, releaseBlock, releaseOf, releaseTerms, releaseView, type ReleaseBlock, type ReleaseOption, type ReleaseView } from './releases';
