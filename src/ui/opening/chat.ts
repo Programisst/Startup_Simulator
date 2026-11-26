@@ -16,7 +16,7 @@ import {
   type ProductTypeId,
 } from '../../core';
 
-export type Stage = 'idea' | 'audience' | 'name' | 'thinking' | 'pickType' | 'savings' | 'goal' | 'done';
+export type Stage = 'idea' | 'audience' | 'name' | 'thinking' | 'pickType' | 'savings' | 'city' | 'goal' | 'done';
 
 /** Одно сообщение. Готовая реплика — ключ перевода; то, что написал игрок или нейросеть, — текст. */
 export interface Line {
@@ -39,6 +39,8 @@ export interface ChatState {
   audienceId?: string;
   businessModel?: BusinessModel;
   difficulty?: DifficultyId;
+  /** Город, где открывается компания: от него зависят цены, зарплаты, кандидаты и инвесторы */
+  cityId?: string;
   goal?: GoalId;
 }
 
@@ -62,6 +64,9 @@ const MIN_IDEA = 12;
 const TYPES = Object.keys(content.productTypes) as ProductTypeId[];
 const SAVINGS: DifficultyId[] = ['easy', 'normal', 'hard'];
 const GOALS: GoalId[] = ['profit', 'valuation', 'sandbox'];
+/** Города по порядку из данных игры. Первый в списке ближе всех к среднему по стране — он же берётся, когда выбора не было. */
+const CITIES = content.cities.map((c) => c.id);
+export const DEFAULT_CITY = CITIES[0];
 
 const friend = (...keys: string[]): Line[] => keys.map((key) => ({ from: 'friend', key: `opening.friend.${key}` }));
 /** Реакция друга на слова игрока: живая от нейросети, заготовка — если та не ответила. */
@@ -92,6 +97,7 @@ export function quickReplies(s: ChatState): QuickReply[] {
   if (s.stage === 'pickType') return TYPES.map((id) => ({ id, key: `opening.type.${id}` }));
   // В ответе видно, с какими деньгами начнёшь: игрок выбирает не наугад.
   if (s.stage === 'savings') return SAVINGS.map((id) => ({ id, key: `opening.me.savings.${id}`, params: { cash: content.difficulties[id].startCash } }));
+  if (s.stage === 'city') return CITIES.map((id) => ({ id, key: `cities.${id}.name` }));
   if (s.stage === 'goal') return GOALS.map((id) => ({ id, key: `opening.me.goal.${id}` }));
   return [];
 }
@@ -116,7 +122,9 @@ export function choose(s: ChatState, id: string): ChatState {
   const me: Line = { from: 'me', key: option.key, ...(option.params ? { params: option.params } : {}) };
   if (s.stage === 'name') return say({ ...s, name: '' }, 'thinking', me, ...friend('thinking'));
   if (s.stage === 'pickType') return say(withType(s, id as ProductTypeId), 'savings', me, ...friend(`react.${id}`, 'askSavings'));
-  if (s.stage === 'savings') return say({ ...s, difficulty: id as DifficultyId }, 'goal', me, ...friend(`savings.${id}`, 'askGoal'));
+  if (s.stage === 'savings') return say({ ...s, difficulty: id as DifficultyId }, 'city', me, ...friend(`savings.${id}`, 'askCity'));
+  // Друг отвечает тем, что известно о городе: его описание лежит рядом с данными городов.
+  if (s.stage === 'city') return say({ ...s, cityId: id }, 'goal', me, { from: 'friend', key: `cities.${id}.note` }, ...friend('askGoal'));
   if (s.stage === 'goal') return say({ ...s, goal: id as GoalId }, 'done', me, ...friend(`goal.${id}`, 'bye', 'byeSleep'));
   return s;
 }
@@ -154,6 +162,7 @@ export function chatSetup(s: ChatState, seed: number, defaultName: string): NewG
     businessModel: s.businessModel ?? modelForIdea(story(s), productType, ideaLexicon),
     goal: s.goal ?? 'profit',
     difficulty: s.difficulty ?? 'normal',
+    ...((s.cityId ?? DEFAULT_CITY) ? { cityId: s.cityId ?? DEFAULT_CITY } : {}),
   };
 }
 

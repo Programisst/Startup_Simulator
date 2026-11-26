@@ -190,7 +190,8 @@
     padding 0.35s ease;
 }
 .ms-quick.shown {
-  max-height: 200px;
+  /* Городов тринадцать: кнопки занимают три-четыре строки. */
+  max-height: 260px;
   padding: 6px 22px 14px;
 }
 .ms-chip {
