@@ -120,6 +120,7 @@ export const config: GameConfig = {
       { id: 'press', raise: 0.25, chance: 0.2 },
     ],
     minValuation: 100_000,
+    cityPriceWeight: 0.5,
     minFounderShare: 0.2,
     energyCost: 20,
     talkDays: 14,
@@ -260,6 +261,17 @@ export const config: GameConfig = {
       { id: 'full', depth: 1, severanceMonths: 2, reputation: -4, motivation: -10, riskChance: 0.35, riskChurn: 1.2, riskDays: 60 },
     ],
     cutCooldownDays: 90,
+  },
+  // Как настоящие цифры города переводятся в игру (docs/02-economy.md, раздел 36).
+  cities: {
+    referenceDevJobs: 30_000,
+    talentMin: -1,
+    talentMax: 2,
+    skillPerTalent: 0.15,
+    referenceVenture: 4,
+    investorPower: 0.2,
+    investorMin: 0.7,
+    investorMax: 1.6,
   },
   // Запросы рынка: работа над продуктом, которая не кончается (docs/02-economy.md, раздел 35).
   // Шансы — как в жизни: из задумок команды срабатывает треть, из того, о чём просят пользователи, — половина.

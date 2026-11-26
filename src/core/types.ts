@@ -384,6 +384,8 @@ export interface FundingConfig {
   counters: CounterDef[];
   /** Оценка компании, с которой инвесторы готовы разговаривать */
   minValuation: number;
+  /** Какая доля «инвесторского» множителя города переходит в цену доли: 0.5 — половина */
+  cityPriceWeight: number;
   /** Меньше этой доли основателю оставить нельзя */
   minFounderShare: number;
   /** Сколько сил стоит начать переговоры и сколько дней предложение в силе */
@@ -680,6 +682,7 @@ export interface GameConfig {
   ops: OpsConfig;
   threats: ThreatsConfig;
   roadmap: RoadmapConfig;
+  cities: CitiesConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -721,6 +724,9 @@ export interface GameContent {
   milestones: MilestoneDef[];
   chapters: ChapterDef[];
   themes: ThemeDef[];
+  /** Города, где можно основать компанию, и средние цифры по стране */
+  cities: CityDef[];
+  country: CountryDef;
 }
 
 // ---------- Состояние партии ----------
@@ -972,6 +978,59 @@ export interface RoadmapState {
   last: { day: number; source: RequestSource; name: number; outcome: RequestOutcome; cash: number } | null;
 }
 
+/** Город: настоящие цифры из открытой статистики. Источники — в src/content/cities.ts. */
+export interface CityDef {
+  id: string;
+  /** Сколько в городе программистов и их средняя зарплата в год, $ */
+  devJobs: number;
+  devWage: number;
+  /** Средняя зарплата маркетолога в год, $ */
+  marketerWage: number;
+  /** Уровень цен: 100 — как в среднем по стране */
+  priceLevel: number;
+  /** Аренда офиса, $ за квадратный фут в год */
+  officeRent: number;
+  /** Венчурные вложения в город за год, $ млрд */
+  venture: number;
+}
+
+/** Средние цифры по стране: с ними сравнивается город. */
+export interface CountryDef {
+  devWage: number;
+  marketerWage: number;
+  officeRent: number;
+}
+
+/** Как настоящие цифры города переводятся в игру. */
+export interface CitiesConfig {
+  /** Сколько программистов в «обычном городе»: каждое удвоение — ещё один кандидат в списке */
+  referenceDevJobs: number;
+  talentMin: number;
+  talentMax: number;
+  /** На сколько выше потолок навыка кандидатов за каждого дополнительного кандидата */
+  skillPerTalent: number;
+  /** Вложения «обычного города», $ млрд, и степень, в которой их избыток поднимает шанс заинтересовать инвестора */
+  referenceVenture: number;
+  investorPower: number;
+  investorMin: number;
+  investorMax: number;
+}
+
+/** Город партии: множители записываются при создании и дальше не меняются. Необязательное поле: в старых сохранениях его нет. */
+export interface CityState {
+  id: string;
+  /** Во сколько раз дороже жизнь основателя (так же оплачивается его подработка) и аренда офиса */
+  living: number;
+  rent: number;
+  /** Во сколько раз выше зарплаты кандидатов */
+  salary: Record<EmployeeRole, number>;
+  /** На сколько больше кандидатов в списке и на сколько выше потолок их навыка */
+  talent: number;
+  skill: number;
+  /** Во сколько раз выше шанс заинтересовать инвестора */
+  investors: number;
+}
+
 export type ThreatKind = 'downturn' | 'rival';
 export type ThreatResponseId = 'discount' | 'attack' | 'priceWar' | 'outbuild';
 
@@ -1176,6 +1235,8 @@ export interface GameState {
   threats?: ThreatsState;
   /** Запросы рынка. Необязательное поле: в старых сохранениях его нет. */
   roadmap?: RoadmapState;
+  /** Город, где основана компания. Необязательное поле: в старых сохранениях его нет — тогда всё как в среднем по стране. */
+  city?: CityState;
   /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
   milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
@@ -1216,6 +1277,8 @@ export interface NewGameSetup {
   businessModel: BusinessModel;
   goal: GoalId;
   difficulty: DifficultyId;
+  /** Город, где основана компания; без него всё как в среднем по стране */
+  cityId?: string;
 }
 
 export type Command =
