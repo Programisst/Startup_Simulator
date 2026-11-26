@@ -70,7 +70,13 @@ function readDepth(pixels: ImageData): Float32Array {
   });
 }
 
-export async function loadRoom(canvas: HTMLCanvasElement) {
+interface MonitorFace {
+  origin: Point;
+  visible: { x: number; y: number; z: number }[];
+  monitor: MonitorTyping;
+}
+
+export async function loadRoom(canvas: HTMLCanvasElement, screenDetails: HTMLCanvasElement) {
   const atlas = new Image();
   atlas.src = atlasUrl;
   await atlas.decode();
@@ -84,6 +90,11 @@ export async function loadRoom(canvas: HTMLCanvasElement) {
   const chair = source.getImageData(width, 0, CHAIR_EDGE.width, CHAIR_EDGE.height);
   const chairDepth = readDepth(source.getImageData(width, height, CHAIR_EDGE.width, CHAIR_EDGE.height));
   const ctx = canvas.getContext('2d', { alpha: false })!;
+  const detailScale = 4;
+  screenDetails.width = width * detailScale;
+  screenDetails.height = height * detailScale;
+  const detail = screenDetails.getContext('2d')!;
+  detail.scale(detailScale, detailScale);
   const frame = ctx.createImageData(width, height);
   const depth = new Float32Array(baseDepth.length);
 
@@ -163,14 +174,14 @@ export async function loadRoom(canvas: HTMLCanvasElement) {
     const full = 7 * icons.length;
     const x = Math.round(at.x - full / 2);
     const y = Math.round(at.y - 5);
-    ctx.fillStyle = '#363d3e';
-    ctx.fillRect(x - 1, y, full + 2, 7);
-    ctx.fillStyle = '#f2e7cc';
-    ctx.fillRect(x, y + 1, full, 5);
+    detail.fillStyle = '#363d3e';
+    detail.fillRect(x - 1, y, full + 2, 7);
+    detail.fillStyle = '#f2e7cc';
+    detail.fillRect(x, y + 1, full, 5);
     icons.forEach(([tone, glyph], j) => {
-      ctx.fillStyle = tone;
+      detail.fillStyle = tone;
       glyph.forEach((row, v) => {
-        for (let u = 0; u < row.length; u++) if (row[u] === 'x') ctx.fillRect(x + j * 7 + u + 1, y + v + 1, 1, 1);
+        for (let u = 0; u < row.length; u++) if (row[u] === 'x') detail.fillRect(x + j * 7 + u + 1, y + v + 1, 1, 1);
       });
     });
   }
@@ -179,40 +190,84 @@ export async function loadRoom(canvas: HTMLCanvasElement) {
     draw(seats: ReadonlyMap<number, { worker: Worker; pose: ReturnType<typeof poseAt> }>, time: number) {
       frame.data.set(base.data);
       depth.set(baseDepth);
+      const monitors: MonitorFace[] = [];
       const statuses: { worker: Worker; at: Point }[] = [];
       layout.desks.forEach(([x, y], seat) => {
         const actor = seats.get(seat);
         drawChair({ x: x! + layout.seatOffset[0]!, y: y! + layout.seatOffset[1]! + (actor?.pose.chair ?? 4) });
         if (actor) {
-          if (actor.worker.person.busy) paintMonitor(x!, y!, actor.worker.monitor);
+          if (actor.worker.person.busy) monitors.push(placeMonitor(x!, y!, actor.worker.monitor));
           statuses.push({ worker: actor.worker, at: paintPerson(actor.worker, actor.pose, time) });
         }
       });
       ctx.putImageData(frame, 0, 0);
+      detail.clearRect(0, 0, width, height);
+      monitors.forEach(face => drawMonitorText(face, time));
       statuses.forEach(({ worker, at }) => paintStatus(worker, at));
     },
   };
 
-  function paintMonitor(x: number, y: number, monitor: MonitorTyping) {
+  function placeMonitor(x: number, y: number, monitor: MonitorTyping): MonitorFace {
     const [left, cols, front, bottom, top] = layout.monitor as [number, number, number, number, number];
-    const put = (u: number, v: number, color: number, bias = .5) => {
-      const at = { x: x + left + u, y: y + front };
-      const z = top - v;
-      const p = project(at, z);
-      pixel(Math.floor(p.x), Math.floor(p.y), at.x + at.y + z + bias, color);
-    };
-    for (let u = 0; u < cols; u++) for (let v = 1; v <= top - bottom; v++) {
-      put(u, v, u < 2 ? 0x393b42 : 0x24282d);
+    const at = { x: x + left, y: y + front };
+    const visible: MonitorFace['visible'] = [];
+    for (let u = 0; u < cols; u++) {
+      for (let v = 1; v <= top - bottom; v++) {
+        const worldZ = top - v;
+        const p = project({ x: at.x + u, y: at.y }, worldZ);
+        const px = Math.floor(p.x);
+        const py = Math.floor(p.y);
+        const z = Math.fround(at.x + u + at.y + worldZ + .5);
+        pixel(px, py, z, 0x24282d);
+        visible.push({ x: px, y: py, z });
+      }
     }
-    monitor.rows(cols - 3, 5, 0).forEach((row, i) => {
-      let col = row.indent;
+    return { origin: project(at, top), visible, monitor };
+  }
+
+  function drawMonitorText({ origin, visible, monitor }: MonitorFace, time: number) {
+    detail.save();
+    detail.beginPath();
+    for (const { x, y, z } of visible) if (depth[y * width + x] === z) detail.rect(x, y, 1, 1);
+    detail.clip();
+    // Map the editor's rectangular surface onto the isometric monitor face.
+    detail.transform(1, .5, 0, 1, origin.x - .35, origin.y + .45);
+    detail.fillStyle = '#20242b';
+    detail.fillRect(0, 0, 21, 13);
+    detail.fillStyle = '#303943';
+    detail.fillRect(0, 0, 4, 13);
+    detail.fillRect(4, 0, 17, 2.5);
+    detail.fillStyle = '#70a4c3';
+    detail.fillRect(4, .1, 8, .26);
+    detail.textBaseline = 'top';
+    detail.font = '1.45px Menlo, monospace';
+    detail.fillStyle = '#d5d6d6';
+    detail.fillText(monitor.fileName.slice(0, 17), 4.6, .58);
+    detail.font = '1.7px Menlo, monospace';
+    const letter = detail.measureText('M').width;
+    for (let n = 0; n < 4; n++) {
+      detail.fillStyle = n === 0 ? '#79b7d5' : '#67727c';
+      detail.fillRect(.65, 3 + n * 2.28, .65, .65);
+      detail.fillRect(1.6, 3.22 + n * 2.28, 1.6, .28);
+    }
+    monitor.rows(13, 4, 0).forEach((row, i) => {
+      const y = 3.05 + i * 2.34;
+      if (row.number !== null) {
+        detail.fillStyle = '#a1a9b5';
+        detail.fillText(String(row.number), 4.45, y);
+      }
+      let x = 6.55 + row.indent * letter;
       for (const token of row.tokens) {
-        for (const [j, char] of [...token.text].entries()) {
-          if (char.trim() && col + j < cols - 3) put(col + j + 3, 3 + i * 2, rgb(TOKEN_COLORS[token.kind] ?? '#cccccc'), .8);
-        }
-        col += token.text.length;
+        detail.fillStyle = TOKEN_COLORS[token.kind] ?? '#d0d4dc';
+        detail.fillText(token.text, x, y);
+        x += token.text.length * letter;
+      }
+      if (row.caret !== null && Math.floor(time * 2) % 2 === 0) {
+        detail.fillStyle = '#f0ece5';
+        detail.fillRect(6.55 + (row.indent + row.caret) * letter, y + .15, .21, 1.55);
       }
     });
+    detail.restore();
   }
 }
 

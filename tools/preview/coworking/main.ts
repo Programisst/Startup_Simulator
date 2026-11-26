@@ -14,6 +14,7 @@ document.querySelector('h1')!.textContent = copy.title;
 
 const scene = document.querySelector<HTMLElement>('#scene')!;
 const room = document.querySelector<HTMLCanvasElement>('#room')!;
+const screenDetails = document.querySelector<HTMLCanvasElement>('#screen-details')!;
 const walk = document.querySelector<HTMLButtonElement>('#walk')!;
 const pause = document.querySelector<HTMLButtonElement>('#pause')!;
 const loading = document.querySelector<HTMLElement>('#loading')!;
@@ -74,7 +75,7 @@ for (const { worker } of workers) {
 }
 
 async function start() {
-  const raster = await loadRoom(room);
+  const raster = await loadRoom(room, screenDetails);
   loading.hidden = true;
   scene.dataset.coworking = 'ready';
   walk.disabled = false;
