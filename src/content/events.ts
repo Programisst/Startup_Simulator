@@ -538,4 +538,22 @@ export const events: EventDef[] = [
       { id: 'earlyBeta', effects: [{ type: 'usersPct', pct: 2 }, { type: 'bugs', amount: 2 }] },
     ],
   },
+  // Сообщения об угрозах большой компании. Случайно не выпадают: их показывает расчёт угроз (src/core/threats.ts).
+  // Решение игрок принимает на экране «Финансы», где видны суммы и шансы.
+  {
+    id: 'threatDownturn',
+    threat: true,
+    weight: 0,
+    cooldownDays: 0,
+    condition: {},
+    choices: [{ id: 'ok', effects: [] }],
+  },
+  {
+    id: 'threatRival',
+    threat: true,
+    weight: 0,
+    cooldownDays: 0,
+    condition: {},
+    choices: [{ id: 'ok', effects: [] }],
+  },
 ];

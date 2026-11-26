@@ -202,6 +202,8 @@ export interface EventDef {
   mood?: 'good';
   /** Развилка во время разработки: возникает на середине работы над функцией, а не случайно */
   dev?: boolean;
+  /** Сообщение об угрозе большой компании: его показывает расчёт угроз, случайно оно не выпадает */
+  threat?: boolean;
   condition: EventCondition;
   choices: EventChoiceDef[];
 }
@@ -674,6 +676,7 @@ export interface GameConfig {
   funding: FundingConfig;
   acquisitions: AcquisitionsConfig;
   ops: OpsConfig;
+  threats: ThreatsConfig;
   startReputation: number;
   startCapacity: number;
   capacityTiers: number[];
@@ -767,7 +770,7 @@ export interface CampaignsState {
 /** Заметное событие дня для ленты: мир откликается на то, что делает игрок. */
 export interface NewsItem {
   day: number;
-  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding' | 'acquisition';
+  kind: 'users' | 'paying' | 'featureDone' | 'overload' | 'monthProfit' | 'monthLoss' | 'review' | 'tired' | 'office' | 'invest' | 'chapter' | 'campaign' | 'release' | 'headhunt' | 'funding' | 'acquisition' | 'threat' | 'opsCut';
   /** Число, о котором новость: пользователей, платящих, долларов; для звезды — число, по которому подбирается имя */
   value?: number;
   /** Для готовой функции — её id */
@@ -859,8 +862,114 @@ export interface OpsConfig {
   steps: { from: number; rate: number }[];
   /** На что делится расход; weight — доля статьи (в жизни — процент от дохода) */
   lines: { id: OpsLineId; weight: number }[];
-  /** За сколько последних дней усредняется доход: службы растут и сжимаются с этим опозданием */
+  /** За сколько последних дней усредняется доход: службы растут с этим опозданием */
   windowDays: number;
+  /** Какая доля людей служб уходит сама за год: так службы сжимаются без сокращения */
+  attritionPerYear: number;
+  /** Срочное сокращение: варианты по глубине */
+  cuts: OpsCutDef[];
+  /** Сколько дней после сокращения нельзя сокращать снова */
+  cutCooldownDays: number;
+}
+
+export type OpsCutId = 'part' | 'full';
+
+/** Вариант срочного сокращения служб. */
+export interface OpsCutDef {
+  id: OpsCutId;
+  /** Какую долю лишнего убрать: 1 — до сегодняшнего дохода */
+  depth: number;
+  /** Выходное пособие: сколько месячных расходов на уволенных */
+  severanceMonths: number;
+  /** Удар по репутации и по настрою команды (отрицательные числа) */
+  reputation: number;
+  motivation: number;
+  /** Шанс, что сократили лишнего и пользователи это заметят */
+  riskChance: number;
+  /** Во сколько раз чаще уходят пользователи, если так случилось, и сколько дней */
+  riskChurn: number;
+  riskDays: number;
+}
+
+/** Состояние служб. Необязательное: в старых сохранениях его нет. */
+export interface OpsState {
+  /** Под какой месячный доход набраны службы */
+  level: number;
+  /** День последнего срочного сокращения */
+  cutDay?: number;
+  /** Последнее сокращение: чем кончилось */
+  last?: { day: number; cut: OpsCutId; severance: number; saving: number; backfired: boolean };
+}
+
+export type ThreatKind = 'downturn' | 'rival';
+export type ThreatResponseId = 'discount' | 'attack' | 'priceWar' | 'outbuild';
+
+/** Как угроза давит на компанию: множители к притоку людей, уходу пользователей и доходу. */
+export interface ThreatPressure {
+  acquisition: number;
+  churn: number;
+  revenue: number;
+}
+
+/** Ответ игрока на угрозу. */
+export interface ThreatResponseDef {
+  id: ThreatResponseId;
+  /** Цена: доля дохода за последние 30 дней, платится сразу */
+  costRevenueShare: number;
+  /** Шанс удачи; 1 — исход известен заранее */
+  chance: number;
+  /** К шансу прибавляется качество продукта, умноженное на это число (качество 0…100) */
+  chancePerQuality: number;
+  /** Давление угрозы при удаче */
+  success: ThreatPressure;
+  /** При удаче угроза кончается через столько дней (0 — идёт свой срок) */
+  successEndsInDays: number;
+  /** При неудаче к техническому долгу прибавляется столько */
+  failDebt: number;
+}
+
+export interface ThreatKindDef {
+  id: ThreatKind;
+  /** Шанс, что угроза начнётся в очередном периоде */
+  chance: number;
+  /** Сколько дней длится: от и до */
+  minDays: number;
+  maxDays: number;
+  /** Давление, пока игрок не ответил или ответил неудачно */
+  pressure: ThreatPressure;
+  responses: ThreatResponseDef[];
+}
+
+/** Опасности большой компании: спад рынка и сильный конкурент. */
+export interface ThreatsConfig {
+  /** Раз во сколько дней проверяется, не началась ли угроза */
+  periodDays: number;
+  /** Сколько дней после конца угрозы новая не начинается */
+  graceDays: number;
+  kinds: ThreatKindDef[];
+}
+
+export interface ActiveThreat {
+  kind: ThreatKind;
+  startDay: number;
+  untilDay: number;
+  /** Ответ игрока; null — пока не отвечал */
+  response: ThreatResponseId | null;
+  /** Удался ли ответ; null — ответа не было */
+  success: boolean | null;
+  /** Сколько заплачено за ответ */
+  paid: number;
+}
+
+/** Состояние угроз. Необязательное: в старых сохранениях его нет. */
+export interface ThreatsState {
+  active: ActiveThreat | null;
+  /** День, когда кончилась последняя угроза */
+  endedDay: number | null;
+  /** Последняя закончившаяся угроза */
+  last: { kind: ThreatKind; startDay: number; endDay: number; response: ThreatResponseId | null; success: boolean | null } | null;
+  /** Сколько угроз уже было */
+  count: number;
 }
 
 /** Из чего сложился последний день — для объяснения показателей игроку. */
@@ -990,6 +1099,10 @@ export interface GameState {
   typedToday?: number;
   /** Лента: последние заметные события */
   news?: NewsItem[];
+  /** Службы большой компании: под какой доход набраны. Необязательное поле: в старых сохранениях его нет. */
+  ops?: OpsState;
+  /** Угрозы большой компании. Необязательное поле: в старых сохранениях его нет. */
+  threats?: ThreatsState;
   /** Достигнутые цели: id и день. Необязательное поле: в старых сохранениях его нет. */
   milestones?: { id: string; day: number }[];
   /** Команда. Необязательное поле: в старых сохранениях его нет, ядро создаёт его само. */
@@ -1049,6 +1162,10 @@ export type Command =
   /** Покупка компании: заказать проверку; купить за полную цену или предложить меньше */
   | { type: 'checkTarget' }
   | { type: 'buyTarget'; offer: 'full' | 'low' }
+  /** Срочно сократить службы компании */
+  | { type: 'cutOps'; cut: OpsCutId }
+  /** Ответить на угрозу */
+  | { type: 'respondThreat'; response: ThreatResponseId }
   | { type: 'setPrice'; price: number }
   | { type: 'setCapacity'; capacity: number }
   | { type: 'queueFeature'; featureId: string }
@@ -1095,6 +1212,8 @@ export type CommandError =
   | 'headhuntUnavailable'
   | 'fundingUnavailable'
   | 'acquisitionUnavailable'
+  | 'opsCutUnavailable'
+  | 'threatUnavailable'
   | 'notEnoughCash'
   | 'talkTooSoon'
   | 'overLoanLimit'

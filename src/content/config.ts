@@ -252,6 +252,44 @@ export const config: GameConfig = {
       { id: 'upkeep', weight: 26 },
     ],
     windowDays: 90,
+    // Сами службы сжимаются медленно: в жизни из поддержки и продаж за год по своей воле уходит 13–17% людей.
+    attritionPerYear: 0.15,
+    // Срочное сокращение. Пособие — два месяца: в жизни, когда его платят, это 10–16 недель.
+    cuts: [
+      { id: 'part', depth: 0.5, severanceMonths: 2, reputation: -2, motivation: -5, riskChance: 0.1, riskChurn: 1.2, riskDays: 60 },
+      { id: 'full', depth: 1, severanceMonths: 2, reputation: -4, motivation: -10, riskChance: 0.35, riskChurn: 1.2, riskDays: 60 },
+    ],
+    cutCooldownDays: 90,
+  },
+  // Опасности большой компании (docs/02-economy.md, раздел 34).
+  // Спад: в жизни раз в шесть с небольшим лет и длится 8–18 месяцев — отсюда 4% на квартал.
+  threats: {
+    periodDays: 90,
+    graceDays: 180,
+    kinds: [
+      {
+        id: 'downturn',
+        chance: 0.04,
+        minDays: 240,
+        maxDays: 540,
+        pressure: { acquisition: 0.75, churn: 1.5, revenue: 1 },
+        responses: [
+          { id: 'discount', costRevenueShare: 0, chance: 1, chancePerQuality: 0, success: { acquisition: 0.75, churn: 1.15, revenue: 0.9 }, successEndsInDays: 0, failDebt: 0 },
+          { id: 'attack', costRevenueShare: 0.5, chance: 0.5, chancePerQuality: 0, success: { acquisition: 1.1, churn: 1.5, revenue: 1 }, successEndsInDays: 0, failDebt: 0 },
+        ],
+      },
+      {
+        id: 'rival',
+        chance: 0.06,
+        minDays: 360,
+        maxDays: 720,
+        pressure: { acquisition: 0.75, churn: 1.3, revenue: 1 },
+        responses: [
+          { id: 'priceWar', costRevenueShare: 0, chance: 1, chancePerQuality: 0, success: { acquisition: 0.9, churn: 1.05, revenue: 0.85 }, successEndsInDays: 0, failDebt: 0 },
+          { id: 'outbuild', costRevenueShare: 0.6, chance: 0.25, chancePerQuality: 0.006, success: { acquisition: 0.9, churn: 1.1, revenue: 1 }, successEndsInDays: 60, failDebt: 10 },
+        ],
+      },
+    ],
   },
   offices: [
     { id: 'home', seats: 3, moveCost: 0, rentPerMonth: 0 },

@@ -80,7 +80,7 @@ export function rollEvent(
   rng: RngState,
 ): { eventId: string | null; rng: RngState } {
   // Развилки разработки возникают по ходу работы над функцией, а не случайно.
-  const available = content.events.filter((e) => !e.dev && isAvailable(e, s, content));
+  const available = content.events.filter((e) => !e.dev && !e.threat && isAvailable(e, s, content));
 
   const urgent = available.find((e) => e.urgent);
   if (urgent) return { eventId: urgent.id, rng };

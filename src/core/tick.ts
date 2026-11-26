@@ -29,7 +29,8 @@ import { stepHeadhunt } from './headhunt';
 import { stepFunding } from './funding';
 import { stepAcquisitions } from './acquisitions';
 import { officeOf } from './office';
-import { opsCostPerMonth } from './ops';
+import { opsCostPerMonth, stepOps } from './ops';
+import { stepThreats, threatPressure } from './threats';
 import { nextInt, nextRange, type RngState } from './rng';
 import { marketingBoost, payrollPerMonth, sloppyDevelopers, stepTeam, teamOf, teamWorkPerDay } from './team';
 import type { DayBreakdown, GameContent, GameState, ModifierTarget, Task } from './types';
@@ -190,6 +191,8 @@ export function tick(state: GameState, content: GameContent): GameState {
     expenses: 0,
   };
   const team = teamOf(s, content);
+  // Угроза большой компании: людей приходит меньше, уходит больше. Без угрозы все множители равны единице.
+  const pressure = threatPressure(s, cfg);
 
   let paymentRevenue = 0;
   let adRevenue = 0;
@@ -203,7 +206,7 @@ export function tick(state: GameState, content: GameContent): GameState {
 
     const noise = nextRange(rng, 0.9, 1.1);
     rng = noise.next;
-    const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team) * cfg.pace.acquisition;
+    const boost = modifierFactor(s, 'acquisition') * noise.value * marketingBoost(team, cfg.team) * cfg.pace.acquisition * pressure.acquisition;
     // Каждый канал приводит людей по своей цене; у непредсказуемых каналов результат гуляет изо дня в день.
     let paid = 0;
     for (const def of mk.channels) {
@@ -225,7 +228,7 @@ export function tick(state: GameState, content: GameContent): GameState {
     b.viral = viralPerDay(m, s.users, s.quality) * boost;
     b.newUsers = Math.min(b.paid + b.organic + b.viral, Math.max(0, m.marketSize - s.users));
 
-    const churn = churnMonthly(m, s.quality, over, s.bugs) * modifierFactor(s, 'churn');
+    const churn = churnMonthly(m, s.quality, over, s.bugs) * modifierFactor(s, 'churn') * pressure.churn;
     const free = s.users - s.paying;
     const freeLeft = free * monthlyToDaily(churn);
     const payingLeft = s.paying * monthlyToDaily(churnPayingMonthly(churn, s.price, m.priceRef));
@@ -255,8 +258,8 @@ export function tick(state: GameState, content: GameContent): GameState {
         break;
     }
   }
-  paymentRevenue *= cfg.pace.revenue;
-  adRevenue *= cfg.pace.revenue;
+  paymentRevenue *= cfg.pace.revenue * pressure.revenue;
+  adRevenue *= cfg.pace.revenue * pressure.revenue;
   b.revenue = paymentRevenue + adRevenue;
 
   // 4. Расходы
@@ -269,6 +272,7 @@ export function tick(state: GameState, content: GameContent): GameState {
   b.salaryCost = payrollPerMonth(team) / DAYS_IN_MONTH;
   b.rentCost = officeOf(s, cfg).rentPerMonth / DAYS_IN_MONTH;
   // Службы большой компании: считаются по доходу прошлых дней, сегодняшний ещё не записан.
+  stepOps(s, cfg);
   b.opsCost = opsCostPerMonth(s, cfg) / DAYS_IN_MONTH;
   b.sideIncome = (s.sideJobIncomePerMonth * s.sideJobShare) / DAYS_IN_MONTH;
   b.expenses = b.serverCost + b.adCost + b.toolsCost + b.feeCost + b.loanCost + b.livingCost + b.salaryCost + b.rentCost + b.opsCost;
@@ -295,6 +299,8 @@ export function tick(state: GameState, content: GameContent): GameState {
   stepFunding(s, content);
   // 5д. Купленная компания: пользователи переходят к нам
   stepAcquisitions(s, content);
+  // 5е. Угрозы большой компании: спад рынка и сильный конкурент
+  stepThreats(s, content);
 
   // 6. Кассовый разрыв и банкротство
   s.negativeCashDays = s.cash < 0 ? s.negativeCashDays + 1 : 0;

@@ -1,5 +1,5 @@
 // Простые автоматические игроки для проверки баланса.
-import { acquisitionsView, cac, campaignsView, featuresOf, fundingView, headhuntView, officeView, releaseView, teamView, type Command, type GameContent, type GameState } from '../../src/core';
+import { acquisitionsView, cac, campaignsView, featuresOf, fundingView, headhuntView, officeView, opsView, releaseView, teamView, threatView, type Command, type GameContent, type GameState } from '../../src/core';
 
 export type Strategy = (s: GameState, content: GameContent) => Command[];
 
@@ -93,6 +93,9 @@ function builder(launchAfter: number): Strategy {
       if ((s.lastDay.opsCost ?? 0) > 0) spend = Math.min(spend, Math.round((monthRevenue * 0.08) / 30));
       if (spend !== s.adSpendPerDay) cmds.push({ type: 'setAdSpend', perDay: spend });
       cmds.push(...scaleServers(s, content));
+      // Доход упал, а службы остались: сокращает лишних, когда они съедают заметную часть дохода.
+      const ops = opsView(s, content.config);
+      if (ops.excessPerMonth > ops.currentRevenue * 0.03 && ops.cuts.some((c) => c.id === 'full' && c.blocked === null)) cmds.push({ type: 'cutOps', cut: 'full' });
     }
     return cmds;
   };
@@ -159,7 +162,7 @@ export const recklessHirer: Strategy = (s, content) => {
 
 /**
  * Активный игрок: всё, что делает осторожный наниматель, плюс все «решения с риском» —
- * акции, обещанные обновления, охота за звёздами, раунды инвестиций и покупка компаний.
+ * акции, обещанные обновления, охота за звёздами, раунды инвестиций, покупка компаний и ответы на угрозы.
  * Рискует с оглядкой: не тратит на одну ставку больше пятой части денег, проверяет компании перед покупкой
  * и не покупает следующую, пока не вычистил ошибки и долг от предыдущей.
  * Нужен, чтобы видеть, не стала ли игра проходиться сама собой, когда всё это сложено вместе.
@@ -203,6 +206,13 @@ export const active: Strategy = (s, content) => {
   const angels = funding.investors.find((i) => i.id === 'angels');
   if (funding.rounds < 2 && angels?.blocked === null && funding.position.level !== 'weak') {
     cmds.push({ type: 'openRound', investorId: 'angels' }, { type: 'counterOffer', stance: 'ask' }, { type: 'closeRound' });
+  }
+
+  // Угроза: отвечает рискованно — наступает в спад и пробует обогнать конкурента продуктом.
+  const threat = threatView(s, content).active;
+  if (threat && threat.response === null) {
+    const risky = threat.responses.find((r) => r.chancePct < 100 && r.blocked === null && r.cost <= s.cash * 0.3);
+    if (risky) cmds.push({ type: 'respondThreat', response: risky.id });
   }
 
   // Покупка компании: сначала проверка, пустышки пропускает; серверы поднимает заранее.

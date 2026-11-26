@@ -4,6 +4,7 @@ import { AcquisitionPanel } from '../components/AcquisitionPanel';
 import { OwnershipCard } from '../components/FinanceParts';
 import { FundingPanel } from '../components/FundingPanel';
 import { OpsPanel } from '../components/OpsPanel';
+import { ThreatPanel } from '../components/ThreatPanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -18,6 +19,7 @@ export function Finance() {
       <OwnershipCard />
       <FundingPanel />
       <AcquisitionPanel />
+      <ThreatPanel />
       <OpsPanel />
       <div className="two">
         <section className="panel">

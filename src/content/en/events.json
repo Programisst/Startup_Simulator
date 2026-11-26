@@ -358,5 +358,19 @@
       "negotiate": "Ask for $10,000",
       "decline": "Decline: the terms are too harsh"
     }
+  },
+  "threatDownturn": {
+    "title": "The market is in a downturn",
+    "body": "Customers are cutting spending: fewer new ones come and existing ones leave more often. This usually lasts from eight months to a year and a half. Decide what to do in Finance: offer discounts, go on the offensive, or cut company services.",
+    "choices": {
+      "ok": "Got it"
+    }
+  },
+  "threatRival": {
+    "title": "A big player has entered your niche",
+    "body": "A large company released a product similar to yours and is spending heavily on ads. Some users will leave for it and fewer new ones will come. You can respond in Finance: with price or with product.",
+    "choices": {
+      "ok": "Got it"
+    }
   }
 }

@@ -61,4 +61,46 @@ describe('панель «Службы компании»', () => {
     expect(missing(container.textContent)).toEqual([]);
     close();
   });
+
+  it('пока лишних людей нет, сокращение не предлагается', () => {
+    useStore.setState({ game: { ...game(1_000_000), ops: { level: 1_000_000 } } });
+    const { container, close } = show(<OpsPanel />);
+    expect(container.querySelector('[data-ops-cut]')).toBeNull();
+    expect(container.textContent).toContain('по своей воле за год уходит только 15% людей');
+    close();
+  });
+
+  it('доход упал: видно, сколько стоят лишние люди, и оба сокращения с ценой, последствиями и риском', () => {
+    const g = game(1_000_000);
+    useStore.setState({ game: { ...g, cash: 1e7, ops: { level: 1_000_000 }, recentDays: g.recentDays.map((d, i) => (i >= 60 ? { ...d, revenue: 500_000 / 30 } : d)) } });
+    const { container, close } = show(<OpsPanel />);
+    expect(container.textContent).toMatch(/Доход упал до \$500[\s ]000 в месяц, а службы набраны под \$1[\s ]000[\s ]000\. Лишние люди стоят \$325[\s ]000 в месяц\./);
+    const options = container.querySelectorAll('[data-ops-cut-option]');
+    expect(options).toHaveLength(2);
+    const full = container.querySelector('[data-ops-cut-option="full"]')!;
+    expect(full.textContent).toMatch(/Службы станут дешевле на \$325[\s ]000 в месяц\. Пособия уволенным — \$650[\s ]000 сразу: окупится за 2 мес\./);
+    expect(full.textContent).toContain('Репутация -4, настрой команды -10.');
+    expect(full.textContent).toContain('Риск 35%: сократите лишнего, и 60 дней пользователи будут уходить на 20% чаще.');
+    expect(container.querySelector('[data-ops-cut-option="part"]')!.textContent).toMatch(/дешевле на \$162[\s ]500 в месяц/);
+    expect(missing(container.textContent)).toEqual([]);
+
+    // Нажали — службы сжались, появилась запись о сокращении, второе подряд недоступно.
+    act(() => (container.querySelector('[data-ops-cut-button="full"]') as HTMLButtonElement).click());
+    const after = useStore.getState().game!;
+    expect(after.ops?.level).toBeCloseTo(500_000, 6);
+    expect(after.cash).toBe(1e7 - 650_000);
+    expect(container.querySelector('[data-ops-cut]')).toBeNull();
+    expect(container.querySelector('[data-ops-last]')!.textContent).toMatch(/Последнее сокращение: пособия \$650[\s ]000, службы дешевле на \$325[\s ]000 в месяц/);
+    expect(missing(container.textContent)).toEqual([]);
+    close();
+  });
+
+  it('без денег на пособия кнопки не нажимаются и объясняют почему', () => {
+    const g = game(1_000_000);
+    useStore.setState({ game: { ...g, cash: 1000, ops: { level: 1_000_000 }, recentDays: g.recentDays.map((d, i) => (i >= 60 ? { ...d, revenue: 500_000 / 30 } : d)) } });
+    const { container, close } = show(<OpsPanel />);
+    expect((container.querySelector('[data-ops-cut-button="full"]') as HTMLButtonElement).disabled).toBe(true);
+    expect(container.textContent).toContain('Не хватает денег на пособия.');
+    close();
+  });
 });
