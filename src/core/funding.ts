@@ -1,6 +1,7 @@
 // Раунды инвестиций: игрок сам зовёт инвестора и торгуется за цену доли — с риском, что тот уйдёт.
 // Описание — docs/02-economy.md, раздел 28.
 
+import { cityOf } from './cities';
 import { revenue30 } from './events';
 import { clamp, valuation } from './formulas';
 import { energyOf } from './founder';
@@ -58,15 +59,25 @@ export function fundingPosition(s: GameState): { score: number; level: 'weak' | 
   return { score, level: score <= -1 ? 'weak' : score >= 2 ? 'strong' : 'normal', reasons };
 }
 
-/** Первое предложение инвестора в деньгах. */
+/**
+ * С какой оценки компании инвесторы готовы разговаривать. В городе, где венчурных денег много,
+ * слушают раньше; там, где их мало, — приходится сначала вырасти.
+ */
+export function minValuationOf(s: GameState, cfg: FundingConfig): number {
+  return round100(cfg.minValuation / cityOf(s).investors);
+}
+
+/** Первое предложение инвестора в деньгах. В столицах венчурных денег за ту же долю дают больше. */
 function firstOffer(s: GameState, def: InvestorDef, cfg: FundingConfig): number {
-  const price = clamp(def.price * (1 + cfg.positionPrice * fundingPosition(s).score), 0, cfg.maxPrice);
+  const cityPrice = 1 + (cityOf(s).investors - 1) * cfg.cityPriceWeight;
+  const price = clamp(def.price * (1 + cfg.positionPrice * fundingPosition(s).score) * cityPrice, 0, cfg.maxPrice);
   return round100(valuationOf(s) * def.share * price);
 }
 
 /** Шанс, что инвестор, выслушав вас, вообще сделает предложение: большинству основателей отказывают. */
 export function interestChance(s: GameState, def: InvestorDef, cfg: FundingConfig): number {
-  return clamp(def.interest + cfg.positionInterest * fundingPosition(s).score, cfg.interestMin, cfg.interestMax);
+  // В городе, где много венчурных денег, инвестора заинтересовать легче.
+  return clamp((def.interest + cfg.positionInterest * fundingPosition(s).score) * cityOf(s).investors, cfg.interestMin, cfg.interestMax);
 }
 
 export type FundingBlock = 'notLaunched' | 'valuation' | 'talks' | 'cooldown' | 'share' | 'promise' | 'energy';
@@ -77,7 +88,7 @@ export function fundingBlock(s: GameState, content: GameContent, def?: InvestorD
   const st = fundingOf(s);
   if (!s.launched) return 'notLaunched';
   if (st.talks) return 'talks';
-  if (valuationOf(s) < cfg.minValuation) return 'valuation';
+  if (valuationOf(s) < minValuationOf(s, cfg)) return 'valuation';
   if (s.day < st.readyDay) return 'cooldown';
   if (energyOf(s) < cfg.energyCost) return 'energy';
   if (def) {
@@ -323,7 +334,7 @@ export function fundingView(s: GameState, content: GameContent): FundingView {
     stakeValue: v * mine,
     position: fundingPosition(s),
     blocked: fundingBlock(s, content),
-    minValuation: cfg.minValuation,
+    minValuation: minValuationOf(s, cfg),
     cooldownDaysLeft: Math.max(0, st.readyDay - s.day),
     energyCost: cfg.energyCost,
     investors,

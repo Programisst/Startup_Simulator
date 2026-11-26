@@ -1,6 +1,7 @@
 // Создание новой партии.
 
 import { pickFeatures, themeOf } from './features';
+import { cityFor } from './cities';
 import { cleanIdea } from './idea';
 import { createRng, nextRange } from './rng';
 import { createTeam } from './team';
@@ -59,6 +60,9 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     userValue: type.userValue,
   };
 
+  // Город: жизнь, аренда и зарплаты в нём свои. Подработка оплачивается по местным ценам: где жизнь дороже, там и за заказы платят больше.
+  const city = cityFor(setup.cityId, content);
+
   const idea = cleanIdea(setup.idea ?? '');
   const needsPrice = setup.businessModel === 'subscription' || setup.businessModel === 'oneTime';
 
@@ -70,11 +74,12 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     status: 'running',
     goal: setup.goal,
     difficulty: difficulty.id,
-    livingCostPerMonth: difficulty.livingCostPerMonth,
-    sideJobIncomePerMonth: difficulty.sideJobIncomePerMonth,
+    livingCostPerMonth: Math.round(difficulty.livingCostPerMonth * (city?.living ?? 1)),
+    sideJobIncomePerMonth: Math.round(difficulty.sideJobIncomePerMonth * (city?.living ?? 1)),
     sideJobShare: 0,
     companyName: setup.companyName,
     ...(idea ? { idea } : {}),
+    ...(city ? { city } : {}),
     ...(theme ? { themeId: theme.id, featureIds: pickFeatures(setup.seed, setup.productType, theme.id, content) } : {}),
     productType: setup.productType,
     audienceId: audience.id,
@@ -97,7 +102,7 @@ export function createGame(setup: NewGameSetup, content: GameContent): GameState
     polish: 0,
     tasks: [],
     rush: false,
-    team: createTeam(setup.seed, content),
+    team: createTeam(setup.seed, content, city ?? undefined),
     modifiers: [],
     loans: [],
     negativeCashDays: 0,
