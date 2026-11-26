@@ -1,5 +1,7 @@
 // Цели на пути компании: что игроку делать дальше и что он получит.
-// Цели идут строго по порядку; за день засчитывается не больше одной.
+// Цель засчитывается в тот день, когда выполнена, — даже если более ранняя ещё не пройдена:
+// иначе одна застрявшая цель держит остальные, и потом они закрываются пачкой.
+// За день засчитывается не больше одной; «ближайшей» игроку показывается самая ранняя из непройденных.
 
 import { applyEffects, conditionHolds, revenue30 } from './events';
 import { totalAdSpend } from './marketing';
@@ -21,17 +23,18 @@ function metricValue(s: GameState, metric: MilestoneMetric): number {
 }
 
 /**
- * Шаг дня: если ближайшая цель достигнута, выдаёт награду и отмечает её. Меняет черновик состояния.
+ * Шаг дня: самая ранняя из выполненных, но ещё не отмеченных целей получает награду и отметку. Меняет черновик состояния.
  * Возвращает id достигнутой цели или null.
  */
 export function stepMilestones(draft: GameState, content: GameContent): string | null {
-  const next = nextMilestone(draft, content);
-  if (!next || !conditionHolds(next.condition, draft, content.config)) return null;
+  const done = doneIds(draft);
+  const next = content.milestones.find((m) => !done.includes(m.id) && conditionHolds(m.condition, draft, content.config));
+  if (!next) return null;
   // В наградах нет случайных исходов, поэтому генератор случайности не сдвигается.
   applyEffects(draft, next.effects, draft.rng, []);
   draft.milestones = [...(draft.milestones ?? []), { id: next.id, day: draft.day }];
-  // Закрыта последняя цель главы — в ленту идёт запись о пройденной главе.
-  const chapter = content.chapters.find((c) => c.milestones[c.milestones.length - 1] === next.id);
+  // Закрыта последняя непройденная цель главы — в ленту идёт запись о пройденной главе.
+  const chapter = content.chapters.find((c) => c.milestones.includes(next.id) && c.milestones.every((id) => id === next.id || done.includes(id)));
   if (chapter) draft.news = [...(draft.news ?? []), { day: draft.day, kind: 'chapter' as const, id: chapter.id }].slice(-40);
   return next.id;
 }
