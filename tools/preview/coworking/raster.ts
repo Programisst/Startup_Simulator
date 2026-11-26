@@ -1,5 +1,5 @@
 import type { ScenePerson } from '../../../src/core';
-import { TOKEN_COLORS } from '../../../src/ui/apartment/engine/editorScreen';
+import { drawEditorScreen } from '../../../src/ui/apartment/engine/editorScreen';
 import { heroFrames, HERO_PALETTE } from '../../../src/ui/apartment/engine/heroPixels';
 import { MonitorTyping } from '../../../src/ui/apartment/engine/monitor';
 import { layout, type Point, type poseAt } from './motion';
@@ -186,6 +186,12 @@ export async function loadRoom(canvas: HTMLCanvasElement, screenDetails: HTMLCan
     });
   }
 
+  const editorTexture = document.createElement('canvas');
+  editorTexture.width = 1050;
+  editorTexture.height = 650;
+  const editorContext = editorTexture.getContext('2d')!;
+
+
   return {
     draw(seats: ReadonlyMap<number, { worker: Worker; pose: ReturnType<typeof poseAt> }>, time: number) {
       frame.data.set(base.data);
@@ -225,48 +231,20 @@ export async function loadRoom(canvas: HTMLCanvasElement, screenDetails: HTMLCan
     return { origin: project(at, top), visible, monitor };
   }
 
+
   function drawMonitorText({ origin, visible, monitor }: MonitorFace, time: number) {
+    const [, screenWidth, , bottom, top] = layout.monitor as [number, number, number, number, number];
+    const screenHeight = top - bottom;
+    drawEditorScreen(editorContext, {
+      x: 0, y: 0, w: editorTexture.width, h: editorTexture.height,
+    }, monitor, time, 1);
     detail.save();
     detail.beginPath();
     for (const { x, y, z } of visible) if (depth[y * width + x] === z) detail.rect(x, y, 1, 1);
     detail.clip();
-    // Map the editor's rectangular surface onto the isometric monitor face.
+    // The complete editor texture covers the complete isometric screen face.
     detail.transform(1, .5, 0, 1, origin.x - .35, origin.y + .45);
-    detail.fillStyle = '#20242b';
-    detail.fillRect(0, 0, 21, 13);
-    detail.fillStyle = '#303943';
-    detail.fillRect(0, 0, 4, 13);
-    detail.fillRect(4, 0, 17, 2.5);
-    detail.fillStyle = '#70a4c3';
-    detail.fillRect(4, .1, 8, .26);
-    detail.textBaseline = 'top';
-    detail.font = '1.45px Menlo, monospace';
-    detail.fillStyle = '#d5d6d6';
-    detail.fillText(monitor.fileName.slice(0, 17), 4.6, .58);
-    detail.font = '1.7px Menlo, monospace';
-    const letter = detail.measureText('M').width;
-    for (let n = 0; n < 4; n++) {
-      detail.fillStyle = n === 0 ? '#79b7d5' : '#67727c';
-      detail.fillRect(.65, 3 + n * 2.28, .65, .65);
-      detail.fillRect(1.6, 3.22 + n * 2.28, 1.6, .28);
-    }
-    monitor.rows(13, 4, 0).forEach((row, i) => {
-      const y = 3.05 + i * 2.34;
-      if (row.number !== null) {
-        detail.fillStyle = '#a1a9b5';
-        detail.fillText(String(row.number), 4.45, y);
-      }
-      let x = 6.55 + row.indent * letter;
-      for (const token of row.tokens) {
-        detail.fillStyle = TOKEN_COLORS[token.kind] ?? '#d0d4dc';
-        detail.fillText(token.text, x, y);
-        x += token.text.length * letter;
-      }
-      if (row.caret !== null && Math.floor(time * 2) % 2 === 0) {
-        detail.fillStyle = '#f0ece5';
-        detail.fillRect(6.55 + (row.indent + row.caret) * letter, y + .15, .21, 1.55);
-      }
-    });
+    detail.drawImage(editorTexture, 0, 0, screenWidth, screenHeight);
     detail.restore();
   }
 }
