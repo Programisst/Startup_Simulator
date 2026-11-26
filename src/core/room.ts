@@ -157,6 +157,7 @@ function taskCost(task: Task, s: GameState, content: GameContent): number {
   if (task.kind === 'feature') {
     return featuresOf(s, content).find((f) => f.id === task.featureId)?.cost ?? 0;
   }
+  if (task.kind === 'request') return task.cost;
   if (task.kind === 'bugfix') return cfg.bugfixCost;
   if (task.kind === 'polish') return cfg.polishCost;
   return cfg.refactorCost;

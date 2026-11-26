@@ -261,6 +261,46 @@ export const config: GameConfig = {
     ],
     cutCooldownDays: 90,
   },
+  // Запросы рынка: работа над продуктом, которая не кончается (docs/02-economy.md, раздел 35).
+  // Шансы — как в жизни: из задумок команды срабатывает треть, из того, о чём просят пользователи, — половина.
+  roadmap: {
+    periodDays: 45,
+    names: 10,
+    revenuePerScale: 40_000,
+    maxScale: 60,
+    checkDays: 7,
+    checkCostShare: 0.1,
+    maxChurnHits: 15,
+    sources: [
+      {
+        id: 'users',
+        minDays: 9,
+        maxDays: 15,
+        chance: 0.5,
+        hit: { value: 0.05, debt: 0, reputation: 2, churn: 0.98, market: 1 },
+        flop: { value: 0.01, debt: 3, reputation: 0, churn: 1, market: 1 },
+      },
+      {
+        id: 'client',
+        minDays: 12,
+        maxDays: 20,
+        chance: 1,
+        hit: { value: 0.01, debt: 6, reputation: 0, churn: 1, market: 1 },
+        flop: { value: 0.01, debt: 6, reputation: 0, churn: 1, market: 1 },
+        deadlineDays: 40,
+        reward: 0.2,
+        lateReputation: -3,
+      },
+      {
+        id: 'bet',
+        minDays: 15,
+        maxDays: 25,
+        chance: 0.33,
+        hit: { value: 0.08, debt: 0, reputation: 3, churn: 1, market: 1.04, boost: { factor: 1.3, days: 30 } },
+        flop: { value: 0.01, debt: 3, reputation: 0, churn: 1, market: 1 },
+      },
+    ],
+  },
   // Опасности большой компании (docs/02-economy.md, раздел 34).
   // Спад: в жизни раз в шесть с небольшим лет и длится 8–18 месяцев — отсюда 4% на квартал.
   threats: {

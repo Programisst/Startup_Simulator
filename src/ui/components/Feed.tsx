@@ -40,6 +40,13 @@ export function useFeedText(): (item: NewsItem) => string {
         return t(item.id === 'joined' ? 'feed.items.headhuntJoined' : 'feed.items.headhuntDeclined', { name: nameOf(item.value ?? 0) });
       case 'acquisition':
         return t(`feed.items.acquisition${(item.id ?? '').charAt(0).toUpperCase()}${(item.id ?? '').slice(1)}`, { value: num(item.value ?? 0) });
+      case 'request': {
+        // id — «источник:исход»; variant — номер названия в списке источника.
+        const [source = '', outcome = ''] = (item.id ?? '').split(':');
+        const cap = (x: string) => x.charAt(0).toUpperCase() + x.slice(1);
+        const names = t(`product.roadmap.names.${source}`, { returnObjects: true }) as string[];
+        return t(`feed.items.request${cap(source)}${cap(outcome)}`, { name: names[item.variant ?? 0] ?? '', value: money(item.value ?? 0) });
+      }
       case 'threat':
         return t(`feed.items.threat${(item.id ?? '').charAt(0).toUpperCase()}${(item.id ?? '').slice(1)}`);
       case 'opsCut':

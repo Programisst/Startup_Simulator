@@ -1,5 +1,5 @@
 // Простые автоматические игроки для проверки баланса.
-import { acquisitionsView, cac, campaignsView, featuresOf, fundingView, headhuntView, officeView, opsView, releaseView, teamView, threatView, type Command, type GameContent, type GameState } from '../../src/core';
+import { acquisitionsView, cac, campaignsView, featuresOf, fundingView, headhuntView, officeView, opsView, releaseView, roadmapView, teamView, threatView, type Command, type GameContent, type GameState } from '../../src/core';
 
 export type Strategy = (s: GameState, content: GameContent) => Command[];
 
@@ -69,6 +69,20 @@ function builder(launchAfter: number): Strategy {
         else if (s.bugs > 0) cmds.push({ type: 'startBugfix' });
         else if (s.debt > 0) cmds.push({ type: 'startRefactor' });
         else cmds.push({ type: 'startPolish' });
+      }
+    }
+    // Функции кончились: берёт запросы рынка — заказ клиента, если успевает к сроку, и то, о чём просят пользователи.
+    // По одному: следующий — когда в работе не осталось ничего, кроме «улучшения продукта».
+    const road = roadmapView(s, content);
+    if (road.unlocked) {
+      // Запросы приносят новые ошибки и долг: чинит сразу, не дожидаясь пустой очереди.
+      if (s.bugs >= 5 && !s.tasks.some((t) => t.kind === 'bugfix')) cmds.push({ type: 'startBugfix' });
+      if (s.debt >= 15 && !s.tasks.some((t) => t.kind === 'refactor')) cmds.push({ type: 'startRefactor' });
+      // Берётся только за то, что команда успеет до прихода следующих запросов: маленькой команде большие переделки не по силам.
+      const fits = (days: number | null) => days !== null && days <= content.config.roadmap.periodDays;
+      if (s.tasks.every((t) => t.kind === 'polish')) {
+        const request = road.requests.find((r) => !r.taken && fits(r.days) && (r.source === 'client' ? !r.tooSlow : r.source === 'users'));
+        if (request) cmds.push({ type: 'takeRequest', source: request.source });
       }
     }
 
@@ -206,6 +220,13 @@ export const active: Strategy = (s, content) => {
   const angels = funding.investors.find((i) => i.id === 'angels');
   if (funding.rounds < 2 && angels?.blocked === null && funding.position.level !== 'weak') {
     cmds.push({ type: 'openRound', investorId: 'angels' }, { type: 'counterOffer', stance: 'ask' }, { type: 'closeRound' });
+  }
+
+  // Идея команды: срабатывает одна из трёх, поэтому сначала проверяет спрос и берётся только за ту, что нужна людям.
+  const bet = roadmapView(s, content).requests.find((r) => r.source === 'bet');
+  if (bet && !bet.taken) {
+    if (bet.check.state === 'none' && bet.check.blocked === null) cmds.push({ type: 'checkRequest', source: 'bet' });
+    else if (bet.known === 'hit' && bet.days !== null && bet.days <= cfg.roadmap.periodDays) cmds.push({ type: 'takeRequest', source: 'bet' });
   }
 
   // Угроза: отвечает рискованно — наступает в спад и пробует обогнать конкурента продуктом.
