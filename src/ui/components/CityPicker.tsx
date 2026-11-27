@@ -46,7 +46,8 @@ export function CityPicker({ value, onChange }: { value: string; onChange: (id: 
               ? t('new.cityTalentMore', { count: chosen.extraCandidates })
               : chosen.extraCandidates < 0
                 ? t('new.cityTalentLess', { count: -chosen.extraCandidates })
-                : t('new.cityTalentSame')}
+                : t('new.cityTalentSame')}{' '}
+            {t('new.cityReach', { reach: chosen.reach })}
           </p>
         </div>
       )}

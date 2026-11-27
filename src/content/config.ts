@@ -272,6 +272,13 @@ export const config: GameConfig = {
     investorPower: 0.2,
     investorMin: 0.7,
     investorMax: 1.6,
+    // Рынок труда: город не бездонный. Один человек «в лёгком доступе» на тысячу программистов города — настройка игры, не статистика.
+    devsPerHire: 1000,
+    premiumAtFull: 0.5,
+    premiumPower: 1.5,
+    premiumMax: 1.5,
+    candidatesDrop: 0.5,
+    candidatesFloor: 0.2,
   },
   // Запросы рынка: работа над продуктом, которая не кончается (docs/02-economy.md, раздел 35).
   // Шансы — как в жизни: из задумок команды срабатывает треть, из того, о чём просят пользователи, — половина.
