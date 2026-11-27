@@ -1,0 +1,27 @@
+.iso-page { background: #343836; overflow: hidden; }
+.iso-view { position: absolute; inset: 82px 18px 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; container-type: size; }
+.iso-room { position: relative; width: min(100cqw, calc(100cqh * var(--iso-aspect))); aspect-ratio: var(--iso-aspect); transform-origin: center; }
+.iso-page[data-ready=false] .iso-room { visibility: hidden; }
+.iso-pixels { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; }
+.iso-details { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.iso-target { position: absolute; transform: translate(-50%,-50%); width: var(--iso-target-width); height: var(--iso-target-height); min-width: 20px; min-height: 20px; padding: 0; background: transparent; border: 1px solid transparent; border-radius: 3px; cursor: pointer; box-shadow: none; }
+.iso-target:hover, .iso-target:focus-visible { background: #f1d8a218; border-color: #e1c393; }
+.iso-target:disabled { cursor: default; }
+.iso-thought { position: absolute; transform: translate(-50%,-100%); max-width: 220px; padding: 9px 12px; font: 13px/1.4 system-ui,sans-serif; color: #3a3a50; background: #f1e6cc; border: 2px solid #3a3a50; pointer-events: none; }
+.iso-thought:empty { display: none; }
+.iso-hint { position: absolute; bottom: 12px; width: 100%; margin: 0; color: #d0ccba; text-align: center; font: 12px system-ui,sans-serif; pointer-events: none; }
+.iso-loading { position: absolute; inset: 45% 0 auto; text-align: center; color: #eee2c8; }
+.iso-rest { position: absolute; inset: 0; display: grid; place-items: center; background: #24232ff2; color: #eee2c8; z-index: 25; font: 500 23px Rubik,system-ui,sans-serif; }
+@media (max-width: 740px) {
+  .iso-view { inset: 128px 0 55px; }
+  .iso-page > .lm-hud-right { top: 77px; left: 16px; right: auto; }
+  .iso-hint { padding-inline: 20px; }
+}
+@media (max-width: 390px) {
+  .iso-page > .lm-hud-row { left: 10px; gap: 6px; }
+  .iso-page > .lm-hud-row:not(.lm-hud-right) .lm-card { padding-inline: 7px; }
+  .iso-page .lm-date { font-size: 13px; }
+  .iso-page .lm-cash { font-size: 18px; }
+  .iso-page .lm-sub { font-size: 10px; }
+  .iso-page > .lm-hud-right .lm-speed button { width: 36px; }
+}

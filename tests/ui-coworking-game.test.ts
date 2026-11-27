@@ -1,9 +1,16 @@
-import { FounderMotion, entryPoint, coffeePoint, route } from '../src/ui/isometric/movement';
+import { OfficeMotion, OfficeNavigation } from '../src/ui/isometric/movement';
+import { officeLayouts } from '../src/ui/isometric/layout';
+import { monitorPoint, type Point } from '../src/ui/isometric/raster';
 import { describe, expect, it } from 'vitest';
 import { content } from '../src/content';
 import { sceneTeam, type Employee } from '../src/core';
 import { newGame } from './helpers';
-import { sceneForOffice, peopleForScene, teamSeats, founderSeat } from '../src/ui/isometric/state';
+import { sceneForOffice, peopleForScene } from '../src/ui/isometric/state';
+
+const coworking = officeLayouts.coworking;
+const founderSeat = coworking.art.desks.length - 1;
+const nav = new OfficeNavigation(coworking.art);
+const coffeePoint = coworking.coffee.target;
 
 const employee = (id: number, seat: number): Employee => ({
   id, seat, nameSeed: id, role: 'developer', skill: 1, salary: 2400, salaryAsk: 2400,
@@ -13,11 +20,12 @@ describe('коворкинг в настоящей партии', () => {
   it('выбирается после переезда, квартира доступна в начале', () => {
     expect(sceneForOffice('home')).toBe('apartment');
     expect(sceneForOffice('coworking')).toBe('coworking');
-    expect(sceneForOffice('smallOffice')).toBe('apartment');
+    expect(sceneForOffice('smallOffice')).toBe('smallOffice');
+    expect(sceneForOffice('office')).toBe('apartment');
+    expect(sceneForOffice('floor')).toBe('apartment');
   });
   it('отдельное место основателя добавляется к шести местам сотрудников', () => {
-    expect(teamSeats).toBe(content.config.offices.find(o => o.id === 'coworking')!.seats);
-    expect(founderSeat).toBe(teamSeats);
+    expect(coworking.art.desks).toHaveLength(content.config.offices.find(o => o.id === 'coworking')!.seats + 1);
   });
   it('перестановка состава и увольнение не пересаживают оставшихся', () => {
     const game = { ...newGame(), office: 'coworking' };
@@ -29,11 +37,68 @@ describe('коворкинг в настоящей партии', () => {
   });
 });
 
+describe('небольшой офис в настоящей партии', () => {
+  it('показывает все места до 11 и оставляет их за сотрудниками после увольнения', () => {
+    const game = { ...newGame(), office: 'smallOffice' };
+    const employees = Array.from({ length: 12 }, (_, seat) => employee(seat + 1, seat));
+    const view = (people: Employee[]) => sceneTeam({ ...game, team: { ...game.team!, employees: people } }, content);
+    expect([...peopleForScene(view([...employees].reverse())).keys()]).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+    const withoutNeighbor = peopleForScene(view(employees.filter(e => e.seat !== 8)));
+    expect(withoutNeighbor.has(8)).toBe(false);
+    expect(withoutNeighbor.get(9)?.id).toBe(10);
+    expect(withoutNeighbor.get(11)?.nameSeed).toBe(12);
+  });
+
+  it('вмещает 13 видимых мониторов и даёт добраться из прохода до каждого кресла', () => {
+    const { art, spawn } = officeLayouts.smallOffice;
+    const officeNav = new OfficeNavigation(art);
+    expect(art.desks).toHaveLength(13);
+    expect(new Set(art.desks.map(desk => desk.join(','))).size).toBe(13);
+    for (let seat = 0; seat <= 12; seat++) {
+      const monitor = monitorPoint(art, seat);
+      expect(monitor.x).toBeGreaterThan(15);
+      expect(monitor.x).toBeLessThan(art.width - 15);
+      expect(monitor.y).toBeGreaterThan(12);
+      expect(monitor.y).toBeLessThan(art.height - 12);
+      const entry = officeNav.entryPoint(seat);
+      const path = officeNav.route(spawn, entry);
+      expect(path.at(-1), 'вход к креслу ' + seat).toEqual(entry);
+    }
+  });
+
+  it('идёт через проёмы к кофе, отдыху и местам прогулок', () => {
+    const { art, spawn, coffee, rest, breakPoints } = officeLayouts.smallOffice;
+    const officeNav = new OfficeNavigation(art);
+    function expectClearRoute(from: Point, to: Point) {
+      const route = officeNav.route(from, to);
+      expect(route.at(-1), JSON.stringify(to)).toEqual(to);
+      for (const [i, end] of route.entries()) {
+        const start = i ? route[i - 1]! : from;
+        const samples = Math.max(1, Math.ceil(Math.hypot(end.x - start.x, end.y - start.y)));
+        for (let step = 0; step <= samples; step++) {
+          const x = start.x + (end.x - start.x) * step / samples;
+          const y = start.y + (end.y - start.y) * step / samples;
+          const overlapsFurniture = art.fixedObstacles.some(([x0, x1, y0, y1]) =>
+            x > x0! - 2.5 && x < x1! + 2.5 && y > y0! - 2.5 && y < y1! + 2.5);
+          if (overlapsFurniture) throw new Error('Маршрут пересекает препятствие у ' + x + ', ' + y);
+        }
+      }
+    }
+    expectClearRoute(spawn, coffee.target);
+    expectClearRoute(coffee.target, rest.target);
+    breakPoints.forEach((to, seat) => {
+      const entry = officeNav.entryPoint(seat);
+      expectClearRoute(entry, to);
+      expectClearRoute(to, entry);
+    });
+  });
+});
+
 describe('основатель в коворкинге', () => {
   it('доходит до своего компьютера, садится, встаёт и идёт к кофе', () => {
-    const motion = new FounderMotion();
+    const motion = new OfficeMotion(nav, founderSeat, coworking.spawn);
     const initial = motion.pose.at;
-    motion.go(entryPoint(founderSeat), 'computer');
+    motion.go(nav.entryPoint(founderSeat), 'computer');
     let arrived: string | null = null;
     for (let i = 0; i < 500 && arrived !== 'computer'; i++) arrived = motion.step(.025);
     expect(arrived).toBe('computer');
@@ -45,12 +110,27 @@ describe('основатель в коворкинге', () => {
     expect(motion.pose.kind).toBe('stand');
   });
   it('нулевое время сохраняет позу и маршрут', () => {
-    const motion = new FounderMotion();
+    const motion = new OfficeMotion(nav, founderSeat, coworking.spawn);
     motion.go(coffeePoint, 'coffee');
     const before = structuredClone(motion.pose);
     expect(motion.step(0)).toBeNull();
     expect(motion.pose).toEqual(before);
     expect(motion.moving).toBe(true);
-    expect(route(before.at, coffeePoint).length).toBeGreaterThan(0);
+    expect(nav.route(before.at, coffeePoint).length).toBeGreaterThan(0);
+  });
+  it('смена цели во время посадки не переносит героя в кресло', () => {
+    const motion = new OfficeMotion(nav, founderSeat, coworking.spawn);
+    const entry = nav.entryPoint(founderSeat);
+    motion.go(entry, 'computer');
+    for (let i = 0; i < 600; i++) {
+      motion.step(.025);
+      if (motion.pose.kind === 'stand' && motion.pose.at.x === entry.x && motion.pose.at.y === entry.y) break;
+    }
+    expect(motion.pose.at).toEqual(entry);
+    motion.step(.1);
+    const before = motion.pose.at;
+    motion.go(coffeePoint, 'coffee');
+    motion.step(.025);
+    expect(Math.hypot(motion.pose.at.x - before.x, motion.pose.at.y - before.y)).toBeLessThan(2);
   });
 });

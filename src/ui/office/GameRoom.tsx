@@ -14,7 +14,7 @@ import { CompanyApp } from './CompanyApp';
 import { RoomControls } from './RoomControls';
 
 // Квартира со всей графикой подгружается отдельным файлом: первый экран игры открывается быстрее.
-const Coworking = lazy(() => import('../isometric/Coworking').then(m => ({ default: m.Coworking })));
+const IsometricOffice = lazy(() => import('../isometric/IsometricOffice').then(m => ({ default: m.IsometricOffice })));
 const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
 
 /** Сколько набранных знаков кода уходит в расчёт одной пачкой. */
@@ -72,6 +72,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
   // Набранные знаки копятся и уходят в расчёт пачками, чтобы игра не пересчитывалась на каждую клавишу.
   const typed = useRef(0);
   const view = roomView(game, content);
+  const scene = sceneForOffice(view.team.office.id);
 
   const featureName = (id: string) => (id === 'core' ? t(`productTypes.${game.productType}.core`) : t(`features.${id}`));
   const thought =
@@ -164,7 +165,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
   return (
     <RoomGuard>
       <Suspense fallback={<p className="muted office-loading">{t('office.loading')}</p>}>
-        {sceneForOffice(view.team.office.id) === 'coworking' ? <Coworking key={view.team.office.id} link={link} /> : <Apartment link={link} />}
+        {scene === 'apartment' ? <Apartment link={link} /> : <IsometricOffice key={scene} office={scene} link={link} />}
       </Suspense>
     </RoomGuard>
   );

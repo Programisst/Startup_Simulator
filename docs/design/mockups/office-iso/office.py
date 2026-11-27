@@ -260,7 +260,7 @@ def backdrop(look):
     return draw
 
 
-def city(look, style):
+def city(look, style, *, window_start=WINDOW_START, window_end=WINDOW_END):
     sky = np.stack([hx(code) for code in colors(look, "sky")])
     skyline = np.stack([hx(code) for code in colors(look, "city")])
     lit = hx("e7b77b" if style != "day" else "d6d9c9")
@@ -269,7 +269,7 @@ def city(look, style):
                  (44, 20, 7), (65, 11, 13), (77, 21, 8))
 
     def view(x, _, z):
-        u = (x - WINDOW_START) * 98 / (WINDOW_END - WINDOW_START)
+        u = (x - window_start) * 98 / (window_end - window_start)
         v = z - 17
         band = np.clip(np.floor(v / 9), 0, 2).astype(int)
         result = sky[2 - band].copy()
@@ -440,8 +440,8 @@ def keyboard(scene, x, y, occupied):
     material(scene, (x + 16, x + 19, y + 1, y + 5, 16, 17), ("#b5b0a4", "#797780", "#565360"))
 
 
-def desktop(scene, look, style, seat, person, *, with_chair=True):
-    x, y = DESKS[seat]
+def desktop(scene, look, style, seat, person, *, with_chair=True, position=None):
+    x, y = DESKS[seat] if position is None else position
     walnut, front, side = colors(look, "wood")
     metal = colors(look, "metal")
     screen, signal, caret = (hx(c) for c in colors(look, "screen"))
@@ -589,25 +589,29 @@ def depth_image(scene):
     return Image.fromarray(rgb)
 
 
-def export_preview(output):
-    room = room_art("day", {}, with_chairs=False)
+def save_atlas(output, name, room):
     cw, ch = CHAIR_ATLAS
     seat = Scene(cw, ch, *CHAIR_ORIGIN, lambda s: None)
     chair(seat, LOOKS["day"], 0, 0)
-    atlas = Image.new("RGB", (WIDTH + cw, HEIGHT * 2))
+    atlas = Image.new("RGB", (room.W + cw, room.H * 2))
     for image, location in (
-        (room.finish(), (0, 0)), (depth_image(room), (0, HEIGHT)),
-        (seat.finish(), (WIDTH, 0)), (depth_image(seat), (WIDTH, HEIGHT)),
+        (room.finish(), (0, 0)), (depth_image(room), (0, room.H)),
+        (seat.finish(), (room.W, 0)), (depth_image(seat), (room.W, room.H)),
     ):
         atlas.paste(image, location)
-    atlas.save(output / "coworking-art.png", optimize=True)
+    atlas.save(output / (name + ".png"), optimize=True)
+    return {"width": cw, "height": ch, "origin": CHAIR_ORIGIN}
+
+
+def export_preview(output):
+    room = room_art("day", {}, with_chairs=False)
     blockers = [COFFEE, BENCH, SIDE_TABLE, (201, 207, 46, 52)]
     blockers.extend((x - 3, x + 3, y - 3, y + 3) for x, y in FLOOR_PLANTS)
     data = {
         "width": WIDTH, "height": HEIGHT, "origin": ORIGIN,
         "room": (ROOM_X, ROOM_Y), "desks": DESKS, "deskSize": (DESK_WIDTH, DESK_DEPTH),
         "seatOffset": SEAT_OFFSET, "monitor": MONITOR, "fixedObstacles": blockers,
-        "chair": {"width": cw, "height": ch, "origin": CHAIR_ORIGIN},
+        "chair": save_atlas(output, "coworking-art", room),
     }
     (output / "coworking-art.json").write_text(json.dumps(data, indent=2) + "\n")
 

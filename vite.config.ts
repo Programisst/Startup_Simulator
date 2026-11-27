@@ -11,6 +11,8 @@ export default defineConfig(({ mode }) => ({
     // Для игры одним файлом (`npm run share`) квартира не выносится в отдельный файл:
     // из файла, открытого двойным щелчком, браузер не может подгрузить соседний.
     rollupOptions: { output: { inlineDynamicImports: mode === 'share' } },
+    // В автономном HTML шрифты тоже должны быть внутри файла.
+    assetsInlineLimit: mode === 'share' ? (path) => path.endsWith('.woff2') || undefined : undefined,
   },
   test: {
     include: ['tests/**/*.test.{ts,tsx}'],
