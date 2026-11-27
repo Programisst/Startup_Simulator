@@ -3,8 +3,9 @@ import { config } from './config';
 import { difficulties } from './difficulties';
 import { events } from './events';
 import { features } from './features';
+import { cities, country } from './cities';
 import { chapters, milestones } from './milestones';
 import { productTypes } from './productTypes';
 import { themes } from './themes';
 
-export const content: GameContent = { config, difficulties, productTypes, features, events, milestones, chapters, themes };
+export const content: GameContent = { config, difficulties, productTypes, features, events, milestones, chapters, themes, cities, country };

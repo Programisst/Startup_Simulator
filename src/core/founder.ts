@@ -2,7 +2,8 @@
 // Описание — в docs/02-economy.md, раздел 19.
 
 import { clamp } from './formulas';
-import type { FounderConfig, GameConfig, GameState } from './types';
+import { featuresOf } from './features';
+import type { FounderConfig, GameConfig, GameContent, GameState } from './types';
 
 /** Силы основателя; в старых сохранениях поля нет — считаем, что он полон сил. */
 export const energyOf = (s: GameState): number => s.energy ?? 100;
@@ -18,6 +19,13 @@ export const focusOf = (s: GameState): number => clamp(s.focus ?? 0, 0, 1);
 
 /** Какую долю дневной работы игрок уже добавил набором кода сегодня (0 — ещё не печатал). */
 export const typedTodayOf = (s: GameState): number => (s.typedDay === s.day ? (s.typedToday ?? 0) : 0);
+
+/** Очередь пуста, но основа продукта готова: набор кода игроком начнёт улучшение продукта. */
+export function canPolishByTyping(s: GameState, content: GameContent): boolean {
+  if (s.tasks.length > 0 || s.resting || s.status !== 'running') return false;
+  const core = featuresOf(s, content).find((f) => f.core);
+  return !core || s.doneFeatures.includes(core.id);
+}
 
 export const coffeeActive = (s: GameState): boolean => (s.coffeeUntilDay ?? -1) > s.day;
 export const coffeeReady = (s: GameState): boolean => s.day >= (s.coffeeReadyDay ?? 0);

@@ -3,6 +3,7 @@ import { content } from '../../content';
 import { featuresOf, overload, type Task } from '../../core';
 import { FounderCare } from '../components/FounderCare';
 import { ReleasePanel } from '../components/ReleasePanel';
+import { RoadmapPanel } from '../components/RoadmapPanel';
 import { money, num } from '../format';
 import { useStore } from '../store';
 
@@ -25,6 +26,11 @@ export function Product() {
       const def = defs.find((f) => f.id === task.featureId);
       return `${featureName(task.featureId)} — ${num(task.progress)} / ${def?.cost ?? 0}`;
     }
+    // Запрос рынка: его название — из списка запросов.
+    if (task.kind === 'request') {
+      const names = t(`product.roadmap.names.${task.source}`, { returnObjects: true }) as string[];
+      return `${names[task.name] ?? t('product.task.request')} — ${num(task.progress)} / ${num(task.cost)}`;
+    }
     return t(`product.task.${task.kind}`);
   }
 
@@ -37,6 +43,7 @@ export function Product() {
       </div>
 
       {game.launched && <ReleasePanel />}
+      <RoadmapPanel />
 
       {!game.launched && (
         <p className="notice">

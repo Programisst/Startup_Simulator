@@ -5,9 +5,10 @@ import { useTranslation } from 'react-i18next';
 import { aiAnalyzeIdea, aiAvailable, aiSuggestIdeas } from '../../ai/client';
 import { content } from '../../content';
 import { ideaLexicon, ideaSeeds, ideaThemes, nameParts, themeLexicon, type IdeaSeed, type IdeaThemeId } from '../../content/ideas';
-import { analyzeIdea, audienceForIdea, IDEA_MAX_LENGTH, modelForIdea, themeForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
+import { analyzeIdea, audienceForIdea, cityFor, IDEA_MAX_LENGTH, modelForIdea, themeForIdea, type BusinessModel, type DifficultyId, type GoalId, type ProductTypeId } from '../../core';
 import { hasSave } from '../../save/storage';
 import { Landscape } from '../apartment/laptop/Landscape';
+import { CityPicker } from '../components/CityPicker';
 import { money } from '../format';
 import { useStore } from '../store';
 import './newgame.css';
@@ -74,6 +75,8 @@ export function NewGame() {
   const ideaRef = useRef('');
   const [name, setName] = useState('');
   const [difficulty, setDifficulty] = useState<DifficultyId>('normal');
+  // Город по умолчанию — первый в списке; игрок меняет его ниже.
+  const [cityId, setCityId] = useState<string>(content.cities[0]?.id ?? '');
   const [goal, setGoal] = useState<GoalId>('profit');
 
   useEffect(() => {
@@ -88,6 +91,10 @@ export function NewGame() {
 
   const analysis = useMemo(() => analyzeIdea(idea, ideaLexicon, content), [idea]);
   const diff = content.difficulties[difficulty];
+  // Жизнь и подработка считаются по ценам выбранного города — как их посчитает расчёт.
+  const city = cityFor(cityId, content);
+  const living = Math.round(diff.livingCostPerMonth * (city?.living ?? 1));
+  const side = Math.round(diff.sideJobIncomePerMonth * (city?.living ?? 1));
 
   // Выбор игрока важнее разбора; разбор важнее пустоты.
   const productType = manual.productType ?? analysis.productType;
@@ -179,6 +186,7 @@ export function NewGame() {
       businessModel,
       goal,
       difficulty,
+      ...(cityId ? { cityId } : {}),
     });
   }
 
@@ -362,6 +370,12 @@ export function NewGame() {
         </section>
 
         <section>
+          <h2>{t('new.city')}</h2>
+          <p className="ng-receipt">{t('new.cityLead')}</p>
+          <CityPicker value={cityId} onChange={setCityId} />
+        </section>
+
+        <section>
           <h2>{t('new.difficulty')}</h2>
           <div className="ng-tabs">
             {DIFFICULTIES.map((id) => (
@@ -374,8 +388,8 @@ export function NewGame() {
           <p className="ng-receipt">
             {t('new.difficultyInfo', {
               cash: money(diff.startCash),
-              living: money(diff.livingCostPerMonth),
-              side: money(diff.sideJobIncomePerMonth),
+              living: money(living),
+              side: money(side),
             })}
           </p>
         </section>

@@ -120,6 +120,7 @@ export const config: GameConfig = {
       { id: 'press', raise: 0.25, chance: 0.2 },
     ],
     minValuation: 100_000,
+    cityPriceWeight: 0.5,
     minFounderShare: 0.2,
     energyCost: 20,
     talkDays: 14,
@@ -260,6 +261,57 @@ export const config: GameConfig = {
       { id: 'full', depth: 1, severanceMonths: 2, reputation: -4, motivation: -10, riskChance: 0.35, riskChurn: 1.2, riskDays: 60 },
     ],
     cutCooldownDays: 90,
+  },
+  // Как настоящие цифры города переводятся в игру (docs/02-economy.md, раздел 36).
+  cities: {
+    referenceDevJobs: 30_000,
+    talentMin: -1,
+    talentMax: 2,
+    skillPerTalent: 0.15,
+    referenceVenture: 4,
+    investorPower: 0.2,
+    investorMin: 0.7,
+    investorMax: 1.6,
+  },
+  // Запросы рынка: работа над продуктом, которая не кончается (docs/02-economy.md, раздел 35).
+  // Шансы — как в жизни: из задумок команды срабатывает треть, из того, о чём просят пользователи, — половина.
+  roadmap: {
+    periodDays: 45,
+    names: 10,
+    revenuePerScale: 40_000,
+    maxScale: 60,
+    checkDays: 7,
+    checkCostShare: 0.1,
+    maxChurnHits: 15,
+    sources: [
+      {
+        id: 'users',
+        minDays: 9,
+        maxDays: 15,
+        chance: 0.5,
+        hit: { value: 0.05, debt: 0, reputation: 2, churn: 0.98, market: 1 },
+        flop: { value: 0.01, debt: 3, reputation: 0, churn: 1, market: 1 },
+      },
+      {
+        id: 'client',
+        minDays: 12,
+        maxDays: 20,
+        chance: 1,
+        hit: { value: 0.01, debt: 6, reputation: 0, churn: 1, market: 1 },
+        flop: { value: 0.01, debt: 6, reputation: 0, churn: 1, market: 1 },
+        deadlineDays: 40,
+        reward: 0.2,
+        lateReputation: -3,
+      },
+      {
+        id: 'bet',
+        minDays: 15,
+        maxDays: 25,
+        chance: 0.33,
+        hit: { value: 0.08, debt: 0, reputation: 3, churn: 1, market: 1.04, boost: { factor: 1.3, days: 30 } },
+        flop: { value: 0.01, debt: 3, reputation: 0, churn: 1, market: 1 },
+      },
+    ],
   },
   // Опасности большой компании (docs/02-economy.md, раздел 34).
   // Спад: в жизни раз в шесть с небольшим лет и длится 8–18 месяцев — отсюда 4% на квартал.

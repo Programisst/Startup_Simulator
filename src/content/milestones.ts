@@ -1,4 +1,5 @@
 // Цели на пути компании: по порядку, от первой строчки кода до большой компании.
+// Порядок — это порядок показа: цель засчитывается, когда выполнена, даже если более ранняя ещё не пройдена.
 // Названия и подсказки для игрока лежат в переводах под ключом goalsLadder.items.<id>.
 // Награды намеренно небольшие: это призы и известность, а не способ выжить. Большие деньги приносят инвесторы.
 import type { ChapterDef, MilestoneDef } from '../core/types';
@@ -18,8 +19,9 @@ export const milestones: MilestoneDef[] = [
   { id: 'team3', condition: { minTeam: 3 }, effects: [{ type: 'reputation', amount: 2 }], progress: { metric: 'team', target: 3 } },
   { id: 'officeCoworking', condition: { minOffice: 1 }, effects: [{ type: 'reputation', amount: 3 }] },
   { id: 'revenue5000', condition: { minRevenue30: 5000 }, effects: [{ type: 'reputation', amount: 4 }], progress: { metric: 'revenue30', target: 5000 } },
-  // Засчитывается, когда предложение пришло: соглашаться не обязательно, иначе отказ закрыл бы путь дальше.
-  { id: 'investorOffer', condition: { eventSeen: 'angelOffer' }, effects: [{ type: 'reputation', amount: 2 }] },
+  // Засчитывается, когда игрок сам позвал инвестора на переговоры или предложение пришло само.
+  // Соглашаться не обязательно. Раньше цель ждала только случайного события — и могла не закрыться месяцами.
+  { id: 'investorOffer', condition: { investorContact: { events: ['angelOffer', 'seedRound', 'seriesA'] } }, effects: [{ type: 'reputation', amount: 2 }] },
   { id: 'team6', condition: { minTeam: 6 }, effects: [{ type: 'reputation', amount: 2 }], progress: { metric: 'team', target: 6 } },
   { id: 'users10000', condition: { minUsers: 10_000 }, effects: [{ type: 'cash', amount: 1500 }], progress: { metric: 'users', target: 10_000 } },
   { id: 'officeSmall', condition: { minOffice: 2 }, effects: [{ type: 'reputation', amount: 4 }] },

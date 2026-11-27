@@ -7,9 +7,10 @@ import { buyBack, closeRound, counterOffer, leaveRound, openRound } from './fund
 import { buyTarget, checkTarget } from './acquisitions';
 import { cutOps } from './ops';
 import { respondThreat } from './threats';
+import { beforePolish, checkRequest, dropRequest, takeRequest } from './roadmap';
 import { applyEffects } from './events';
 import { featuresOf } from './features';
-import { coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
+import { canPolishByTyping, coffeeReady, energyOf, focusOf, founderWorkPerDay, typedTodayOf } from './founder';
 import { nextOffice } from './office';
 import { loanLimit, loanTerms } from './bank';
 import { fire, hire, setSalary, talk, teamOf, teamWorkPerDay, type TeamChange } from './team';
@@ -62,7 +63,9 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       const next: GameState = { ...state, focus: Math.min(1, focusOf(state) + cmd.chars / f.focusChars) };
       // Набор кода сразу двигает текущую задачу: игрок ведёт команду своим примером.
       // За игровой день так можно добавить не больше typeBonusCap дневных норм — иначе работу можно было бы «напечатать» на паузе.
-      const task = state.tasks[0];
+      // Задач нет, а продукт уже есть — основатель берётся его улучшать: набор не должен уходить в пустоту.
+      const tasks = state.tasks.length === 0 && canPolishByTyping(state, content) ? [{ kind: 'polish' as const, progress: 0 }] : state.tasks;
+      const task = tasks[0];
       const share = Math.min(f.typeBonusCap - typedTodayOf(state), cmd.chars / f.typeCharsPerDay);
       if (!task || share <= 0 || state.resting || state.status !== 'running') return { ok: true, state: next };
       const work = share * (founderWorkPerDay(state, cfg) + teamWorkPerDay(teamOf(state, content), cfg.team)) * (state.rush ? cfg.rushSpeed : 1);
@@ -72,7 +75,9 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
         const cost = featuresOf(state, content).find((d) => d.id === task.featureId)?.cost ?? 0;
         progress = Math.max(task.progress, Math.min(progress, cost - 1e-6));
       }
-      next.tasks = [{ ...task, progress }, ...state.tasks.slice(1)];
+      // Запрос, как и функцию, завершает шаг дня: там выясняется, сработал ли он.
+      if (task.kind === 'request') progress = Math.max(task.progress, Math.min(progress, task.cost - 1e-6));
+      next.tasks = [{ ...task, progress }, ...tasks.slice(1)];
       // Набранное игроком тоже идёт в зачёт обещанного обновления.
       const release = withReleaseWork(state, progress - task.progress);
       if (release) next.release = release;
@@ -108,6 +113,12 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
     case 'buyTarget': {
       const next = cmd.type === 'checkTarget' ? checkTarget(state, content) : buyTarget(state, content, cmd.offer);
       return next ? { ok: true, state: next } : fail('acquisitionUnavailable');
+    }
+
+    case 'takeRequest':
+    case 'checkRequest': {
+      const next = cmd.type === 'takeRequest' ? takeRequest(state, content, cmd.source) : checkRequest(state, content, cmd.source);
+      return next ? { ok: true, state: next } : fail('requestUnavailable');
     }
 
     case 'cutOps': {
@@ -228,7 +239,8 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       }
       return {
         ok: true,
-        state: { ...state, tasks: [...state.tasks, { kind: 'feature', featureId: def.id, progress: 0 }] },
+        // Перед «улучшением продукта»: оно не кончается само, и функция за ним никогда бы не началась.
+        state: { ...state, tasks: beforePolish(state.tasks, { kind: 'feature', featureId: def.id, progress: 0 }) },
       };
     }
 
@@ -258,7 +270,13 @@ export function applyCommand(state: GameState, cmd: Command, content: GameConten
       if (!Number.isInteger(cmd.index) || cmd.index < 0 || cmd.index >= state.tasks.length) {
         return fail('noSuchTask');
       }
-      return { ok: true, state: { ...state, tasks: state.tasks.filter((_, i) => i !== cmd.index) } };
+      {
+        const removed = state.tasks[cmd.index]!;
+        const next: GameState = { ...state, tasks: state.tasks.filter((_, i) => i !== cmd.index) };
+        // Снятый заказ клиента — сорванное обещание.
+        if (removed.kind === 'request') dropRequest(next, content, removed);
+        return { ok: true, state: next };
+      }
 
     case 'setRush':
       return { ok: true, state: { ...state, rush: cmd.rush } };

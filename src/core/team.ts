@@ -1,13 +1,14 @@
 // Команда: кандидаты, наём, зарплаты, мотивация и вклад сотрудников в работу.
 // Описание формул — в docs/02-economy.md, раздел 16.
 
+import { cityOf } from './cities';
 import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
 import { totalAdSpend } from './marketing';
 import { officeIndex, officeOf } from './office';
 import { opsCostPerMonth } from './ops';
 import { createRng, nextFloat, nextInt, nextRange, type RngState } from './rng';
-import type { Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, StarDef, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
+import type { CityState, Candidate, ChatLine, DriverId, Employee, EmployeeRole, GameContent, GameState, StarDef, TalkOutcome, TeamConfig, TeamLogEntry, TeamState, TraitId } from './types';
 
 const TRAITS: TraitId[] = ['diligent', 'calm', 'loyal', 'sloppy'];
 const DRIVERS: DriverId[] = ['money', 'growth', 'peace', 'mission', 'people'];
@@ -17,29 +18,32 @@ export const driverOf = (e: Candidate): DriverId => e.driver ?? 'money';
 const TEAM_SEED_SALT = 0x5eed7ea3;
 const LOG_LIMIT = 50;
 
-function makeCandidate(rng: RngState, id: number, cfg: TeamConfig): { candidate: Candidate; rng: RngState } {
+function makeCandidate(rng: RngState, id: number, cfg: TeamConfig, city: CityState): { candidate: Candidate; rng: RngState } {
   const roleRoll = nextFloat(rng);
   const role: EmployeeRole = roleRoll.value < cfg.developerShare ? 'developer' : 'marketer';
-  const skillRoll = nextRange(roleRoll.next, cfg.skillMin, cfg.skillMax);
+  // В городе, где много программистов, среди кандидатов встречаются люди сильнее.
+  const skillRoll = nextRange(roleRoll.next, cfg.skillMin, cfg.skillMax + city.skill);
   const skill = Math.round(skillRoll.value * 100) / 100;
   const traitRoll = nextInt(skillRoll.next, 0, TRAITS.length - 1);
   const spread = nextRange(traitRoll.next, 1 - cfg.salarySpread, 1 + cfg.salarySpread);
   const nameRoll = nextInt(spread.next, 0, 9999);
   const driverRoll = nextInt(nameRoll.next, 0, DRIVERS.length - 1);
   // Зарплата растёт с навыком быстрее, чем сам навык: сильные специалисты стоят непропорционально дорого.
-  const ask = cfg.salaryBase[role] * skill ** cfg.salaryExponent * spread.value;
+  const ask = cfg.salaryBase[role] * skill ** cfg.salaryExponent * spread.value * city.salary[role];
   return {
     candidate: { id, role, skill, trait: TRAITS[traitRoll.value]!, salaryAsk: Math.max(50, Math.round(ask / 50) * 50), nameSeed: nameRoll.value, driver: DRIVERS[driverRoll.value]! },
     rng: driverRoll.next,
   };
 }
 
-function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, count = cfg.candidatesShown): TeamState {
+function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, city: CityState, extra = 0): TeamState {
   let rng = team.rng;
   let nextId = team.nextId;
   const candidates: Candidate[] = [];
+  // Чем больше в городе программистов, тем длиннее список; хотя бы один кандидат находится всегда.
+  const count = Math.max(1, cfg.candidatesShown + extra + city.talent);
   for (let i = 0; i < count; i++) {
-    const made = makeCandidate(rng, nextId, cfg);
+    const made = makeCandidate(rng, nextId, cfg, city);
     candidates.push(made.candidate);
     rng = made.rng;
     nextId += 1;
@@ -47,14 +51,14 @@ function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, count 
   return { ...team, rng, nextId, candidates, refreshedDay: day };
 }
 
-export function createTeam(seed: number, content: GameContent): TeamState {
+export function createTeam(seed: number, content: GameContent, city: CityState = cityOf({})): TeamState {
   const empty: TeamState = { rng: createRng(seed ^ TEAM_SEED_SALT), nextId: 1, refreshedDay: 0, employees: [], candidates: [], log: [] };
-  return refreshCandidates(empty, content.config.team, 0);
+  return refreshCandidates(empty, content.config.team, 0, city);
 }
 
 /** Команда партии. В старых сохранениях её нет — тогда создаётся пустая, с первым списком кандидатов. */
 export function teamOf(s: GameState, content: GameContent): TeamState {
-  return s.team ?? { ...createTeam(s.seed, content), refreshedDay: s.day };
+  return s.team ?? { ...createTeam(s.seed, content, cityOf(s)), refreshedDay: s.day };
 }
 
 /** Во сколько раз сотрудник работает лучше или хуже обычного из-за мотивации. */
@@ -150,7 +154,7 @@ export function stepTeam(s: GameState, content: GameContent): TeamState {
 
   team = { ...team, rng, employees, log };
   // В офисе побольше кандидатов приходит больше: компанию лучше знают.
-  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1, cfg.candidatesShown + officeIndex(s, content.config));
+  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1, cityOf(s), officeIndex(s, content.config));
   return team;
 }
 

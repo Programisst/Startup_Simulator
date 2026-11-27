@@ -17,7 +17,8 @@ export const defaultModel: Record<ProductTypeId, BusinessModel> = {
   game: 'ads',
 };
 
-export function play(productType: ProductTypeId, strategy: Strategy, seed: number, difficulty: DifficultyId): GameState {
+/** cityId — город партии; без него всё как в среднем по стране (так настроен баланс). */
+export function play(productType: ProductTypeId, strategy: Strategy, seed: number, difficulty: DifficultyId, cityId?: string): GameState {
   let s = createGame(
     {
       seed,
@@ -29,6 +30,7 @@ export function play(productType: ProductTypeId, strategy: Strategy, seed: numbe
       difficulty,
       // Темы идут по кругу: баланс проверяется на всех, а не на «партии без темы».
       themeId: content.themes[Math.abs(seed) % content.themes.length]?.id,
+      ...(cityId ? { cityId } : {}),
     },
     content,
   );
@@ -73,10 +75,10 @@ export function summarize(results: GameState[]): Summary {
 }
 
 /** Прогон стратегии по всем типам продукта: gamesPerType партий на каждый тип. */
-export function runAll(strategy: Strategy, difficulty: DifficultyId, gamesPerType: number): GameState[] {
+export function runAll(strategy: Strategy, difficulty: DifficultyId, gamesPerType: number, cityId?: string): GameState[] {
   const results: GameState[] = [];
   for (const productType of PRODUCT_TYPES) {
-    for (let i = 0; i < gamesPerType; i++) results.push(play(productType, strategy, 1000 + i, difficulty));
+    for (let i = 0; i < gamesPerType; i++) results.push(play(productType, strategy, 1000 + i, difficulty, cityId));
   }
   return results;
 }

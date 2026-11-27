@@ -1,8 +1,8 @@
 // Действия на экране ноутбука. Их вызывают и мышь с клавиатурой игрока, и «режиссёр»,
 // поэтому компьютер ведёт себя одинаково, кто бы за ним ни сидел.
-import { advanceCode, navigateFromInput, runCommand, type Nav, type SearchResult } from './logic';
-import { foldersOf, PROJECT_FILES, testRunOutput } from './project';
-import { newTab, type AppId, type BrowserTab, type Focus, type LaptopStore, type Page } from './store';
+import { advanceCode, navigateFromInput, repairPrefix, runCommand, type Nav, type SearchResult } from './logic';
+import { foldersOf, PROJECT_FILES, testRunOutput, WRITTEN_FILES } from './project';
+import { initialTexts, newTab, type AppId, type BrowserTab, type Focus, type LaptopStore, type Page } from './store';
 
 const SCROLL_LIMIT: Record<string, number> = { product: 420, results: 700, article: 620 };
 
@@ -114,10 +114,21 @@ export class Actions {
   typeCode(): void {
     const s = this.s;
     const file = PROJECT_FILES[s.fileIndex];
-    if (!file || file.static) return;
+    const writable = file !== undefined && !file.static;
     const text = s.texts[s.fileIndex] ?? '';
-    const next = advanceCode(text, file.code, 2 + Math.floor(Math.random() * 3));
-    if (next === text) return;
+    const next = writable ? advanceCode(text, file.code, 2 + Math.floor(Math.random() * 3)) : text;
+    if (next === text) {
+      // Печатать здесь нечего: файл дописан, открыт готовый файл или не открыт никакой. Код при этом не кончается —
+      // основатель берётся за следующий недописанный файл, а когда дописаны все, начинает новую задачу
+      // с того же места (как и «режиссёр», когда печатает сам). Нажатия игрока всё это время идут в зачёт работы.
+      const unfinished = WRITTEN_FILES.find(({ f, i }) => repairPrefix(s.texts[i] ?? '', f.code).length < f.code.length);
+      if (!unfinished) this.store.set({ texts: initialTexts() });
+      const target = unfinished?.i ?? WRITTEN_FILES.find(({ i }) => i !== s.fileIndex)?.i ?? WRITTEN_FILES[0]?.i;
+      if (target === undefined) return;
+      this.openFile(target);
+      this.typeCode();
+      return;
+    }
     this.store.set((st) => ({
       texts: st.texts.map((t, i) => (i === st.fileIndex ? next : t)),
       dirty: st.dirty.map((d, i) => (i === st.fileIndex ? true : d)),

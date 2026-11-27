@@ -23,6 +23,8 @@ export { campaignBlock, campaignCost, campaignOdds, campaignsOf, campaignsView, 
 export { headhuntView, headhuntBlock, headhuntChance, starNow, starOfWindow, type HeadhuntBlock, type HeadhuntOfferView, type HeadhuntView, type StarFit } from './headhunt';
 export { starAura } from './team';
 export { opsView, opsCostFor, opsCostPerMonth, steadyRevenue, currentRevenue, opsLevelOf, type OpsView, type OpsCutView, type OpsCutBlock } from './ops';
+export { cityFactors, cityFor, cityOf, citiesView, type CityView } from './cities';
+export { roadmapView, roadmapOf, requestOfWindow, type RoadmapView, type RequestView, type RequestCheckBlock } from './roadmap';
 export { threatView, threatPressure, threatOfWindow, threatsOf, threatEventId, type ThreatView, type ThreatResponseView, type ThreatResponseBlock } from './threats';
 export { acquisitionsView, acquisitionBlock, targetOfWindow, targetNow, type AcquisitionBlock, type AcquisitionsView } from './acquisitions';
 export { fundingView, fundingBlock, fundingPosition, fundingOf, interestChance, type FundingBlock, type FundingView, type InvestorView, type PositionReason } from './funding';
