@@ -1,6 +1,6 @@
 .iso-page { background: #343836; overflow: hidden; }
 .iso-view { position: absolute; inset: 82px 18px 44px; display: flex; align-items: center; justify-content: center; overflow: hidden; container-type: size; }
-.iso-room { position: relative; width: min(100cqw, calc(100cqh * var(--iso-aspect))); aspect-ratio: var(--iso-aspect); transform-origin: center; }
+.iso-room { position: relative; width: min(100cqw, calc(100cqh * var(--iso-aspect)), var(--iso-max-width)); aspect-ratio: var(--iso-aspect); transform-origin: center; }
 .iso-page[data-ready=false] .iso-room { visibility: hidden; }
 .iso-pixels { width: 100%; height: 100%; display: block; image-rendering: pixelated; cursor: crosshair; }
 .iso-details { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
@@ -25,3 +25,17 @@
   .iso-page .lm-sub { font-size: 10px; }
   .iso-page > .lm-hud-right .lm-speed button { width: 36px; }
 }
+
+.iso-page[data-opening=true] .iso-view { inset: 20px 18px; }
+.iso-page[data-scene=home] .iso-target[data-spot=rest] { height: calc(var(--iso-target-height) * 1.6); }
+.iso-sleep {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  background: #171621;
+  animation: iso-sleep-in .5s .67s ease both;
+}
+.iso-sleep small { color: #bdb3ac; font-size: 13px; }
+@keyframes iso-sleep-in { from { opacity: 0; } to { opacity: 1; } }

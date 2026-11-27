@@ -1,5 +1,6 @@
 import { findPath, type Box } from '../apartment/engine/nav';
 import type { Dir } from '../apartment/engine/scene';
+import type { HomeAction } from './layout';
 import type { Point, Pose, RoomArt } from './raster';
 
 const SCALE = 20;
@@ -30,6 +31,16 @@ export class OfficeNavigation {
       .map(p => ({ x: p.x * SCALE, y: p.z * SCALE }));
   }
 
+  canWalk({ x, y }: Point): boolean {
+    const foot = .135;
+    const at = { x: x / SCALE, y: y / SCALE };
+    const { bounds } = this;
+    return at.x >= bounds.x + foot && at.x <= bounds.x + bounds.w - foot
+      && at.y >= bounds.y + foot && at.y <= bounds.y + bounds.h - foot
+      && !this.obstacles.some(box => at.x + foot > box.x && at.x - foot < box.x + box.w
+        && at.y + foot > box.y && at.y - foot < box.y + box.h);
+  }
+
   seatPoint(seat: number): Point {
     const [x, y] = this.art.desks[seat]!;
     return { x: x! + this.art.seatOffset[0]!, y: y! + this.art.seatOffset[1]! };
@@ -47,10 +58,16 @@ function interpolate(a: Point, b: Point, t: number): Point {
   return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
 }
 
-export type Destination = 'computer' | 'coffee' | 'rest' | 'floor';
+function walkingDirection(dx: number, dy: number): Dir {
+  const screenX = dx - dy, screenY = (dx + dy) / 2;
+  return Math.abs(screenX) > Math.abs(screenY) * .7 ? (screenX > 0 ? 0 : 2) : (screenY < 0 ? 1 : 3);
+}
+
+export type Destination = 'computer' | 'coffee' | 'rest' | 'floor' | HomeAction;
 
 export class OfficeMotion {
   pose: Pose;
+  private steering = false;
   private destination: Destination = 'floor';
   private points: Point[] = [];
   private transition: 'sit' | 'stand' | null = null;
@@ -65,6 +82,7 @@ export class OfficeMotion {
 
   go(target: Point, destination: Destination): void {
     this.destination = destination;
+    this.steering = false;
     if (this.transition === 'sit' && destination === 'computer') return;
     if (this.transition === 'stand' && destination === 'computer') {
       this.transition = 'sit';
@@ -81,6 +99,34 @@ export class OfficeMotion {
       return;
     }
     this.points = this.nav.route(this.pose.at, target);
+  }
+
+  steer(horizontal: number, vertical: number, dt: number): void {
+    if (this.pose.kind === 'sit' || this.transition) {
+      this.go(this.nav.entryPoint(this.seat), 'floor');
+      this.step(dt);
+      return;
+    }
+    this.steering = true;
+    this.points = [];
+    const x = vertical + horizontal / 2;
+    const y = vertical - horizontal / 2;
+    const scale = dt * SPEED / Math.hypot(x, y);
+    const at = this.pose.at;
+    const target = { x: at.x + x * scale, y: at.y + y * scale };
+    const next = [target, { x: target.x, y: at.y }, { x: at.x, y: target.y }].find(p => this.nav.canWalk(p));
+    if (next) {
+      const distance = Math.hypot(next.x - at.x, next.y - at.y);
+      this.pose = { ...this.pose, at: next, dir: walkingDirection(x, y), kind: distance > 0 ? 'walk' : 'stand', stride: this.pose.stride + distance };
+    } else {
+      this.pose = { ...this.pose, kind: 'stand', dir: walkingDirection(x, y) };
+    }
+  }
+
+  stopSteering(): void {
+    if (!this.steering) return;
+    this.steering = false;
+    this.pose = { ...this.pose, kind: 'stand' };
   }
 
   private seatTransition(entering: boolean): Pose {
@@ -120,9 +166,7 @@ export class OfficeMotion {
       const length = Math.hypot(dx, dy);
       const step = Math.min(distance, length);
       const at = interpolate(this.pose.at, target, length ? step / length : 1);
-      const screenX = dx - dy, screenY = (dx + dy) / 2;
-      const dir: Dir = Math.abs(screenX) > Math.abs(screenY) * .7 ? (screenX > 0 ? 0 : 2) : (screenY < 0 ? 1 : 3);
-      this.pose = { ...this.pose, at, dir, kind: 'walk', stride: this.pose.stride + step };
+      this.pose = { ...this.pose, at, dir: walkingDirection(dx, dy), kind: 'walk', stride: this.pose.stride + step };
       distance -= step;
       if (step < length) break;
       this.points.shift();

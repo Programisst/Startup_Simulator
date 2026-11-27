@@ -1,3 +1,4 @@
+import homeArt from './founder-home-art.json';
 import coworkingArt from './coworking-art.json';
 import smallOfficeArt from './small-office-art.json';
 import type { Point, RoomArt } from './raster';
@@ -9,6 +10,8 @@ interface ActionSpot {
   height: number;
 }
 
+export type HomeAction = 'window' | 'lamp' | 'boxes';
+
 interface OfficeLayout {
   art: RoomArt;
   loadAtlas: () => Promise<{ default: string }>;
@@ -16,9 +19,19 @@ interface OfficeLayout {
   coffee: ActionSpot;
   rest: ActionSpot;
   breakPoints: Point[];
+  home?: { pillow: Point & { height: number }; extras: Record<HomeAction, ActionSpot> };
 }
 
 export const officeLayouts: Record<IsometricOfficeId, OfficeLayout> = {
+  home: {
+    art: homeArt,
+    loadAtlas: () => import('./founder-home-art.png?inline'),
+    spawn: homeArt.spawn,
+    coffee: homeArt.coffee,
+    rest: homeArt.rest,
+    breakPoints: [],
+    home: { pillow: homeArt.pillow, extras: homeArt.extras },
+  },
   coworking: {
     art: coworkingArt,
     loadAtlas: () => import('./coworking-art.png?inline'),

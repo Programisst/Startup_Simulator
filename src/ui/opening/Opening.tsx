@@ -8,7 +8,7 @@ import { RoomGuard } from '../office/GameRoom';
 import { chatSetup, choose, pendingLive, reply, resolveIdea, settleLive, startChat } from './chat';
 import { Messenger } from './Messenger';
 
-const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
+const IsometricOffice = lazy(() => import('../isometric/IsometricOffice').then((m) => ({ default: m.IsometricOffice })));
 
 /** Друг «думает» над идеей хотя бы столько, даже если нейросеть ответила мгновенно. */
 const THINK_MS = 1600;
@@ -80,7 +80,7 @@ export function Opening({ onStart }: { onStart: (setup: NewGameSetup) => void })
   return (
     <RoomGuard>
       <Suspense fallback={null}>
-        <Apartment opening={{ app, title: t('opening.appTitle'), finished, onSlept }} />
+        <IsometricOffice office="home" opening={{ app, title: t('opening.appTitle'), finished, onSlept }} />
       </Suspense>
     </RoomGuard>
   );

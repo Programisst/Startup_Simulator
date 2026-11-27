@@ -83,7 +83,7 @@ interface MonitorFace {
   monitor: MonitorTyping;
 }
 
-export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLCanvasElement, layout: RoomArt, atlasUrl: string) {
+export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLCanvasElement, layout: RoomArt, atlasUrl: string, transparent = false) {
   const { width, height } = layout;
   const CHAIR_EDGE = layout.chair;
   const oy = layout.origin[1]!;
@@ -98,9 +98,15 @@ export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLC
   source.drawImage(atlas, 0, 0);
   const base = source.getImageData(0, 0, width, height);
   const baseDepth = readDepth(source.getImageData(0, height, width, height));
+  // A lit room can change colour while the scene background stays fixed.
+  if (transparent) {
+    for (let i = 0; i < baseDepth.length; i++) {
+      if (!Number.isFinite(baseDepth[i])) base.data[i * 4 + 3] = 0;
+    }
+  }
   const chair = source.getImageData(width, 0, CHAIR_EDGE.width, CHAIR_EDGE.height);
   const chairDepth = readDepth(source.getImageData(width, height, CHAIR_EDGE.width, CHAIR_EDGE.height));
-  const ctx = canvas.getContext('2d', { alpha: false })!;
+  const ctx = canvas.getContext('2d', { alpha: transparent })!;
   const detailScale = 4;
   screenDetails.width = width * detailScale;
   screenDetails.height = height * detailScale;
@@ -118,6 +124,7 @@ export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLC
     frame.data[o] = color >> 16;
     frame.data[o + 1] = (color >> 8) & 255;
     frame.data[o + 2] = color & 255;
+    frame.data[o + 3] = 255;
   }
 
   function drawChair(at: Point) {
@@ -204,7 +211,8 @@ export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLC
 
 
   return {
-    draw(seats: ReadonlyMap<number, { worker: Worker; pose: Pose }>, time: number, founder?: { worker: Worker; pose: Pose }) {
+    draw(seats: ReadonlyMap<number, { worker: Worker; pose: Pose }>, time: number,
+      founder?: { worker: Worker; pose: Pose }, sleeper?: { worker: Worker; pillow: Point & { height: number } }) {
       frame.data.set(base.data);
       depth.set(baseDepth);
       const monitors: MonitorFace[] = [];
@@ -218,6 +226,17 @@ export async function createRoom(canvas: HTMLCanvasElement, screenDetails: HTMLC
           if (actor !== founder) statuses.push({ worker: actor.worker, at });
         }
       });
+      if (sleeper) {
+        const { worker, pillow } = sleeper;
+        const p = project(pillow, pillow.height);
+        const rows = seated.slice(0, 10);
+        for (const [y, row] of rows.entries()) {
+          for (let x = 0; x < row.length; x++) {
+            const color = worker.palette[row[x]!];
+            if (color !== undefined) pixel(Math.floor(p.x) + x - 9, Math.floor(p.y) + y - 7, pillow.x + pillow.y + pillow.height + 8 - y, color);
+          }
+        }
+      }
       ctx.putImageData(frame, 0, 0);
       detail.clearRect(0, 0, width, height);
       monitors.forEach(face => drawMonitorText(face, time));

@@ -17,12 +17,19 @@ const employee = (id: number, seat: number): Employee => ({
   hiredDay: 0, motivation: 80, trait: 'calm', driver: 'money', star: id === 1,
 });
 describe('коворкинг в настоящей партии', () => {
-  it('выбирается после переезда, квартира доступна в начале', () => {
-    expect(sceneForOffice('home')).toBe('apartment');
+  it('выбирает изометрическую квартиру до переезда и соответствующий офис после него', () => {
+    expect(sceneForOffice('home')).toBe('home');
     expect(sceneForOffice('coworking')).toBe('coworking');
     expect(sceneForOffice('smallOffice')).toBe('smallOffice');
     expect(sceneForOffice('office')).toBe('apartment');
     expect(sceneForOffice('floor')).toBe('apartment');
+  });
+  it('в квартире сохраняет игровой состав, а на сцене оставляет только основателя', () => {
+    const game = { ...newGame(), office: 'home' };
+    const person = employee(15, 0);
+    const view = sceneTeam({ ...game, team: { ...game.team!, employees: [person] } }, content);
+    expect(view.people.map(p => p.id)).toEqual([15]);
+    expect([...peopleForScene(view, 0).values()]).toEqual([]);
   });
   it('отдельное место основателя добавляется к шести местам сотрудников', () => {
     expect(coworking.art.desks).toHaveLength(content.config.offices.find(o => o.id === 'coworking')!.seats + 1);
@@ -132,5 +139,33 @@ describe('основатель в коворкинге', () => {
     motion.go(coffeePoint, 'coffee');
     motion.step(.025);
     expect(Math.hypot(motion.pose.at.x - before.x, motion.pose.at.y - before.y)).toBeLessThan(2);
+  });
+});
+
+describe('стартовая квартира', () => {
+  it('есть один стол и свободные подходы к нему, кровати, кухне и предметам', () => {
+    const home = officeLayouts.home;
+    const navigation = new OfficeNavigation(home.art);
+    expect(home.art.desks).toHaveLength(1);
+    const entry = navigation.entryPoint(0);
+    for (const target of [entry, home.coffee.target, home.rest.target, ...Object.values(home.home!.extras).map(p => p.target)]) {
+      expect(navigation.canWalk(target)).toBe(true);
+      const fromStart = navigation.route(home.spawn, target);
+      expect(fromStart.at(-1)).toEqual(target);
+      expect(navigation.route(entry, target).at(-1)).toEqual(target);
+    }
+  });
+
+  it('клавиатурой можно встать из кресла, а после остановки герой остаётся на месте', () => {
+    const home = officeLayouts.home;
+    const navigation = new OfficeNavigation(home.art);
+    const founder = new OfficeMotion(navigation, 0);
+    for (let i = 0; i < 80; i++) founder.steer(0, 1, .025);
+    expect(founder.pose.kind).toBe('walk');
+    expect(navigation.canWalk(founder.pose.at)).toBe(true);
+    founder.stopSteering();
+    const restingAt = founder.pose.at;
+    founder.step(.25);
+    expect(founder.pose).toMatchObject({ kind: 'stand', at: restingAt });
   });
 });

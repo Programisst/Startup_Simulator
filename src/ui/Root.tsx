@@ -43,7 +43,7 @@ export function Root() {
 
   // Пока идёт заставка, квартира уже подгружается — после полёта она открывается без ожидания.
   useEffect(() => {
-    if (showStart) void import('./apartment/Apartment');
+    if (showStart) void import('./isometric/IsometricOffice');
   }, [showStart]);
 
   useEffect(() => {
