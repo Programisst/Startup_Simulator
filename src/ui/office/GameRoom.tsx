@@ -4,6 +4,7 @@ import { Component, lazy, Suspense, useRef, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { content } from '../../content';
 import { milestoneView, roomView } from '../../core';
+import { sceneForOffice } from '../isometric/state';
 import type { RoomLink } from '../apartment/link';
 import { money, num } from '../format';
 import { usePersonName } from '../names';
@@ -13,6 +14,7 @@ import { CompanyApp } from './CompanyApp';
 import { RoomControls } from './RoomControls';
 
 // Квартира со всей графикой подгружается отдельным файлом: первый экран игры открывается быстрее.
+const Coworking = lazy(() => import('../isometric/Coworking').then(m => ({ default: m.Coworking })));
 const Apartment = lazy(() => import('../apartment/Apartment').then((m) => ({ default: m.Apartment })));
 
 /** Сколько набранных знаков кода уходит в расчёт одной пачкой. */
@@ -152,6 +154,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
         busy: p.busy,
         mood: p.mood,
         leaving: p.leaving,
+        star: p.star,
         quote: t(`team.quotes.${p.driver}.${p.mood}`),
       })),
       freeSeats: view.team.freeSeats,
@@ -161,7 +164,7 @@ export function GameRoom({ step }: { step: TutorialStep | null }) {
   return (
     <RoomGuard>
       <Suspense fallback={<p className="muted office-loading">{t('office.loading')}</p>}>
-        <Apartment link={link} />
+        {sceneForOffice(view.team.office.id) === 'coworking' ? <Coworking key={view.team.office.id} link={link} /> : <Apartment link={link} />}
       </Suspense>
     </RoomGuard>
   );

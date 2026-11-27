@@ -74,6 +74,8 @@ export interface RoomLink {
       mood: 'high' | 'mid' | 'low';
       /** Собирается уйти, если ничего не менять */
       leaving: boolean;
+      /** Звезда из расчёта игры */
+      star?: boolean;
       /** Что он сейчас сказал бы — готовая реплика по характеру и настроению */
       quote: string;
     }[];

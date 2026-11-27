@@ -615,9 +615,16 @@ def export_preview(output):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("output", type=Path, help="Directory for the native-resolution PNGs")
+    parser.add_argument("--game-art", action="store_true", help="Export coworking with a separate founder desk")
     parser.add_argument("--preview-art", action="store_true", help="Export the preview art atlas")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
+    if args.game_art:
+        global ROOM_Y, HEIGHT, DESKS
+        ROOM_Y, HEIGHT = 196, 340
+        DESKS = (*DESKS, (142, 146))
+        export_preview(args.output)
+        return
     if args.preview_art:
         export_preview(args.output)
         return

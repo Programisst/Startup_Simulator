@@ -85,6 +85,7 @@ function DesktopIcon({ kind }: { kind: DesktopItem['kind'] }) {
 }
 
 interface Props {
+  fullscreen?: boolean;
   minutes: number;
   weekday: string;
   origin: { x: number; y: number };
@@ -106,7 +107,7 @@ interface Props {
   controls?: ReactNode;
 }
 
-export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText, appTitle, canLeave = true, controls }: Props) {
+export function Laptop({ minutes, weekday, origin, closing, onClosed, company, onTyped, onDockApp, focusText, appTitle, canLeave = true, controls, fullscreen = false }: Props) {
   const typedRef = useRef(onTyped);
   typedRef.current = onTyped;
   const { t } = useTranslation();
@@ -124,6 +125,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
   const screenRef = useRef<HTMLDivElement>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.6);
+  const [screenHeight, setScreenHeight] = useState(SCREEN_H);
   const [entered, setEntered] = useState(false);
 
   useEffect(() => () => actions.dispose(), [actions]);
@@ -172,7 +174,11 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
   useLayoutEffect(() => {
     const el = screenRef.current;
     if (!el) return;
-    const update = () => setScale(el.clientWidth / SCREEN_W);
+    const update = () => {
+      const nextScale = el.clientWidth / SCREEN_W;
+      setScale(nextScale);
+      if (fullscreen && nextScale > 0) setScreenHeight(el.clientHeight / nextScale);
+    };
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -218,17 +224,18 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
   const fromY = origin.y - window.innerHeight / 2;
   const menu = t(s.app === 'browser' ? 'laptop.os.menuBrowser' : 'laptop.os.menuEditor', { returnObjects: true }) as string[];
   const desktop = t('laptop.os.desktop', { returnObjects: true }) as DesktopItem[];
-  const editorWin = windowStyle(s, 'editor');
-  const browserWin = windowStyle(s, 'browser');
+  const fullBox = { left: 0, top: MENU_H, width: SCREEN_W, height: Math.max(180, screenHeight - MENU_H - DOCK_H - 22) };
+  const editorWin = fullscreen && s.zoomed.editor ? { style: fullBox, height: fullBox.height } : windowStyle(s, 'editor');
+  const browserWin = fullscreen && s.zoomed.browser ? { style: fullBox, height: fullBox.height } : windowStyle(s, 'browser');
 
   return (
-    <div className={`lp-overlay desk${open ? ' open' : ''}`}>
-      <DeskView minutes={minutes} device={deviceRef} />
+    <div className={`lp-overlay desk${fullscreen ? ' fullscreen' : ''}${open ? ' open' : ''}`}>
+      {!fullscreen && <DeskView minutes={minutes} device={deviceRef} />}
       <div ref={deviceRef} className="lp-device mono" style={{ transform: open ? 'translate(0, 0) scale(1)' : `translate(${fromX}px, ${fromY}px) scale(0.08)` }}>
         <div className="lp-bezel">
           <i className="lp-camera" />
           <div ref={screenRef} className={`lp-screen${open ? ' on' : ''}${s.manual ? ' manual' : ''}`} onPointerDown={takeOver}>
-            <div className="lp-canvas" style={{ width: SCREEN_W, height: SCREEN_H, transform: `scale(${scale})` }}>
+            <div className="lp-canvas" style={{ width: SCREEN_W, height: fullscreen ? screenHeight : SCREEN_H, transform: `scale(${scale})` }}>
               <div className="os-desktop" onClick={() => actions.selectDesktop(null)}>
                 <Landscape variant="dusk" id="desk" />
               </div>
@@ -278,7 +285,7 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
               </div>
 
               <div className={windowClass(s, 'editor')} style={editorWin.style} onPointerDown={() => actions.bringToFront('editor')}>
-                <EditorWindow s={s} actions={actions} height={editorWin.height} />
+                <EditorWindow s={s} actions={actions} height={editorWin.height} scrollable={fullscreen} />
               </div>
               <div className={windowClass(s, 'browser')} style={browserWin.style} onPointerDown={() => actions.bringToFront('browser')}>
                 <BrowserWindow s={s} actions={actions} />
@@ -287,13 +294,13 @@ export function Laptop({ minutes, weekday, origin, closing, onClosed, company, o
               {hasCompany && (
                 <div
                   className={`os-window os-company ${companyFront ? 'front' : 'closed'}`}
-                  style={{ left: WINDOW.x, top: WINDOW.y, width: WINDOW.w, height: WINDOW.h }}
+                  style={fullscreen ? fullBox : { left: WINDOW.x, top: WINDOW.y, width: WINDOW.w, height: WINDOW.h }}
                 >
                   <div className="os-company-zoom">{company}</div>
                 </div>
               )}
 
-              <div className="os-dock" style={{ left: DOCK_X, top: DOCK_Y, width: DOCK_W, height: DOCK_H }}>
+              <div className="os-dock" style={{ left: DOCK_X, top: fullscreen ? screenHeight - DOCK_H - 8 : DOCK_Y, width: DOCK_W, height: DOCK_H }}>
                 {DOCK_ITEMS.map((item) => (
                   <button
                     key={item}

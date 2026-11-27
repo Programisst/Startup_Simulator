@@ -2606,3 +2606,13 @@ button.br-btn:not(.dim):hover,
 .lp-hint[hidden] {
   display: none;
 }
+
+/* Полноразмерный компьютер коворкинга использует те же приложения и команды. */
+.lp-overlay.fullscreen { background: #242a27; }
+.lp-overlay.fullscreen .lp-device.mono { position: absolute; inset: 64px 0 0; width: 100%; height: calc(100% - 64px); margin: 0; }
+.lp-overlay.fullscreen .lp-bezel { padding: 0; height: 100%; border-radius: 0; box-shadow: none; }
+.lp-overlay.fullscreen .lp-screen { aspect-ratio: auto; height: 100%; border-radius: 0; }
+.lp-overlay.fullscreen .lp-camera, .lp-overlay.fullscreen .lp-chin, .lp-overlay.fullscreen .lp-stand, .lp-overlay.fullscreen .lp-screen::after { display: none; }
+.lp-overlay.fullscreen .ed-code.scrollable { overflow: auto; }
+.lp-overlay.fullscreen .ed-code.scrollable .ed-code-inner { min-width: max(730px,100%); user-select: text; }
+.lp-overlay.fullscreen .ed-code.scrollable .ed-minimap, .lp-overlay.fullscreen .ed-code.scrollable .ed-scrollbar { display: none; }
