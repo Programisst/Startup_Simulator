@@ -1,7 +1,7 @@
 // Команда: кандидаты, наём, зарплаты, мотивация и вклад сотрудников в работу.
 // Описание формул — в docs/02-economy.md, раздел 16.
 
-import { cityOf } from './cities';
+import { cityOf, laborMarket, type LaborMarket } from './cities';
 import { clamp } from './formulas';
 import { founderWorkPerDay } from './founder';
 import { totalAdSpend } from './marketing';
@@ -18,7 +18,7 @@ export const driverOf = (e: Candidate): DriverId => e.driver ?? 'money';
 const TEAM_SEED_SALT = 0x5eed7ea3;
 const LOG_LIMIT = 50;
 
-function makeCandidate(rng: RngState, id: number, cfg: TeamConfig, city: CityState): { candidate: Candidate; rng: RngState } {
+function makeCandidate(rng: RngState, id: number, cfg: TeamConfig, city: CityState, premium = 1): { candidate: Candidate; rng: RngState } {
   const roleRoll = nextFloat(rng);
   const role: EmployeeRole = roleRoll.value < cfg.developerShare ? 'developer' : 'marketer';
   // В городе, где много программистов, среди кандидатов встречаются люди сильнее.
@@ -29,21 +29,22 @@ function makeCandidate(rng: RngState, id: number, cfg: TeamConfig, city: CitySta
   const nameRoll = nextInt(spread.next, 0, 9999);
   const driverRoll = nextInt(nameRoll.next, 0, DRIVERS.length - 1);
   // Зарплата растёт с навыком быстрее, чем сам навык: сильные специалисты стоят непропорционально дорого.
-  const ask = cfg.salaryBase[role] * skill ** cfg.salaryExponent * spread.value * city.salary[role];
+  // premium — надбавка тесного рынка труда: лёгких кандидатов уже наняли, остальных приходится переманивать.
+  const ask = cfg.salaryBase[role] * skill ** cfg.salaryExponent * spread.value * city.salary[role] * premium;
   return {
     candidate: { id, role, skill, trait: TRAITS[traitRoll.value]!, salaryAsk: Math.max(50, Math.round(ask / 50) * 50), nameSeed: nameRoll.value, driver: DRIVERS[driverRoll.value]! },
     rng: driverRoll.next,
   };
 }
 
-function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, city: CityState, extra = 0): TeamState {
+function refreshCandidates(team: TeamState, cfg: TeamConfig, day: number, city: CityState, extra = 0, market?: LaborMarket): TeamState {
   let rng = team.rng;
   let nextId = team.nextId;
   const candidates: Candidate[] = [];
   // Чем больше в городе программистов, тем длиннее список; хотя бы один кандидат находится всегда.
-  const count = Math.max(1, cfg.candidatesShown + extra + city.talent);
+  const count = Math.max(1, Math.round((cfg.candidatesShown + extra + city.talent) * (market?.candidates ?? 1)));
   for (let i = 0; i < count; i++) {
-    const made = makeCandidate(rng, nextId, cfg, city);
+    const made = makeCandidate(rng, nextId, cfg, city, market?.premium ?? 1);
     candidates.push(made.candidate);
     rng = made.rng;
     nextId += 1;
@@ -154,7 +155,7 @@ export function stepTeam(s: GameState, content: GameContent): TeamState {
 
   team = { ...team, rng, employees, log };
   // В офисе побольше кандидатов приходит больше: компанию лучше знают.
-  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1, cityOf(s), officeIndex(s, content.config));
+  if (s.day + 1 - team.refreshedDay >= cfg.candidatesEveryDays) team = refreshCandidates(team, cfg, s.day + 1, cityOf(s), officeIndex(s, content.config), laborMarket(cityOf(s), team.employees.length, content.config.cities));
   return team;
 }
 
@@ -394,6 +395,32 @@ export interface TeamView {
   marketingBoost: number;
   /** Через сколько дней придут новые кандидаты */
   daysToNewCandidates: number;
+  /** Рынок труда города: сколько людей он даёт легко и что будет со следующими кандидатами. null — партия без города */
+  market: {
+    cityId: string;
+    reach: number;
+    /** На сколько процентов город дороже или дешевле страны по зарплатам разработчиков */
+    citySalaryPct: number;
+    /** На сколько процентов больше попросят следующие кандидаты из-за тесного рынка и сколько их придёт против обычного, в процентах */
+    premiumPct: number;
+    candidatesPct: number;
+    /** Нанято больше, чем город даёт легко */
+    tight: boolean;
+  } | null;
+}
+
+function marketView(s: GameState, teamSize: number, content: GameContent): TeamView['market'] {
+  const city = cityOf(s);
+  const market = laborMarket(city, teamSize, content.config.cities);
+  if (!city.id || market.reach === null) return null;
+  return {
+    cityId: city.id,
+    reach: market.reach,
+    citySalaryPct: Math.round((city.salary.developer - 1) * 100),
+    premiumPct: Math.round((market.premium - 1) * 100),
+    candidatesPct: Math.round(market.candidates * 100),
+    tight: market.pressure >= 1,
+  };
 }
 
 /** Всё, что экрану команды нужно знать. Состояние игры не меняет. */
@@ -430,5 +457,6 @@ export function teamView(s: GameState, content: GameContent): TeamView {
     founderWorkPerDay: founder,
     marketingBoost: marketingBoost(team, cfg.team),
     daysToNewCandidates: Math.max(0, cfg.team.candidatesEveryDays - (s.day - team.refreshedDay)),
+    market: marketView(s, team.employees.length, content),
   };
 }

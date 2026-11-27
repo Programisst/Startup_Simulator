@@ -86,7 +86,7 @@ describe('переписка с другом', () => {
     expect(s.stage).toBe('savings');
   });
 
-  it('сбережения задают сложность, цель — цель партии; в конце друг прощается', () => {
+  it('сбережения задают сложность, потом друг спрашивает город, цель — цель партии; в конце друг прощается', () => {
     let s = resolveIdea(upToThinking('Сервис, который сам выставляет счета клиентам малого бизнеса'), null);
     expect(quickReplies(s).map((o) => o.id)).toEqual(['easy', 'normal', 'hard']);
     // В кнопках видно, с какими деньгами начнёшь: игрок не отвечает наугад.
@@ -96,19 +96,33 @@ describe('переписка с другом', () => {
       content.difficulties.hard.startCash,
     ]);
     s = choose(s, 'hard');
-    expect(s.stage).toBe('goal');
+    expect(s.stage).toBe('city');
     expect(s.lines.find((l) => l.from === 'me' && l.key === 'opening.me.savings.hard')?.params?.cash).toBe(content.difficulties.hard.startCash);
+    // Город: кнопки — все города из данных игры; друг отвечает тем, что о городе известно.
+    expect(s.lines.at(-1)?.key).toBe('opening.friend.askCity');
+    expect(quickReplies(s).map((o) => o.id)).toEqual(content.cities.map((c) => c.id));
+    s = choose(s, 'sanJose');
+    expect(s.stage).toBe('goal');
+    expect(s.cityId).toBe('sanJose');
+    expect(s.lines.some((l) => l.from === 'me' && l.key === 'cities.sanJose.name')).toBe(true);
+    expect(s.lines.some((l) => l.from === 'friend' && l.key === 'cities.sanJose.note')).toBe(true);
     expect(quickReplies(s).map((o) => o.id)).toEqual(['profit', 'valuation', 'sandbox']);
     s = choose(s, 'valuation');
     expect(s.stage).toBe('done');
     expect(s.difficulty).toBe('hard');
     expect(s.goal).toBe('valuation');
+    // Выбранный город попадает в партию и меняет её.
+    const setup = chatSetup(s, 3, 'Моя компания');
+    expect(setup.cityId).toBe('sanJose');
+    expect(createGame(setup, content).city?.id).toBe('sanJose');
+    expect(createGame(setup, content).livingCostPerMonth).toBeGreaterThan(content.difficulties.hard.livingCostPerMonth);
   });
 
   it('из переписки собирается партия: своя идея, название, тема', () => {
     let s = resolveIdea(upToThinking('Сервис для малого бизнеса: счета, акты и напоминания клиентам об оплате'), null);
-    s = choose(choose(s, 'normal'), 'profit');
+    s = choose(choose(choose(s, 'normal'), 'denver'), 'profit');
     const setup = chatSetup(s, 5, 'Моя компания');
+    expect(setup.cityId).toBe('denver');
     expect(setup.companyName).toBe('Счётчик');
     expect(setup.idea).toContain('напоминания');
     expect(setup.seed).toBe(5);
@@ -127,6 +141,10 @@ describe('переписка с другом', () => {
     unknown = choose(unknown, 'ai');
     keys.push(...friendKeys(unknown), ...quickReplies(unknown).map((o) => o.key));
     unknown = choose(unknown, 'easy');
+    keys.push(...friendKeys(unknown), ...quickReplies(unknown).map((o) => o.key));
+    // Реплика друга о городе своя у каждого города — проверяем все.
+    for (const c of content.cities) keys.push(...choose(unknown, c.id).lines.filter((l) => l.key).map((l) => l.key!));
+    unknown = choose(unknown, content.cities[0]!.id);
     keys.push(...quickReplies(unknown).map((o) => o.key));
     unknown = choose(unknown, 'sandbox');
     keys.push(...friendKeys(unknown), ...unknown.lines.filter((l) => l.key).map((l) => l.key!));

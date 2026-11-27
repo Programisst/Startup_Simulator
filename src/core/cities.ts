@@ -4,7 +4,7 @@
 // Данные — src/content/cities.ts; описание и источники — docs/02-economy.md, раздел 36.
 
 import { clamp } from './formulas';
-import type { CityDef, CityState, EmployeeRole, GameContent, GameState } from './types';
+import type { CitiesConfig, CityDef, CityState, EmployeeRole, GameContent, GameState } from './types';
 
 /** Партия без города (старые сохранения, прогоны баланса): всё как в среднем по стране. */
 const NOWHERE: CityState = { id: '', living: 1, rent: 1, salary: { developer: 1, marketer: 1 }, talent: 0, skill: 0, investors: 1 };
@@ -26,6 +26,33 @@ export function cityFactors(def: CityDef, content: GameContent): CityState {
     skill: round2(Math.max(0, talent) * cfg.skillPerTalent),
     // Денег инвесторов в столицах в десятки раз больше, но шанс получить их растёт куда медленнее.
     investors: round2(clamp(Math.pow(def.venture / cfg.referenceVenture, cfg.investorPower), cfg.investorMin, cfg.investorMax)),
+    reach: Math.max(1, Math.round(def.devJobs / cfg.devsPerHire)),
+  };
+}
+
+export interface LaborMarket {
+  /** Сколько людей город даёт легко; null — предела нет (партия без города) */
+  reach: number | null;
+  /** Какая часть этого уже нанята: 1 — всё, что давалось легко, выбрано */
+  pressure: number;
+  /** Во сколько раз больше просят новые кандидаты из-за того, что лёгкие уже наняты */
+  premium: number;
+  /** Какая доля обычного списка кандидатов приходит */
+  candidates: number;
+}
+
+/**
+ * Рынок труда города при такой команде. Город не бездонный: чем больше людей уже нанято,
+ * тем меньше кандидатов приходит и тем больше они просят — лёгких уже выбрали, остальных приходится переманивать.
+ */
+export function laborMarket(city: CityState, teamSize: number, cfg: CitiesConfig): LaborMarket {
+  if (city.reach === undefined) return { reach: null, pressure: 0, premium: 1, candidates: 1 };
+  const pressure = Math.max(0, teamSize) / city.reach;
+  return {
+    reach: city.reach,
+    pressure,
+    premium: round2(1 + Math.min(cfg.premiumMax, cfg.premiumAtFull * Math.pow(pressure, cfg.premiumPower))),
+    candidates: clamp(1 - cfg.candidatesDrop * pressure, cfg.candidatesFloor, 1),
   };
 }
 
@@ -56,6 +83,8 @@ export interface CityView {
   /** На сколько больше (или меньше) кандидатов в списке и на сколько сильнее лучшие из них */
   extraCandidates: number;
   skillBonus: number;
+  /** Сколько людей стартап легко находит в городе; дальше нанимать всё труднее и дороже */
+  reach: number;
 }
 
 const pct = (factor: number): number => Math.round((factor - 1) * 100);
@@ -77,6 +106,7 @@ export function citiesView(content: GameContent): CityView[] {
       investorsPct: pct(f.investors),
       extraCandidates: f.talent,
       skillBonus: f.skill,
+      reach: f.reach ?? 0,
     };
   });
 }

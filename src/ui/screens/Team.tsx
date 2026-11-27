@@ -237,6 +237,15 @@ export function Team() {
         <section className="panel">
           <h3>{t('team.candidates')}</h3>
           <p className="muted">{t('team.nextCandidates', { days: view.daysToNewCandidates })}</p>
+          {/* Рынок труда города: простой рабочий вид — нужно оформление. */}
+          {view.market && (
+            <p className={view.market.tight ? 'negative' : 'muted'} data-labor-market={view.market.cityId}>
+              {t('team.market.city', { city: t(`cities.${view.market.cityId}.name`), reach: view.market.reach, size: view.size })}{' '}
+              {view.market.premiumPct > 0 || view.market.candidatesPct < 100
+                ? t('team.market.tight', { premium: view.market.premiumPct, candidates: view.market.candidatesPct })
+                : t('team.market.easy')}
+            </p>
+          )}
           {view.candidates.length === 0 && <p className="muted">{t('team.noCandidates')}</p>}
           {view.candidates.map((c) => (
             <article key={c.id} className="person">

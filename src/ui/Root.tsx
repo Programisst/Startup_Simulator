@@ -7,7 +7,7 @@ import { App } from './App';
 import { Intro } from './intro/Intro';
 import { canDraw } from './office/GameRoom';
 import { Opening } from './opening/Opening';
-import { lastAnswers, quickSetup, sampleAnswers, wantsSkip } from './opening/quick';
+import { lastAnswers, quickSetup, sampleAnswers, wantedCity, wantsSkip } from './opening/quick';
 import { useStore } from './store';
 import './opening/curtain.css';
 
@@ -38,7 +38,7 @@ export function Root() {
     if (!skip.current || !showStart) return;
     skip.current = false;
     setCurtain('dawn');
-    start(quickSetup(lastAnswers(), sampleAnswers(t), Math.floor(Math.random() * 2 ** 31)));
+    start(quickSetup(lastAnswers(), sampleAnswers(t), Math.floor(Math.random() * 2 ** 31), wantedCity(window.location.search)));
   }, [showStart, start, t]);
 
   // Пока идёт заставка, квартира уже подгружается — после полёта она открывается без ожидания.

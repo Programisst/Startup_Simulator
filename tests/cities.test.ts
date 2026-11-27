@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { content } from '../src/content';
 import ru from '../src/content/ru/ui.json';
-import { citiesView, cityFactors, cityFor, cityOf, createGame, fundingView, officeView, teamOf, tick, type CityDef, type GameState } from '../src/core';
+import { citiesView, cityFactors, cityFor, cityOf, createGame, fundingView, laborMarket, officeView, teamOf, teamView, tick, type CityDef, type Employee, type GameState } from '../src/core';
 import { runAll, summarize } from '../tools/balance/simulate';
 import { carefulHirer } from '../tools/balance/strategies';
 import { baseSetup, newGame } from './helpers';
@@ -164,6 +164,75 @@ describe('что город меняет в партии', () => {
       expect(hub[i]!).toBeGreaterThan(plain[i]!);
       expect(poor[i]!).toBeLessThanOrEqual(plain[i]!);
     }
+  });
+});
+
+describe('рынок труда города не бездонный', () => {
+  const c = content.config.cities;
+  const staff = (n: number): Employee[] =>
+    Array.from({ length: n }, (_, i) => ({ id: 500 + i, role: 'developer' as const, skill: 1, trait: 'calm' as const, salaryAsk: 3000, salary: 3000, nameSeed: i, hiredDay: 0, motivation: 70 }));
+  const withTeam = (cityId: string | undefined, n: number): GameState => {
+    const s = game(cityId);
+    return { ...s, cash: 1e9, office: 'floor', team: { ...s.team!, employees: staff(n) } };
+  };
+
+  it('сколько людей город даёт легко, считается из числа его программистов', () => {
+    for (const def of content.cities) expect(cityFactors(def, content).reach, def.id).toBe(Math.round(def.devJobs / c.devsPerHire));
+    expect(cityFactors(biggest, content).reach!).toBeGreaterThan(cityFactors(smallest, content).reach! * 5);
+  });
+
+  it('пока нанято мало, рынок не мешает; чем больше нанято, тем меньше кандидатов и тем больше они просят', () => {
+    const city = cityFactors(smallest, content);
+    const reach = city.reach!;
+    expect(laborMarket(city, 0, c)).toMatchObject({ reach, pressure: 0, premium: 1, candidates: 1 });
+    const full = laborMarket(city, reach, c);
+    expect(full.premium).toBeCloseTo(1 + c.premiumAtFull, 2);
+    expect(full.candidates).toBeCloseTo(1 - c.candidatesDrop, 6);
+    const over = laborMarket(city, reach * 3, c);
+    expect(over.premium).toBeGreaterThan(full.premium);
+    expect(over.premium).toBeLessThanOrEqual(1 + c.premiumMax);
+    expect(over.candidates).toBe(c.candidatesFloor);
+    // Надбавка не бесконечна.
+    expect(laborMarket(city, reach * 50, c).premium).toBe(1 + c.premiumMax);
+  });
+
+  it('партия без города и сохранение, сделанное до рынка труда, предела не знают', () => {
+    expect(laborMarket(cityOf(game()), 500, c)).toEqual({ reach: null, pressure: 0, premium: 1, candidates: 1 });
+    const old = { ...cityFactors(smallest, content) };
+    delete old.reach;
+    expect(laborMarket(old, 500, c)).toEqual({ reach: null, pressure: 0, premium: 1, candidates: 1 });
+    expect(teamView(game(), content).market).toBeNull();
+  });
+
+  it('в маленьком городе большой команде приходит меньше кандидатов, и просят они больше, чем той же команде в большом', () => {
+    const size = cityFactors(smallest, content).reach! * 3;
+    const refresh = (cityId: string) => {
+      let s = withTeam(cityId, size);
+      for (let i = 0; i < content.config.team.candidatesEveryDays + 1; i++) s = tick({ ...s, cash: 1e9 }, quiet);
+      return teamOf(s, content).candidates;
+    };
+    const small = refresh(smallest.id);
+    const big = refresh(biggest.id);
+    expect(small.length).toBeLessThan(big.length);
+    expect(small.length).toBeGreaterThanOrEqual(1);
+    // Просят больше, чем положено по навыку и зарплатам города: рынок выбран.
+    const base = content.config.team;
+    const fair = (x: (typeof small)[number], cityDef: CityDef) => base.salaryBase[x.role] * x.skill ** base.salaryExponent * cityFactors(cityDef, content).salary[x.role];
+    const ratio = (list: typeof small, cityDef: CityDef) => list.reduce((sum, x) => sum + x.salaryAsk / fair(x, cityDef), 0) / list.length;
+    expect(ratio(small, smallest)).toBeGreaterThan(1 + c.premiumAtFull);
+    expect(ratio(big, biggest)).toBeLessThan(1.25);
+  });
+
+  it('экран команды называет город, сколько людей он даёт легко и что будет со следующими кандидатами', () => {
+    const reach = cityFactors(smallest, content).reach!;
+    const calm = teamView(withTeam(smallest.id, 2), content).market!;
+    expect(calm).toMatchObject({ cityId: smallest.id, reach, tight: false });
+    expect(calm.candidatesPct).toBeGreaterThan(85);
+    const tight = teamView(withTeam(smallest.id, reach * 2), content).market!;
+    expect(tight.tight).toBe(true);
+    expect(tight.premiumPct).toBeGreaterThan(100);
+    expect(tight.candidatesPct).toBe(Math.round(c.candidatesFloor * 100));
+    expect(tight.citySalaryPct).toBe(Math.round((cityFactors(smallest, content).salary.developer - 1) * 100));
   });
 });
 
